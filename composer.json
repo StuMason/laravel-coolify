@@ -1,0 +1,77 @@
+{
+    "name": "stumason/laravel-coolify",
+    "description": "Manage, deploy, and monitor your Laravel application on Coolify - like Horizon for your infrastructure.",
+    "keywords": ["laravel", "coolify", "deployment", "monitoring", "infrastructure", "devops"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Stu Mason",
+            "email": "stu@stuartmason.co.uk"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/contracts": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/console": "^11.0|^12.0",
+        "guzzlehttp/guzzle": "^7.5"
+    },
+    "require-dev": {
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
+        "phpstan/phpstan": "^1.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "Stumason\\Coolify\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Stumason\\Coolify\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Stumason\\Coolify\\CoolifyServiceProvider"
+            ],
+            "aliases": {
+                "Coolify": "Stumason\\Coolify\\Facades\\Coolify"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "scripts": {
+        "post-autoload-dump": "@prepare",
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "@build",
+            "@php vendor/bin/testbench serve"
+        ],
+        "lint": [
+            "@php vendor/bin/phpstan analyse"
+        ],
+        "test": [
+            "@php vendor/bin/pest"
+        ],
+        "test:coverage": [
+            "@php vendor/bin/pest --coverage"
+        ]
+    }
+}
