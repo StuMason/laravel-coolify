@@ -43,10 +43,7 @@
                 <div class="flex h-16 justify-between">
                     <div class="flex">
                         <div class="flex flex-shrink-0 items-center">
-                            <svg class="h-8 w-8 text-coolify-500" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                            </svg>
-                            <span class="ml-2 text-xl font-bold text-white">Coolify</span>
+                            <span class="text-xl font-bold text-white">Coolify</span>
                         </div>
                         <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                             <a href="{{ route('coolify.index') }}" class="inline-flex items-center border-b-2 border-coolify-500 px-1 pt-1 text-sm font-medium text-white">

@@ -99,9 +99,19 @@ class CoolifyApplicationRepository implements ApplicationRepository
      */
     public function deploy(string $uuid): array
     {
-        return $this->client->post("applications/{$uuid}/deploy", [
-            'force' => false,
+        // Coolify API uses POST /deploy with uuid in body
+        $response = $this->client->post('deploy', [
+            'uuid' => $uuid,
         ]);
+
+        // API returns {deployments: [{message, resource_uuid, deployment_uuid}]}
+        $deployment = $response['deployments'][0] ?? $response;
+
+        return [
+            'deployment_uuid' => $deployment['deployment_uuid'] ?? null,
+            'message' => $deployment['message'] ?? null,
+            'resource_uuid' => $deployment['resource_uuid'] ?? $uuid,
+        ];
     }
 
     /**
@@ -149,8 +159,16 @@ class CoolifyApplicationRepository implements ApplicationRepository
     /**
      * @inheritDoc
      */
-    public function updateEnvs(string $uuid, array $envs): array
+    public function createEnv(string $uuid, array $env): array
     {
-        return $this->client->patch("applications/{$uuid}/envs", $envs);
+        return $this->client->post("applications/{$uuid}/envs", $env);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateEnv(string $uuid, array $env): array
+    {
+        return $this->client->patch("applications/{$uuid}/envs", $env);
     }
 }

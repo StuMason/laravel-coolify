@@ -32,7 +32,10 @@ class CoolifyDeploymentRepository implements DeploymentRepository
      */
     public function forApplication(string $applicationUuid): array
     {
-        return $this->client->get("applications/{$applicationUuid}/deployments");
+        // Coolify API endpoint is /deployments/applications/{uuid}, not /applications/{uuid}/deployments
+        $response = $this->client->get("deployments/applications/{$applicationUuid}");
+
+        return $response['deployments'] ?? [];
     }
 
     /**
@@ -50,9 +53,20 @@ class CoolifyDeploymentRepository implements DeploymentRepository
      */
     public function trigger(string $applicationUuid, array $options = []): array
     {
-        return $this->client->post("applications/{$applicationUuid}/deploy", array_merge([
-            'force' => false,
+        // Coolify API uses POST /deploy with uuid in body, not /applications/{uuid}/deploy
+        $response = $this->client->post('deploy', array_merge([
+            'uuid' => $applicationUuid,
         ], $options));
+
+        // API returns {deployments: [{message, resource_uuid, deployment_uuid}]}
+        // Extract the first deployment for backwards compatibility
+        $deployment = $response['deployments'][0] ?? $response;
+
+        return [
+            'deployment_uuid' => $deployment['deployment_uuid'] ?? null,
+            'message' => $deployment['message'] ?? null,
+            'resource_uuid' => $deployment['resource_uuid'] ?? $applicationUuid,
+        ];
     }
 
     /**

@@ -348,20 +348,28 @@ class ProvisionCommand extends Command
             $this->line('  <fg=gray>Database credentials set on Coolify application</>');
 
             // ─────────────────────────────────────────────────────────────────
-            // WEBHOOK SETUP INSTRUCTIONS
+            // DEPLOY KEY SETUP
             // ─────────────────────────────────────────────────────────────────
             $this->newLine();
-            $this->line('  <fg=yellow;options=bold>IMPORTANT: Setup Required for Auto-Deploy</>');
+            $this->line('  <fg=yellow;options=bold>IMPORTANT: Add Deploy Key to GitHub</>');
             $this->newLine();
-            $this->line('  <fg=white>1. Add deploy key to your GitHub repo:</>');
-            $this->line("     <fg=gray>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
-            $this->line('     <fg=gray>Add the public key from Coolify (Security -> Private Keys)</>');
-            $this->newLine();
-            $this->line('  <fg=white>2. Setup webhook for auto-deploy on push:</>');
-            $this->line("     <fg=gray>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/hooks");
-            $this->line('     <fg=gray>Add webhook URL from Coolify app -> Webhooks -> Manual Git Webhooks</>');
-            $this->newLine();
-            $this->line('  <fg=gray>Or view the Webhook Setup section in your Laravel app at /coolify</>');
+
+            // Fetch and display the public key
+            $publicKey = $deployKey['public_key'] ?? null;
+            if ($publicKey) {
+                $this->line('  <fg=white>1. Go to:</> <fg=cyan>https://github.com/'.$repoInfo['full_name'].'/settings/keys</>');
+                $this->line('  <fg=white>2. Click "Add deploy key"</>');
+                $this->line('  <fg=white>3. Add this public key:</>');
+                $this->newLine();
+                $this->line("  <fg=gray>{$publicKey}</>");
+                $this->newLine();
+            } else {
+                $this->line("  <fg=white>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
+                $this->line('  <fg=gray>Add the public key from Coolify (Security -> Private Keys)</>');
+                $this->newLine();
+            }
+
+            $this->line('  <fg=gray>Webhook setup instructions will be shown in your dashboard at /coolify</>');
             $this->newLine();
 
             // ─────────────────────────────────────────────────────────────────
@@ -599,7 +607,12 @@ class ProvisionCommand extends Command
         return $firstApp ? ['uuid' => $firstApp['uuid'], 'id' => $firstApp['id']] : null;
     }
 
-    protected function selectRepository(GitHubAppRepository $githubApps, int $githubAppId): ?array
+    /**
+     * Select a repository - either from GitHub App list or manual entry.
+     *
+     * @param  array{uuid: string, id: int}|null  $githubApp  Optional GitHub App for listing repos
+     */
+    protected function selectRepository(GitHubAppRepository $githubApps, ?array $githubApp): ?array
     {
         if ($repo = $this->option('repository')) {
             [$owner, $repoName] = explode('/', $repo, 2);
@@ -611,52 +624,54 @@ class ProvisionCommand extends Command
             ];
         }
 
-        // Try to fetch repos, but handle rate limiting gracefully
-        try {
-            $response = spin(
-                callback: fn () => $githubApps->repositories($githubAppId),
-                message: 'Fetching repositories...'
-            );
-
-            $repositories = $response['repositories'] ?? $response ?? [];
-
-            // Check for rate limit error in response
-            if (isset($response['message']) && str_contains($response['message'], 'rate limit')) {
-                throw new CoolifyApiException('Rate limited');
-            }
-
-            if (! empty($repositories)) {
-                // Build a searchable list
-                $repoChoices = collect($repositories)->mapWithKeys(function ($repo) {
-                    $fullName = $repo['full_name'] ?? "{$repo['owner']['login']}/{$repo['name']}";
-
-                    return [$fullName => $fullName];
-                })->toArray();
-
-                $selected = search(
-                    label: 'Search and select repository:',
-                    options: fn (string $value) => collect($repoChoices)
-                        ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)))
-                        ->toArray(),
-                    placeholder: 'Type to search...'
+        // Try to fetch repos from GitHub App if available
+        if ($githubApp) {
+            try {
+                $response = spin(
+                    callback: fn () => $githubApps->repositories($githubApp['id']),
+                    message: 'Fetching repositories from GitHub App...'
                 );
 
-                if ($selected) {
-                    [$owner, $repoName] = explode('/', $selected, 2);
+                $repositories = $response['repositories'] ?? $response ?? [];
 
-                    return [
-                        'owner' => $owner,
-                        'repo' => $repoName,
-                        'full_name' => $selected,
-                    ];
+                // Check for rate limit error in response
+                if (isset($response['message']) && str_contains($response['message'], 'rate limit')) {
+                    throw new CoolifyApiException('Rate limited');
                 }
+
+                if (! empty($repositories)) {
+                    // Build a searchable list
+                    $repoChoices = collect($repositories)->mapWithKeys(function ($repo) {
+                        $fullName = $repo['full_name'] ?? "{$repo['owner']['login']}/{$repo['name']}";
+
+                        return [$fullName => $fullName];
+                    })->toArray();
+
+                    $selected = search(
+                        label: 'Search and select repository:',
+                        options: fn (string $value) => collect($repoChoices)
+                            ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)))
+                            ->toArray(),
+                        placeholder: 'Type to search...'
+                    );
+
+                    if ($selected) {
+                        [$owner, $repoName] = explode('/', $selected, 2);
+
+                        return [
+                            'owner' => $owner,
+                            'repo' => $repoName,
+                            'full_name' => $selected,
+                        ];
+                    }
+                }
+            } catch (CoolifyApiException $e) {
+                // Rate limited or other error - fall back to manual entry
+                warning('Could not fetch repositories (GitHub may be rate limiting). Enter manually.');
             }
-        } catch (CoolifyApiException $e) {
-            // Rate limited or other error - fall back to manual entry
-            warning('Could not fetch repositories (GitHub may be rate limiting). Enter manually.');
         }
 
-        // Manual entry fallback
+        // Manual entry (either no GitHub App or rate limited)
         $repo = text(
             label: 'Enter repository (owner/repo)',
             placeholder: 'e.g. StuMason/my-laravel-app',
@@ -675,52 +690,60 @@ class ProvisionCommand extends Command
         ];
     }
 
-    protected function selectBranch(GitHubAppRepository $githubApps, int $githubAppId, string $owner, string $repo): ?string
+    /**
+     * Select a branch - either from GitHub App list or manual entry.
+     *
+     * @param  array{uuid: string, id: int}|null  $githubApp  Optional GitHub App for listing branches
+     */
+    protected function selectBranch(GitHubAppRepository $githubApps, ?array $githubApp, string $owner, string $repo): ?string
     {
         if ($branch = $this->option('branch')) {
             return $branch;
         }
 
-        try {
-            $response = spin(
-                callback: fn () => $githubApps->branches($githubAppId, $owner, $repo),
-                message: 'Fetching branches...'
-            );
-
-            // Check for rate limit error
-            if (isset($response['message']) && str_contains($response['message'], 'rate limit')) {
-                throw new CoolifyApiException('Rate limited');
-            }
-
-            // API returns {branches: [...]}
-            $branches = $response['branches'] ?? $response ?? [];
-
-            if (! empty($branches)) {
-                $branchChoices = collect($branches)->mapWithKeys(fn ($b) => [
-                    $b['name'] => $b['name'],
-                ])->toArray();
-
-                // Put main/master at the top if they exist
-                $sortedChoices = [];
-                foreach (['main', 'master'] as $defaultBranch) {
-                    if (isset($branchChoices[$defaultBranch])) {
-                        $sortedChoices[$defaultBranch] = $defaultBranch;
-                    }
-                }
-                $sortedChoices = array_merge($sortedChoices, $branchChoices);
-
-                return select(
-                    label: 'Select branch:',
-                    options: $sortedChoices,
-                    default: array_key_first($sortedChoices)
+        // Try to fetch branches from GitHub App if available
+        if ($githubApp) {
+            try {
+                $response = spin(
+                    callback: fn () => $githubApps->branches($githubApp['id'], $owner, $repo),
+                    message: 'Fetching branches from GitHub App...'
                 );
+
+                // Check for rate limit error
+                if (isset($response['message']) && str_contains($response['message'], 'rate limit')) {
+                    throw new CoolifyApiException('Rate limited');
+                }
+
+                // API returns {branches: [...]}
+                $branches = $response['branches'] ?? $response ?? [];
+
+                if (! empty($branches)) {
+                    $branchChoices = collect($branches)->mapWithKeys(fn ($b) => [
+                        $b['name'] => $b['name'],
+                    ])->toArray();
+
+                    // Put main/master at the top if they exist
+                    $sortedChoices = [];
+                    foreach (['main', 'master'] as $defaultBranch) {
+                        if (isset($branchChoices[$defaultBranch])) {
+                            $sortedChoices[$defaultBranch] = $defaultBranch;
+                        }
+                    }
+                    $sortedChoices = array_merge($sortedChoices, $branchChoices);
+
+                    return select(
+                        label: 'Select branch:',
+                        options: $sortedChoices,
+                        default: array_key_first($sortedChoices)
+                    );
+                }
+            } catch (CoolifyApiException) {
+                // Rate limited or other error - fall back to manual entry
+                warning('Could not fetch branches (GitHub may be rate limiting).');
             }
-        } catch (CoolifyApiException) {
-            // Rate limited or other error - fall back to manual entry
-            warning('Could not fetch branches (GitHub may be rate limiting).');
         }
 
-        // Manual entry fallback
+        // Manual entry (either no GitHub App or rate limited)
         return text(
             label: 'Enter branch name',
             default: 'main',
@@ -819,14 +842,15 @@ class ProvisionCommand extends Command
         $db = $databases->get($uuid);
         $status = $db['status'] ?? 'unknown';
 
-        if ($status === 'running' || $status === 'healthy') {
+        // Status can be compound like "running:healthy" so use str_contains
+        if (str_contains($status, 'running') || str_contains($status, 'healthy')) {
             $this->storeDatabaseUrl($type, $db);
             note("{$type} is ready!");
 
             return;
         }
 
-        if ($status === 'error' || $status === 'failed') {
+        if (str_contains($status, 'error') || str_contains($status, 'failed')) {
             throw new CoolifyApiException("{$type} failed to start");
         }
 
@@ -843,13 +867,14 @@ class ProvisionCommand extends Command
 
                     $status = $db['status'] ?? 'unknown';
 
-                    if ($status === 'running' || $status === 'healthy') {
+                    // Status can be compound like "running:healthy" so use str_contains
+                    if (str_contains($status, 'running') || str_contains($status, 'healthy')) {
                         $this->storeDatabaseUrl($type, $db);
 
                         return true;
                     }
 
-                    if ($status === 'error' || $status === 'failed') {
+                    if (str_contains($status, 'error') || str_contains($status, 'failed')) {
                         throw new CoolifyApiException("{$type} failed to start: {$status}");
                     }
 
@@ -871,6 +896,11 @@ class ProvisionCommand extends Command
         }
     }
 
+    /**
+     * Create application using deploy key for SSH-based private repo access.
+     *
+     * Deploy keys don't hit GitHub API rate limits (unlike GitHub Apps).
+     */
     protected function createApplication(
         ApplicationRepository $applications,
         string $serverUuid,
@@ -878,7 +908,7 @@ class ProvisionCommand extends Command
         string $environment,
         string $appName,
         string $domain,
-        string $githubAppUuid,
+        string $deployKeyUuid,
         string $gitRepository,
         string $branch
     ): ?string {
@@ -886,14 +916,15 @@ class ProvisionCommand extends Command
         $this->line("    Name: <fg=white>{$appName}</>");
         $this->line("    Domain: <fg=white>https://{$domain}</>");
 
-        // Step 1: Create minimal public app first (fast, no GitHub API calls)
-        $this->line('    Creating application shell...');
+        // Use deploy key endpoint - creates app with SSH access (no GitHub API calls)
+        $this->line('    Creating application with deploy key...');
 
-        $publicPayload = [
+        $payload = [
             'server_uuid' => $serverUuid,
             'project_uuid' => $projectUuid,
             'environment_name' => $environment,
-            'git_repository' => "https://github.com/{$gitRepository}",
+            'private_key_uuid' => $deployKeyUuid,
+            'git_repository' => "git@github.com:{$gitRepository}.git",
             'git_branch' => $branch,
             'build_pack' => 'nixpacks',
             'ports_exposes' => '8080',
@@ -902,11 +933,9 @@ class ProvisionCommand extends Command
             'instant_deploy' => false,
         ];
 
-        $uuid = null;
-
         try {
             $result = spin(
-                callback: fn () => $applications->createPublic($publicPayload),
+                callback: fn () => $applications->createPrivateDeployKey($payload),
                 message: '    Calling Coolify API...'
             );
 
@@ -917,35 +946,13 @@ class ProvisionCommand extends Command
             }
 
             $this->createdResources['Application'] = $uuid;
-            $this->line("    <fg=green>Application shell created:</> {$uuid}");
+            $this->line("    <fg=green>Application created:</> {$uuid}");
+
+            return $uuid;
 
         } catch (\Exception $e) {
             throw new CoolifyApiException('Failed to create application: '.$e->getMessage());
         }
-
-        // Step 2: Try to link GitHub App for private repo access
-        // Try different field names that Coolify might accept
-        $this->line('    Linking GitHub App for private repo access...');
-
-        try {
-            // Try with github_app_uuid first (matches the create endpoint parameter name)
-            spin(
-                callback: fn () => $applications->update($uuid, [
-                    'github_app_uuid' => $githubAppUuid,
-                    'git_repository' => $gitRepository,  // owner/repo format for private
-                ]),
-                message: '    Updating application source...'
-            );
-
-            $this->line('    <fg=green>GitHub App linked successfully</>');
-
-        } catch (\Exception $e) {
-            $this->line("    <fg=yellow>[WARNING]</> Could not link GitHub App: {$e->getMessage()}");
-            $this->line('    <fg=gray>App created but may not have access to private repos</>');
-            $this->line('    <fg=gray>You can manually link it in the Coolify dashboard</>');
-        }
-
-        return $uuid;
     }
 
     protected function setApplicationEnvVars(
@@ -959,15 +966,15 @@ class ProvisionCommand extends Command
         $envVars = [];
 
         // Set Coolify resource UUIDs so they're available in production
-        $envVars[] = ['key' => 'COOLIFY_PROJECT_UUID', 'value' => $projectUuid, 'is_build_time' => false];
-        $envVars[] = ['key' => 'COOLIFY_APPLICATION_UUID', 'value' => $appUuid, 'is_build_time' => false];
+        $envVars[] = ['key' => 'COOLIFY_PROJECT_UUID', 'value' => $projectUuid];
+        $envVars[] = ['key' => 'COOLIFY_APPLICATION_UUID', 'value' => $appUuid];
 
         if ($dbUuid) {
-            $envVars[] = ['key' => 'COOLIFY_DATABASE_UUID', 'value' => $dbUuid, 'is_build_time' => false];
+            $envVars[] = ['key' => 'COOLIFY_DATABASE_UUID', 'value' => $dbUuid];
         }
 
         if ($redisUuid) {
-            $envVars[] = ['key' => 'COOLIFY_REDIS_UUID', 'value' => $redisUuid, 'is_build_time' => false];
+            $envVars[] = ['key' => 'COOLIFY_REDIS_UUID', 'value' => $redisUuid];
         }
 
         // Fetch PostgreSQL connection details
@@ -976,17 +983,17 @@ class ProvisionCommand extends Command
             $internalUrl = $db['internal_db_url'] ?? $this->postgresInternalUrl;
 
             if ($internalUrl) {
-                $envVars[] = ['key' => 'DATABASE_URL', 'value' => $internalUrl, 'is_build_time' => false];
-                $envVars[] = ['key' => 'DB_CONNECTION', 'value' => 'pgsql', 'is_build_time' => false];
+                $envVars[] = ['key' => 'DATABASE_URL', 'value' => $internalUrl];
+                $envVars[] = ['key' => 'DB_CONNECTION', 'value' => 'pgsql'];
 
                 // Parse the URL to extract individual components
                 $parsed = parse_url($internalUrl);
                 if ($parsed) {
-                    $envVars[] = ['key' => 'DB_HOST', 'value' => $parsed['host'] ?? '', 'is_build_time' => false];
-                    $envVars[] = ['key' => 'DB_PORT', 'value' => (string) ($parsed['port'] ?? 5432), 'is_build_time' => false];
-                    $envVars[] = ['key' => 'DB_DATABASE', 'value' => ltrim($parsed['path'] ?? '', '/'), 'is_build_time' => false];
-                    $envVars[] = ['key' => 'DB_USERNAME', 'value' => $parsed['user'] ?? '', 'is_build_time' => false];
-                    $envVars[] = ['key' => 'DB_PASSWORD', 'value' => $parsed['pass'] ?? '', 'is_build_time' => false];
+                    $envVars[] = ['key' => 'DB_HOST', 'value' => $parsed['host'] ?? ''];
+                    $envVars[] = ['key' => 'DB_PORT', 'value' => (string) ($parsed['port'] ?? 5432)];
+                    $envVars[] = ['key' => 'DB_DATABASE', 'value' => ltrim($parsed['path'] ?? '', '/')];
+                    $envVars[] = ['key' => 'DB_USERNAME', 'value' => $parsed['user'] ?? ''];
+                    $envVars[] = ['key' => 'DB_PASSWORD', 'value' => $parsed['pass'] ?? ''];
                 }
             }
         }
@@ -997,18 +1004,18 @@ class ProvisionCommand extends Command
             $internalUrl = $redis['internal_db_url'] ?? $this->redisInternalUrl;
 
             if ($internalUrl) {
-                $envVars[] = ['key' => 'REDIS_URL', 'value' => $internalUrl, 'is_build_time' => false];
-                $envVars[] = ['key' => 'CACHE_STORE', 'value' => 'redis', 'is_build_time' => false];
-                $envVars[] = ['key' => 'SESSION_DRIVER', 'value' => 'redis', 'is_build_time' => false];
-                $envVars[] = ['key' => 'QUEUE_CONNECTION', 'value' => 'redis', 'is_build_time' => false];
+                $envVars[] = ['key' => 'REDIS_URL', 'value' => $internalUrl];
+                $envVars[] = ['key' => 'CACHE_STORE', 'value' => 'redis'];
+                $envVars[] = ['key' => 'SESSION_DRIVER', 'value' => 'redis'];
+                $envVars[] = ['key' => 'QUEUE_CONNECTION', 'value' => 'redis'];
 
                 // Parse the URL for individual components
                 $parsed = parse_url($internalUrl);
                 if ($parsed) {
-                    $envVars[] = ['key' => 'REDIS_HOST', 'value' => $parsed['host'] ?? '', 'is_build_time' => false];
-                    $envVars[] = ['key' => 'REDIS_PORT', 'value' => (string) ($parsed['port'] ?? 6379), 'is_build_time' => false];
+                    $envVars[] = ['key' => 'REDIS_HOST', 'value' => $parsed['host'] ?? ''];
+                    $envVars[] = ['key' => 'REDIS_PORT', 'value' => (string) ($parsed['port'] ?? 6379)];
                     if (! empty($parsed['pass'])) {
-                        $envVars[] = ['key' => 'REDIS_PASSWORD', 'value' => $parsed['pass'], 'is_build_time' => false];
+                        $envVars[] = ['key' => 'REDIS_PASSWORD', 'value' => $parsed['pass']];
                     }
                 }
             }
@@ -1019,7 +1026,7 @@ class ProvisionCommand extends Command
         spin(
             callback: function () use ($applications, $appUuid, $envVars): void {
                 foreach ($envVars as $env) {
-                    $applications->updateEnvs($appUuid, $env);
+                    $applications->createEnv($appUuid, $env);
                 }
             },
             message: '    Pushing to Coolify...'

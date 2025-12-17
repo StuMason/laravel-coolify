@@ -47,8 +47,10 @@ class InstallCommand extends Command
 
         // Check if .env is configured
         if ($this->isConfigured()) {
-            $this->promptForProvisioning();
-            $this->promptForStatusCheck();
+            // Just run the status check automatically, no need to ask
+            $this->call('coolify:status', ['--all' => true]);
+            $this->newLine();
+            info('Run `php artisan coolify:provision` to set up your infrastructure.');
         } else {
             warning('Coolify is not configured yet.');
             $this->newLine();
@@ -76,27 +78,6 @@ class InstallCommand extends Command
         $url = config('coolify.url');
 
         return ! empty($token) && ! empty($url);
-    }
-
-    /**
-     * Prompt to check Coolify status.
-     */
-    protected function promptForStatusCheck(): void
-    {
-        if (confirm('Would you like to check the Coolify connection status?', true)) {
-            $this->call('coolify:status', ['--all' => true]);
-            $this->newLine();
-        }
-    }
-
-    /**
-     * Prompt to provision infrastructure.
-     */
-    protected function promptForProvisioning(): void
-    {
-        if (confirm('Would you like to provision your infrastructure now?', false)) {
-            $this->call('coolify:provision');
-        }
     }
 
     /**

@@ -122,10 +122,18 @@ interface ApplicationRepository
     public function envs(string $uuid): array;
 
     /**
-     * Update environment variables for an application.
+     * Create a new environment variable for an application.
      *
-     * @param  array<string, mixed>  $envs
+     * @param  array<string, mixed>  $env  Should contain 'key', 'value', and optionally 'is_buildtime'
      * @return array<string, mixed>
      */
-    public function updateEnvs(string $uuid, array $envs): array;
+    public function createEnv(string $uuid, array $env): array;
+
+    /**
+     * Update an existing environment variable for an application.
+     *
+     * @param  array<string, mixed>  $env  Should contain 'key' and 'value'
+     * @return array<string, mixed>
+     */
+    public function updateEnv(string $uuid, array $env): array;
 }

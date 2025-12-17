@@ -68,6 +68,14 @@ class DestroyCommand extends Command
 
             $projectName = $project['name'] ?? $projectUuid;
 
+            // Get environment IDs from the project
+            // The API doesn't return project_uuid on resources, but it does return environment_id
+            // We can use this to filter resources belonging to this project
+            $projectEnvironmentIds = collect($project['environments'] ?? [])
+                ->pluck('id')
+                ->filter()
+                ->all();
+
             // Fetch all resources in the project
             $allApps = spin(
                 callback: fn () => $applications->all(),
@@ -84,12 +92,13 @@ class DestroyCommand extends Command
                 message: 'Fetching services...'
             );
 
-            // Filter to this project's resources
-            $projectApps = collect($allApps)->filter(fn ($app) => ($app['project_uuid'] ?? null) === $projectUuid)->values()->all();
+            // Filter to this project's resources by environment_id
+            // (project_uuid is null in API responses, so we use environment_id instead)
+            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
 
-            $projectDatabases = collect($allDatabases)->filter(fn ($db) => ($db['project_uuid'] ?? null) === $projectUuid)->values()->all();
+            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
 
-            $projectServices = collect($allServices)->filter(fn ($svc) => ($svc['project_uuid'] ?? null) === $projectUuid)->values()->all();
+            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
 
             // Show what will be deleted
             $this->newLine();
@@ -175,10 +184,22 @@ class DestroyCommand extends Command
                 $this->deleteService($services, $svc);
             }
 
-            // Brief pause before deleting project
-            sleep(1);
+            // Step 5: Wait for all resources to be deleted before deleting project
+            // Deletions are queued and async, so we need to poll until complete
+            $resourceCount = count($projectApps) + count($projectDatabases) + count($projectServices);
 
-            // Step 5: Finally delete the project
+            if ($resourceCount > 0) {
+                $this->waitForResourceDeletion(
+                    $applications,
+                    $databases,
+                    $services,
+                    $projectApps,
+                    $projectDatabases,
+                    $projectServices
+                );
+            }
+
+            // Step 6: Finally delete the project
             spin(
                 callback: fn () => $projects->delete($projectUuid),
                 message: "Deleting project '{$projectName}'..."
@@ -303,5 +324,77 @@ class DestroyCommand extends Command
         } catch (CoolifyApiException $exception) {
             warning("Failed to delete service '{$svc['name']}': {$exception->getMessage()}");
         }
+    }
+
+    /**
+     * Wait for all resources to be fully deleted before deleting the project.
+     * Deletions are queued and async, so we poll until they're gone.
+     */
+    protected function waitForResourceDeletion(
+        ApplicationRepository $applications,
+        DatabaseRepository $databases,
+        ServiceRepository $services,
+        array $projectApps,
+        array $projectDatabases,
+        array $projectServices
+    ): void {
+        $appUuids = collect($projectApps)->pluck('uuid')->all();
+        $dbUuids = collect($projectDatabases)->pluck('uuid')->all();
+        $svcUuids = collect($projectServices)->pluck('uuid')->all();
+
+        $maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max
+        $attempt = 0;
+
+        spin(
+            callback: function () use ($applications, $databases, $services, $appUuids, $dbUuids, $svcUuids, $maxAttempts, &$attempt): bool {
+                while ($attempt < $maxAttempts) {
+                    $attempt++;
+
+                    // Check if any apps still exist
+                    $remainingApps = 0;
+                    if (! empty($appUuids)) {
+                        try {
+                            $allApps = $applications->all();
+                            $remainingApps = collect($allApps)->whereIn('uuid', $appUuids)->count();
+                        } catch (CoolifyApiException) {
+                            // Ignore errors during polling
+                        }
+                    }
+
+                    // Check if any databases still exist
+                    $remainingDbs = 0;
+                    if (! empty($dbUuids)) {
+                        try {
+                            $allDbs = $databases->all();
+                            $remainingDbs = collect($allDbs)->whereIn('uuid', $dbUuids)->count();
+                        } catch (CoolifyApiException) {
+                            // Ignore errors during polling
+                        }
+                    }
+
+                    // Check if any services still exist
+                    $remainingSvcs = 0;
+                    if (! empty($svcUuids)) {
+                        try {
+                            $allSvcs = $services->all();
+                            $remainingSvcs = collect($allSvcs)->whereIn('uuid', $svcUuids)->count();
+                        } catch (CoolifyApiException) {
+                            // Ignore errors during polling
+                        }
+                    }
+
+                    // All resources deleted?
+                    if ($remainingApps === 0 && $remainingDbs === 0 && $remainingSvcs === 0) {
+                        return true;
+                    }
+
+                    sleep(2);
+                }
+
+                // Timed out but continue anyway - project delete will fail if resources remain
+                return true;
+            },
+            message: 'Waiting for resources to be deleted...'
+        );
     }
 }

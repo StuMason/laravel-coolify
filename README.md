@@ -39,7 +39,7 @@ COOLIFY_APPLICATION_UUID=your-app-uuid
 
 **Important:** The Coolify API token must have appropriate permissions:
 
-- For **provisioning** (`coolify:provision`), your token needs access to GitHub Apps, which requires a **root-level API token** created by a Coolify admin
+- For **provisioning** (`coolify:provision`), your token needs access to servers and projects, which requires a **root-level API token** created by a Coolify admin
 - For **basic operations** (deploy, logs, status), a team-level token is sufficient
 
 To create a root API token:
@@ -48,7 +48,22 @@ To create a root API token:
 2. Go to **Keys & Tokens** > **API Tokens**
 3. Create a token with root/admin access
 
-The API uses the team associated with your token to filter resources. If you're getting "resource not found" errors when listing GitHub Apps, servers, or projects, ensure your token has the correct team/root access.
+### Deploy Keys vs GitHub Apps
+
+This package uses **SSH deploy keys** instead of GitHub Apps for private repository access. Here's why:
+
+| | Deploy Keys (SSH) | GitHub Apps |
+|---|---|---|
+| **Rate Limits** | None (uses SSH) | 5000 req/hour shared across ALL apps |
+| **Setup** | Manual (add public key to repo) | Automatic |
+| **Auto-Deploy** | Manual webhook setup | Automatic via GitHub App |
+| **Reliability** | Very reliable | Can fail when rate limited |
+
+**Why this matters:** GitHub Apps share their 5000 request/hour rate limit across ALL Coolify applications using that app. If you have multiple projects deploying frequently, you'll hit rate limits and deployments will fail with "Repository not found" errors.
+
+Deploy keys use SSH directly - no GitHub API calls, no rate limits, no mysterious failures.
+
+**Trade-off:** You need to set up webhooks manually for auto-deploy on push. The provisioning command shows you exactly how to do this.
 
 ## Quick Start
 
@@ -89,6 +104,17 @@ php artisan coolify:provision \
   --with-dragonfly \
   --force
 ```
+
+**Prerequisites:**
+
+1. Create an SSH key in Coolify (Security > Private Keys)
+2. Set `COOLIFY_DEPLOY_KEY_UUID` in your `.env` (or select during provisioning)
+
+**After Provisioning:**
+
+1. Add the public key to your GitHub repo (Settings > Deploy Keys)
+2. Set up a webhook for auto-deploy on push (Settings > Webhooks)
+   - The provisioning command will show you the exact URLs and secrets needed
 
 ## Dashboard
 
