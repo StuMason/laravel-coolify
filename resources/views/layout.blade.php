@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,10 +35,10 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="h-full bg-gray-50 dark:bg-gray-900">
+<body class="h-full bg-gray-900">
     <div class="min-h-full">
         <!-- Navigation -->
-        <nav class="border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
+        <nav class="border-b border-gray-700 bg-gray-800">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 justify-between">
                     <div class="flex">
@@ -46,16 +46,16 @@
                             <svg class="h-8 w-8 text-coolify-500" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                             </svg>
-                            <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white">Coolify</span>
+                            <span class="ml-2 text-xl font-bold text-white">Coolify</span>
                         </div>
                         <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                            <a href="{{ route('coolify.index') }}" class="inline-flex items-center border-b-2 border-coolify-500 px-1 pt-1 text-sm font-medium text-gray-900 dark:text-white">
+                            <a href="{{ route('coolify.index') }}" class="inline-flex items-center border-b-2 border-coolify-500 px-1 pt-1 text-sm font-medium text-white">
                                 Dashboard
                             </a>
                         </div>
                     </div>
                     <div class="flex items-center">
-                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                        <span class="text-sm text-gray-400">
                             {{ config('app.name') }}
                         </span>
                     </div>

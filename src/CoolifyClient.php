@@ -69,11 +69,11 @@ class CoolifyClient
      *
      * @throws CoolifyApiException
      */
-    public function post(string $endpoint, array $data = []): array
+    public function post(string $endpoint, array $data = [], ?int $timeout = null): array
     {
         $this->clearCacheForEndpoint($endpoint);
 
-        return $this->request('post', $endpoint, ['json' => $data]);
+        return $this->request('post', $endpoint, ['json' => $data], $timeout);
     }
 
     /**
@@ -130,9 +130,9 @@ class CoolifyClient
      * @throws CoolifyAuthenticationException
      * @throws CoolifyNotFoundException
      */
-    protected function request(string $method, string $endpoint, array $options = []): array
+    protected function request(string $method, string $endpoint, array $options = [], ?int $timeout = null): array
     {
-        $response = $this->buildRequest()
+        $response = $this->buildRequest($timeout)
             ->{$method}($this->buildUrl($endpoint), $options['json'] ?? $options['query'] ?? []);
 
         return $this->handleResponse($response);
@@ -141,10 +141,10 @@ class CoolifyClient
     /**
      * Build the HTTP request with authentication.
      */
-    protected function buildRequest(): PendingRequest
+    protected function buildRequest(?int $timeout = null): PendingRequest
     {
         $request = Http::acceptJson()
-            ->timeout(30)
+            ->timeout($timeout ?? config('coolify.timeout', 60))
             ->retry(3, 100, throw: false);
 
         if ($this->token) {

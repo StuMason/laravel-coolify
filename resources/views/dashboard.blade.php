@@ -3,7 +3,7 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" x-data="dashboard()" x-init="init()">
     <!-- Status Banner -->
-    <div x-show="!stats.connected" x-cloak class="mb-6 rounded-lg bg-yellow-50 p-4 dark:bg-yellow-900/20">
+    <div x-show="!stats.connected" x-cloak class="mb-6 rounded-lg bg-yellow-900/20 p-4">
         <div class="flex">
             <div class="flex-shrink-0">
                 <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -11,9 +11,9 @@
                 </svg>
             </div>
             <div class="ml-3">
-                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Not Connected</h3>
-                <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                    Unable to connect to Coolify. Check your <code class="rounded bg-yellow-100 px-1 dark:bg-yellow-800">COOLIFY_URL</code> and <code class="rounded bg-yellow-100 px-1 dark:bg-yellow-800">COOLIFY_TOKEN</code> configuration.
+                <h3 class="text-sm font-medium text-yellow-200">Not Connected</h3>
+                <p class="mt-1 text-sm text-yellow-300">
+                    Unable to connect to Coolify. Check your <code class="rounded bg-yellow-800 px-1">COOLIFY_URL</code> and <code class="rounded bg-yellow-800 px-1">COOLIFY_TOKEN</code> configuration.
                 </p>
             </div>
         </div>
@@ -21,31 +21,31 @@
 
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Infrastructure Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Monitor and manage your Coolify resources</p>
+        <h1 class="text-2xl font-bold text-white">Infrastructure Dashboard</h1>
+        <p class="mt-1 text-sm text-gray-400">Monitor and manage your Coolify resources</p>
     </div>
 
     <!-- Application Card -->
     <div class="mb-8" x-show="stats.application" x-cloak>
-        <div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+        <div class="overflow-hidden rounded-lg bg-gray-800 shadow">
             <div class="px-4 py-5 sm:p-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-coolify-100 dark:bg-coolify-900">
-                                <svg class="h-6 w-6 text-coolify-600 dark:text-coolify-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-coolify-900">
+                                <svg class="h-6 w-6 text-coolify-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z"/>
                                 </svg>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white" x-text="stats.application?.name || 'Application'"></h3>
+                            <h3 class="text-lg font-medium text-white" x-text="stats.application?.name || 'Application'"></h3>
                             <div class="mt-1 flex items-center space-x-4">
                                 <span class="inline-flex items-center text-sm" :class="statusClass(stats.application?.status)">
                                     <span class="mr-1.5 h-2 w-2 rounded-full" :class="statusDotClass(stats.application?.status)"></span>
                                     <span x-text="stats.application?.status || 'unknown'"></span>
                                 </span>
-                                <span class="text-sm text-gray-500 dark:text-gray-400" x-text="stats.application?.fqdn"></span>
+                                <span class="text-sm text-gray-400" x-text="stats.application?.fqdn"></span>
                             </div>
                         </div>
                     </div>
@@ -66,19 +66,19 @@
                 </div>
 
                 <!-- Git Info -->
-                <div class="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700" x-show="stats.application?.repository">
+                <div class="mt-4 border-t border-gray-700 pt-4" x-show="stats.application?.repository">
                     <dl class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-3">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Repository</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-white" x-text="stats.application?.repository"></dd>
+                            <dt class="text-sm font-medium text-gray-400">Repository</dt>
+                            <dd class="mt-1 text-sm text-white" x-text="stats.application?.repository"></dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Branch</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-white" x-text="stats.application?.branch"></dd>
+                            <dt class="text-sm font-medium text-gray-400">Branch</dt>
+                            <dd class="mt-1 text-sm text-white" x-text="stats.application?.branch"></dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Commit</dt>
-                            <dd class="mt-1 font-mono text-sm text-gray-900 dark:text-white" x-text="stats.application?.commit"></dd>
+                            <dt class="text-sm font-medium text-gray-400">Commit</dt>
+                            <dd class="mt-1 font-mono text-sm text-white" x-text="stats.application?.commit"></dd>
                         </div>
                     </dl>
                 </div>
@@ -90,24 +90,24 @@
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <!-- Database Card -->
         <template x-for="(db, key) in stats.databases" :key="key">
-            <div class="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800">
+            <div class="overflow-hidden rounded-lg bg-gray-800 shadow">
                 <div class="px-4 py-5 sm:p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
-                                <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-900">
+                                <svg class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/>
                                 </svg>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <h4 class="text-sm font-medium text-gray-900 dark:text-white" x-text="db.name"></h4>
+                            <h4 class="text-sm font-medium text-white" x-text="db.name"></h4>
                             <div class="mt-1 flex items-center">
                                 <span class="inline-flex items-center text-xs" :class="statusClass(db.status)">
                                     <span class="mr-1 h-1.5 w-1.5 rounded-full" :class="statusDotClass(db.status)"></span>
                                     <span x-text="db.status"></span>
                                 </span>
-                                <span class="ml-2 text-xs text-gray-500 dark:text-gray-400" x-text="db.type"></span>
+                                <span class="ml-2 text-xs text-gray-400" x-text="db.type"></span>
                             </div>
                         </div>
                     </div>

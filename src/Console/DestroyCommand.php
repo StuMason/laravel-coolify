@@ -142,22 +142,43 @@ class DestroyCommand extends Command
                 }
             }
 
-            // Delete applications first
+            // Step 1: Stop all resources first
+            foreach ($projectApps as $app) {
+                $this->stopApplication($applications, $app);
+            }
+
+            foreach ($projectDatabases as $db) {
+                $this->stopDatabase($databases, $db);
+            }
+
+            foreach ($projectServices as $svc) {
+                $this->stopService($services, $svc);
+            }
+
+            // Brief pause to let Coolify process the stops
+            if (count($projectApps) + count($projectDatabases) + count($projectServices) > 0) {
+                sleep(2);
+            }
+
+            // Step 2: Delete applications
             foreach ($projectApps as $app) {
                 $this->deleteApplication($applications, $app);
             }
 
-            // Delete databases
+            // Step 3: Delete databases
             foreach ($projectDatabases as $db) {
                 $this->deleteDatabase($databases, $db);
             }
 
-            // Delete services
+            // Step 4: Delete services
             foreach ($projectServices as $svc) {
                 $this->deleteService($services, $svc);
             }
 
-            // Finally delete the project
+            // Brief pause before deleting project
+            sleep(1);
+
+            // Step 5: Finally delete the project
             spin(
                 callback: fn () => $projects->delete($projectUuid),
                 message: "Deleting project '{$projectName}'..."
@@ -207,6 +228,42 @@ class DestroyCommand extends Command
             label: 'Select project to destroy:',
             options: $choices
         );
+    }
+
+    protected function stopApplication(ApplicationRepository $applications, array $app): void
+    {
+        try {
+            spin(
+                callback: fn () => $applications->stop($app['uuid']),
+                message: "Stopping application '{$app['name']}'..."
+            );
+        } catch (CoolifyApiException) {
+            // Ignore - might already be stopped
+        }
+    }
+
+    protected function stopDatabase(DatabaseRepository $databases, array $db): void
+    {
+        try {
+            spin(
+                callback: fn () => $databases->stop($db['uuid']),
+                message: "Stopping database '{$db['name']}'..."
+            );
+        } catch (CoolifyApiException) {
+            // Ignore - might already be stopped
+        }
+    }
+
+    protected function stopService(ServiceRepository $services, array $svc): void
+    {
+        try {
+            spin(
+                callback: fn () => $services->stop($svc['uuid']),
+                message: "Stopping service '{$svc['name']}'..."
+            );
+        } catch (CoolifyApiException) {
+            // Ignore - might already be stopped
+        }
     }
 
     protected function deleteApplication(ApplicationRepository $applications, array $app): void

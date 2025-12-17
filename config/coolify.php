@@ -95,12 +95,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | GitHub App UUID
+    | Deploy Key UUID
     |--------------------------------------------------------------------------
     |
-    | The UUID of the GitHub App (source) to use for creating applications.
-    | Find this in Coolify under Sources -> GitHub -> (your app). The UUID
-    | is in the URL. This is required for provisioning private repos.
+    | The UUID of the SSH key to use for cloning private repositories.
+    | Deploy keys are preferred over GitHub Apps because they don't hit
+    | GitHub API rate limits - they use SSH directly. Find available keys
+    | in Coolify under Security -> Private Keys.
+    |
+    | After provisioning, you'll need to add the public key to your
+    | GitHub repository as a deploy key (Settings -> Deploy Keys).
+    |
+    */
+
+    'deploy_key_uuid' => env('COOLIFY_DEPLOY_KEY_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | GitHub App UUID (Legacy/Optional)
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of a GitHub App for listing repositories during provisioning.
+    | This is OPTIONAL - if not set, you can enter the repository manually.
+    | GitHub Apps are subject to API rate limits (5000 req/hour shared
+    | across all Coolify apps using that GitHub App).
+    |
+    | For auto-deploy on push, use a manual webhook instead of GitHub App.
+    | See the dashboard's Webhook Setup section after provisioning.
     |
     */
 
@@ -186,6 +207,19 @@ return [
     */
 
     'cache_ttl' => env('COOLIFY_CACHE_TTL', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The default timeout in seconds for API requests to Coolify. Some
+    | operations like creating applications can take longer, so this
+    | can be overridden per-request. Default: 60 seconds.
+    |
+    */
+
+    'timeout' => env('COOLIFY_TIMEOUT', 60),
 
     /*
     |--------------------------------------------------------------------------

@@ -21,14 +21,16 @@ interface GitHubAppRepository
     /**
      * Get repositories for a GitHub App.
      *
-     * @return array<int, array<string, mixed>>
+     * @param  int|string  $id  The GitHub App's internal Coolify ID (numeric) or UUID
+     * @return array<string, mixed>
      */
-    public function repositories(string $uuid): array;
+    public function repositories(int|string $id): array;
 
     /**
      * Get branches for a repository.
      *
+     * @param  int|string  $id  The GitHub App's internal Coolify ID (numeric) or UUID
      * @return array<int, array<string, mixed>>
      */
-    public function branches(string $uuid, string $owner, string $repo): array;
+    public function branches(int|string $id, string $owner, string $repo): array;
 }

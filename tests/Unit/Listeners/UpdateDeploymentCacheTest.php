@@ -25,17 +25,17 @@ describe('UpdateDeploymentCache', function () {
     it('clears cache on deployment started', function () {
         Cache::shouldReceive('forget')
             ->once()
-            ->with('coolify.applications')
+            ->with('coolify:application:app-uuid-123')
             ->andReturn(true);
 
         Cache::shouldReceive('forget')
             ->once()
-            ->with('coolify.application.app-uuid-123')
+            ->with('coolify:application:app-uuid-123:deployments')
             ->andReturn(true);
 
         Cache::shouldReceive('forget')
             ->once()
-            ->with('coolify.deployments.app-uuid-123')
+            ->with('coolify:deployments:recent')
             ->andReturn(true);
 
         $event = new DeploymentStarted($this->application, $this->deployment);

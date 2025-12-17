@@ -30,16 +30,16 @@ class CoolifyGitHubAppRepository implements GitHubAppRepository
     /**
      * @inheritDoc
      */
-    public function repositories(string $uuid): array
+    public function repositories(int|string $id): array
     {
-        return $this->client->get("github-apps/{$uuid}/repositories");
+        return $this->client->get("github-apps/{$id}/repositories");
     }
 
     /**
      * @inheritDoc
      */
-    public function branches(string $uuid, string $owner, string $repo): array
+    public function branches(int|string $id, string $owner, string $repo): array
     {
-        return $this->client->get("github-apps/{$uuid}/repositories/{$owner}/{$repo}/branches");
+        return $this->client->get("github-apps/{$id}/repositories/{$owner}/{$repo}/branches");
     }
 }

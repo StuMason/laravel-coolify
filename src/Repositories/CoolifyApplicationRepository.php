@@ -40,7 +40,8 @@ class CoolifyApplicationRepository implements ApplicationRepository
      */
     public function createPrivateGithubApp(array $data): array
     {
-        return $this->client->post('applications/private-github-app', $data);
+        // App creation can take a while on Coolify - use 120s timeout
+        return $this->client->post('applications/private-github-app', $data, timeout: 120);
     }
 
     /**

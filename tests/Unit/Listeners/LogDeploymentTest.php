@@ -27,31 +27,31 @@ describe('LogDeployment', function () {
     it('logs deployment started event', function () {
         Log::shouldReceive('channel')
             ->once()
-            ->with('coolify')
+            ->with('stack')
             ->andReturnSelf();
 
         Log::shouldReceive('info')
             ->once()
-            ->with('Deployment started', \Mockery::type('array'));
+            ->with('Coolify deployment started', \Mockery::type('array'));
 
         $event = new DeploymentStarted($this->application, $this->deployment);
 
-        $this->listener->handleDeploymentStarted($event);
+        $this->listener->handleStarted($event);
     });
 
     it('logs deployment succeeded event', function () {
         Log::shouldReceive('channel')
             ->once()
-            ->with('coolify')
+            ->with('stack')
             ->andReturnSelf();
 
         Log::shouldReceive('info')
             ->once()
-            ->with('Deployment succeeded', \Mockery::type('array'));
+            ->with('Coolify deployment succeeded', \Mockery::type('array'));
 
         $event = new DeploymentSucceeded($this->application, $this->deployment);
 
-        $this->listener->handleDeploymentSucceeded($event);
+        $this->listener->handleSucceeded($event);
     });
 
     it('logs deployment failed event', function () {
@@ -59,21 +59,24 @@ describe('LogDeployment', function () {
 
         Log::shouldReceive('channel')
             ->once()
-            ->with('coolify')
+            ->with('stack')
             ->andReturnSelf();
 
         Log::shouldReceive('error')
             ->once()
-            ->with('Deployment failed', \Mockery::type('array'));
+            ->with('Coolify deployment failed', \Mockery::type('array'));
 
         $event = new DeploymentFailed($this->application, $this->deployment);
 
-        $this->listener->handleDeploymentFailed($event);
+        $this->listener->handleFailed($event);
     });
 
     it('returns array of subscribed events', function () {
-        $subscribedEvents = LogDeployment::$subscribe ?? $this->listener->subscribe(app('events'));
+        $subscribedEvents = $this->listener->subscribe();
 
-        expect(is_array($subscribedEvents) || $subscribedEvents === null)->toBeTrue();
+        expect($subscribedEvents)->toBeArray()
+            ->and($subscribedEvents)->toHaveKey(DeploymentStarted::class)
+            ->and($subscribedEvents)->toHaveKey(DeploymentSucceeded::class)
+            ->and($subscribedEvents)->toHaveKey(DeploymentFailed::class);
     });
 });

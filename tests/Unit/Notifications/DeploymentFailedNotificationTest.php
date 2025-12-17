@@ -1,6 +1,7 @@
 <?php
 
 use Stumason\Coolify\Coolify;
+use Stumason\Coolify\Events\DeploymentFailed as DeploymentFailedEvent;
 use Stumason\Coolify\Notifications\DeploymentFailed as DeploymentFailedNotification;
 
 describe('DeploymentFailedNotification', function () {
@@ -17,13 +18,18 @@ describe('DeploymentFailedNotification', function () {
             'status_message' => 'Build failed',
         ];
 
-        $this->notification = new DeploymentFailedNotification($this->application, $this->deployment, 'Build error occurred');
+        $this->event = new DeploymentFailedEvent(
+            $this->application,
+            $this->deployment,
+            new Exception('Build error occurred')
+        );
+        $this->notification = new DeploymentFailedNotification($this->event);
     });
 
     it('includes mail channel when email is configured', function () {
         Coolify::routeMailNotificationsTo('test@example.com');
 
-        $channels = $this->notification->via(null);
+        $channels = $this->notification->via((object) []);
 
         expect($channels)->toContain('mail');
 
@@ -32,21 +38,21 @@ describe('DeploymentFailedNotification', function () {
     });
 
     it('has mail representation with failure styling', function () {
-        $mail = $this->notification->toMail(null);
+        $mail = $this->notification->toMail((object) []);
 
         expect($mail->subject)->toContain('Deployment Failed')
             ->and($mail->subject)->toContain('Test Application');
     });
 
     it('includes failure reason in notification', function () {
-        $mail = $this->notification->toMail(null);
+        $mail = $this->notification->toMail((object) []);
 
         // The notification should contain the failure reason
         expect($mail)->not->toBeNull();
     });
 
     it('has slack representation with danger color', function () {
-        $slack = $this->notification->toSlack(null);
+        $slack = $this->notification->toSlack((object) []);
 
         expect($slack)->not->toBeNull();
     });

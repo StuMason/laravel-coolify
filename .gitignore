@@ -13,3 +13,4 @@ composer.lock
 # Keep dist folder but ignore contents
 /dist/*
 !/dist/.gitkeep
+.env

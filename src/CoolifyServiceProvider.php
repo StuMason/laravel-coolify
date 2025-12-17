@@ -6,7 +6,6 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\CachesRoutes;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Inertia\Inertia;
 
 class CoolifyServiceProvider extends ServiceProvider
 {
@@ -22,7 +21,6 @@ class CoolifyServiceProvider extends ServiceProvider
         $this->registerRoutes();
         $this->registerResources();
         $this->registerCommands();
-        $this->registerInertia();
         $this->offerPublishing();
     }
 
@@ -95,22 +93,6 @@ class CoolifyServiceProvider extends ServiceProvider
     protected function registerResources(): void
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'coolify');
-    }
-
-    /**
-     * Configure Inertia for the Coolify dashboard.
-     */
-    protected function registerInertia(): void
-    {
-        Inertia::setRootView('coolify::app');
-
-        Inertia::share([
-            'coolify' => fn () => [
-                'appName' => config('app.name'),
-                'path' => config('coolify.path'),
-                'polling' => config('coolify.polling_interval', 10),
-            ],
-        ]);
     }
 
     /**

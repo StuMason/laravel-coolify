@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Stumason\Coolify\Http\Middleware\Authenticate;
 
 Route::middleware(Authenticate::class)->group(function () {
-    // API Routes
+    // API Routes (JSON responses for AJAX calls)
     Route::prefix('api')->group(function () {
         // Dashboard stats
         Route::get('/stats', 'DashboardStatsController@index')->name('coolify.stats');
@@ -55,6 +55,6 @@ Route::middleware(Authenticate::class)->group(function () {
         Route::get('/teams/current/members', 'TeamController@members')->name('coolify.teams.members');
     });
 
-    // Dashboard (catch-all)
-    Route::get('/{view?}', 'HomeController@index')->where('view', '(.*)')->name('coolify.index');
+    // Dashboard (Blade views - no Inertia)
+    Route::get('/', 'DashboardController@index')->name('coolify.index');
 });
