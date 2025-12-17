@@ -35,6 +35,21 @@ COOLIFY_TOKEN=your-api-token
 COOLIFY_APPLICATION_UUID=your-app-uuid
 ```
 
+### API Token Requirements
+
+**Important:** The Coolify API token must have appropriate permissions:
+
+- For **provisioning** (`coolify:provision`), your token needs access to GitHub Apps, which requires a **root-level API token** created by a Coolify admin
+- For **basic operations** (deploy, logs, status), a team-level token is sufficient
+
+To create a root API token:
+
+1. Log into Coolify as an admin
+2. Go to **Keys & Tokens** > **API Tokens**
+3. Create a token with root/admin access
+
+The API uses the team associated with your token to filter resources. If you're getting "resource not found" errors when listing GitHub Apps, servers, or projects, ensure your token has the correct team/root access.
+
 ## Quick Start
 
 ### Check Status
@@ -113,6 +128,7 @@ Coolify::auth(function ($request) {
 | `coolify:logs` | View application logs |
 | `coolify:logs --follow` | Stream logs in real-time |
 | `coolify:provision` | Provision new infrastructure |
+| `coolify:destroy` | Destroy a project and all its resources |
 
 ## Programmatic Usage
 

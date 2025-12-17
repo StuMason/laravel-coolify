@@ -30,9 +30,49 @@ class CoolifyApplicationRepository implements ApplicationRepository
     /**
      * @inheritDoc
      */
-    public function create(array $data): array
+    public function createPublic(array $data): array
     {
-        return $this->client->post('applications', $data);
+        return $this->client->post('applications/public', $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createPrivateGithubApp(array $data): array
+    {
+        return $this->client->post('applications/private-github-app', $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createPrivateDeployKey(array $data): array
+    {
+        return $this->client->post('applications/private-deploy-key', $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createDockerfile(array $data): array
+    {
+        return $this->client->post('applications/dockerfile', $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createDockerImage(array $data): array
+    {
+        return $this->client->post('applications/dockerimage', $data);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createDockerCompose(array $data): array
+    {
+        return $this->client->post('applications/dockercompose', $data);
     }
 
     /**

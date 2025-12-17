@@ -121,6 +121,7 @@ class CoolifyServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 Console\DeployCommand::class,
+                Console\DestroyCommand::class,
                 Console\InstallCommand::class,
                 Console\LogsCommand::class,
                 Console\ProvisionCommand::class,

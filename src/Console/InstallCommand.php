@@ -7,7 +7,11 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Attribute\AsCommand;
 
-#[AsCommand(name: 'coolify:install')]
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\warning;
+
+#[AsCommand(name: 'coolify-dashboard:install')]
 class InstallCommand extends Command
 {
     /**
@@ -15,21 +19,21 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'coolify:install';
+    protected $signature = 'coolify-dashboard:install';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Install all of the Coolify resources';
+    protected $description = 'Install the Coolify dashboard for managing deployments';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        $this->components->info('Installing Coolify resources.');
+        info('Installing Coolify Dashboard...');
 
         collect([
             'Service Provider' => fn () => $this->callSilent('vendor:publish', ['--tag' => 'coolify-provider']) == 0,
@@ -38,17 +42,61 @@ class InstallCommand extends Command
 
         $this->registerCoolifyServiceProvider();
 
-        $this->components->info('Coolify scaffolding installed successfully.');
+        info('Coolify Dashboard installed successfully.');
         $this->newLine();
 
-        $this->components->bulletList([
-            'Add your Coolify API token to .env: <comment>COOLIFY_TOKEN=your-token</comment>',
-            'Set your Coolify URL if self-hosted: <comment>COOLIFY_URL=https://coolify.example.com</comment>',
-            'Run <comment>php artisan coolify:status --all</comment> to test the connection',
-            'Run <comment>php artisan coolify:provision</comment> to set up your infrastructure',
-        ]);
+        // Check if .env is configured
+        if ($this->isConfigured()) {
+            $this->promptForProvisioning();
+            $this->promptForStatusCheck();
+        } else {
+            warning('Coolify is not configured yet.');
+            $this->newLine();
+            $this->components->bulletList([
+                'Add your Coolify API token to .env: <comment>COOLIFY_TOKEN=your-token</comment>',
+                'Set your Coolify URL if self-hosted: <comment>COOLIFY_URL=https://coolify.example.com</comment>',
+            ]);
+            $this->newLine();
+            info('Once configured, run:');
+            $this->components->bulletList([
+                '<comment>php artisan coolify:provision</comment> to set up your infrastructure',
+                '<comment>php artisan coolify:status --all</comment> to test the connection',
+            ]);
+        }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Check if Coolify is configured in .env.
+     */
+    protected function isConfigured(): bool
+    {
+        $token = config('coolify.token');
+        $url = config('coolify.url');
+
+        return ! empty($token) && ! empty($url);
+    }
+
+    /**
+     * Prompt to check Coolify status.
+     */
+    protected function promptForStatusCheck(): void
+    {
+        if (confirm('Would you like to check the Coolify connection status?', true)) {
+            $this->call('coolify:status', ['--all' => true]);
+            $this->newLine();
+        }
+    }
+
+    /**
+     * Prompt to provision infrastructure.
+     */
+    protected function promptForProvisioning(): void
+    {
+        if (confirm('Would you like to provision your infrastructure now?', false)) {
+            $this->call('coolify:provision');
+        }
     }
 
     /**

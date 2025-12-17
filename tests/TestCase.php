@@ -40,6 +40,10 @@ abstract class TestCase extends BaseTestCase
      */
     protected function defineEnvironment($app): void
     {
+        // Set encryption key for testing
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
+        // Coolify configuration
         $app['config']->set('coolify.url', 'https://coolify.test');
         $app['config']->set('coolify.token', 'test-token');
         $app['config']->set('coolify.application_uuid', 'test-app-uuid');

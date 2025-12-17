@@ -5,6 +5,7 @@ namespace Stumason\Coolify;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
+use Stumason\Coolify\Contracts\GitHubAppRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
@@ -12,6 +13,7 @@ use Stumason\Coolify\Contracts\TeamRepository;
 use Stumason\Coolify\Repositories\CoolifyApplicationRepository;
 use Stumason\Coolify\Repositories\CoolifyDatabaseRepository;
 use Stumason\Coolify\Repositories\CoolifyDeploymentRepository;
+use Stumason\Coolify\Repositories\CoolifyGitHubAppRepository;
 use Stumason\Coolify\Repositories\CoolifyProjectRepository;
 use Stumason\Coolify\Repositories\CoolifyServerRepository;
 use Stumason\Coolify\Repositories\CoolifyServiceRepository;
@@ -29,6 +31,7 @@ trait ServiceBindings
         ApplicationRepository::class => CoolifyApplicationRepository::class,
         DatabaseRepository::class => CoolifyDatabaseRepository::class,
         DeploymentRepository::class => CoolifyDeploymentRepository::class,
+        GitHubAppRepository::class => CoolifyGitHubAppRepository::class,
         ProjectRepository::class => CoolifyProjectRepository::class,
         ServerRepository::class => CoolifyServerRepository::class,
         ServiceRepository::class => CoolifyServiceRepository::class,

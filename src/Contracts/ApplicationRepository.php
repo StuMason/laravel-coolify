@@ -19,12 +19,52 @@ interface ApplicationRepository
     public function get(string $uuid): array;
 
     /**
-     * Create a new application.
+     * Create a new public git application.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function create(array $data): array;
+    public function createPublic(array $data): array;
+
+    /**
+     * Create a new private git application (GitHub App).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createPrivateGithubApp(array $data): array;
+
+    /**
+     * Create a new private git application (Deploy Key).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createPrivateDeployKey(array $data): array;
+
+    /**
+     * Create a new Dockerfile application.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createDockerfile(array $data): array;
+
+    /**
+     * Create a new Docker image application.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createDockerImage(array $data): array;
+
+    /**
+     * Create a new Docker Compose application.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createDockerCompose(array $data): array;
 
     /**
      * Update an application.

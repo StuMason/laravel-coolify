@@ -95,6 +95,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | GitHub App UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of the GitHub App (source) to use for creating applications.
+    | Find this in Coolify under Sources -> GitHub -> (your app). The UUID
+    | is in the URL. This is required for provisioning private repos.
+    |
+    */
+
+    'github_app_uuid' => env('COOLIFY_GITHUB_APP_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Dashboard Path
     |--------------------------------------------------------------------------
     |

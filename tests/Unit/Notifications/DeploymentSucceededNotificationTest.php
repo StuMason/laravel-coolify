@@ -1,6 +1,7 @@
 <?php
 
 use Stumason\Coolify\Coolify;
+use Stumason\Coolify\Events\DeploymentSucceeded as DeploymentSucceededEvent;
 use Stumason\Coolify\Notifications\DeploymentSucceeded as DeploymentSucceededNotification;
 
 describe('DeploymentSucceededNotification', function () {
@@ -18,13 +19,14 @@ describe('DeploymentSucceededNotification', function () {
             'finished_at' => '2024-01-01 10:05:30',
         ];
 
-        $this->notification = new DeploymentSucceededNotification($this->application, $this->deployment);
+        $this->event = new DeploymentSucceededEvent($this->application, $this->deployment);
+        $this->notification = new DeploymentSucceededNotification($this->event);
     });
 
     it('includes mail channel when email is configured', function () {
         Coolify::routeMailNotificationsTo('test@example.com');
 
-        $channels = $this->notification->via(null);
+        $channels = $this->notification->via((object) []);
 
         expect($channels)->toContain('mail');
 
@@ -33,14 +35,14 @@ describe('DeploymentSucceededNotification', function () {
     });
 
     it('has mail representation with success styling', function () {
-        $mail = $this->notification->toMail(null);
+        $mail = $this->notification->toMail((object) []);
 
         expect($mail->subject)->toContain('Deployment Succeeded')
             ->and($mail->subject)->toContain('Test Application');
     });
 
     it('has slack representation with success color', function () {
-        $slack = $this->notification->toSlack(null);
+        $slack = $this->notification->toSlack((object) []);
 
         expect($slack)->not->toBeNull();
     });

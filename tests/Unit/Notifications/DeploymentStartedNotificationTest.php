@@ -1,6 +1,7 @@
 <?php
 
 use Stumason\Coolify\Coolify;
+use Stumason\Coolify\Events\DeploymentStarted as DeploymentStartedEvent;
 use Stumason\Coolify\Notifications\DeploymentStarted as DeploymentStartedNotification;
 
 describe('DeploymentStartedNotification', function () {
@@ -16,13 +17,14 @@ describe('DeploymentStartedNotification', function () {
             'status' => 'in_progress',
         ];
 
-        $this->notification = new DeploymentStartedNotification($this->application, $this->deployment);
+        $this->event = new DeploymentStartedEvent($this->application, $this->deployment);
+        $this->notification = new DeploymentStartedNotification($this->event);
     });
 
     it('includes mail channel when email is configured', function () {
         Coolify::routeMailNotificationsTo('test@example.com');
 
-        $channels = $this->notification->via(null);
+        $channels = $this->notification->via((object) []);
 
         expect($channels)->toContain('mail');
 
@@ -33,7 +35,7 @@ describe('DeploymentStartedNotification', function () {
     it('includes slack channel when webhook is configured', function () {
         Coolify::routeSlackNotificationsTo('https://hooks.slack.com/test');
 
-        $channels = $this->notification->via(null);
+        $channels = $this->notification->via((object) []);
 
         expect($channels)->toContain('slack');
 
@@ -44,20 +46,20 @@ describe('DeploymentStartedNotification', function () {
     it('excludes mail channel when not configured', function () {
         Coolify::$email = null;
 
-        $channels = $this->notification->via(null);
+        $channels = $this->notification->via((object) []);
 
         expect($channels)->not->toContain('mail');
     });
 
     it('has mail representation', function () {
-        $mail = $this->notification->toMail(null);
+        $mail = $this->notification->toMail((object) []);
 
         expect($mail->subject)->toContain('Deployment Started')
             ->and($mail->subject)->toContain('Test Application');
     });
 
     it('has slack representation', function () {
-        $slack = $this->notification->toSlack(null);
+        $slack = $this->notification->toSlack((object) []);
 
         expect($slack)->not->toBeNull();
     });
