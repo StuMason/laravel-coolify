@@ -26,8 +26,9 @@ Add to `.env`:
 ```
 COOLIFY_URL=https://app.coolify.io
 COOLIFY_TOKEN=your-api-token
-COOLIFY_APPLICATION_UUID=your-app-uuid
 ```
+
+The token needs to be a **root-level API token** (created by a Coolify admin under Keys & Tokens > API Tokens). Team tokens may work for basic operations but provisioning requires root access.
 
 ## Commands
 
@@ -75,10 +76,6 @@ Uses SSH deploy keys instead of GitHub Apps. GitHub Apps have a shared rate limi
 After provisioning, you need to:
 1. Add the deploy key to your GitHub repo
 2. Set up a webhook for auto-deploy (the command shows you the URL)
-
-## API Token
-
-For `coolify:provision`, you need a root-level API token (admin access). For basic operations (deploy, logs, status), a team token works.
 
 ## Facade
 
