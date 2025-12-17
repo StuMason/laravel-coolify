@@ -33,7 +33,6 @@ class ProvisionCommand extends Command
                             {--server= : Server UUID to deploy to}
                             {--project= : Project UUID}
                             {--environment=production : Environment name}
-                            {--deploy-key= : Deploy key UUID for SSH access}
                             {--github-app= : GitHub App UUID (optional, for listing repos)}
                             {--repository= : GitHub repository (owner/repo)}
                             {--branch= : Git branch}
@@ -527,57 +526,43 @@ class ProvisionCommand extends Command
     }
 
     /**
-     * Select a deploy key (SSH key) for cloning private repositories.
+     * Create a new deploy key (SSH key) for this app.
+     * Each app needs its own key because GitHub deploy keys can only be used on ONE repo.
      *
      * @return array{uuid: string, name: string, public_key: string}|null
      */
     protected function selectDeployKey(SecurityKeyRepository $securityKeys): ?array
     {
-        $keyList = spin(
-            callback: fn () => $securityKeys->all(),
-            message: 'Fetching SSH keys...'
-        );
+        $appName = $this->option('name') ?? basename(base_path());
+        $keyName = "{$appName}-deploy-key";
 
-        // Filter to only show git-related keys
-        $gitKeys = collect($keyList)->filter(fn ($key) => $key['is_git_related'] ?? false)->values()->all();
+        $this->line("    Creating new SSH key: {$keyName}");
 
-        if (empty($gitKeys)) {
-            $this->components->error('No SSH keys found for Git access.');
-            $this->line('  You need to create an SSH key in Coolify first.');
-            $this->line('  Go to Security -> Private Keys in your Coolify dashboard.');
+        try {
+            $newKey = spin(
+                callback: fn () => $securityKeys->create([
+                    'name' => $keyName,
+                    'description' => "Deploy key for {$appName} - created by coolify:provision",
+                ]),
+                message: 'Creating SSH key...'
+            );
+
+            // Fetch the full key details to get the public key
+            $keyDetails = spin(
+                callback: fn () => $securityKeys->get($newKey['uuid']),
+                message: 'Fetching key details...'
+            );
+
+            return [
+                'uuid' => $keyDetails['uuid'],
+                'name' => $keyDetails['name'] ?? $keyName,
+                'public_key' => $keyDetails['public_key'] ?? '',
+            ];
+        } catch (\Exception $e) {
+            $this->components->error('Failed to create SSH key: '.$e->getMessage());
 
             return null;
         }
-
-        // Check for pre-configured UUID
-        $preConfiguredUuid = $this->option('deploy-key') ?? config('coolify.deploy_key_uuid');
-        if ($preConfiguredUuid) {
-            $key = collect($gitKeys)->firstWhere('uuid', $preConfiguredUuid);
-            if ($key) {
-                return [
-                    'uuid' => $key['uuid'],
-                    'name' => $key['name'] ?? 'SSH Key',
-                    'public_key' => $key['public_key'] ?? '',
-                ];
-            }
-        }
-
-        $choices = collect($gitKeys)->mapWithKeys(fn ($key) => [
-            $key['uuid'] => $key['name'] ?? "SSH Key ({$key['uuid']})",
-        ])->toArray();
-
-        $selectedUuid = select(
-            label: 'Select SSH key for Git access:',
-            options: $choices
-        );
-
-        $selectedKey = collect($gitKeys)->firstWhere('uuid', $selectedUuid);
-
-        return $selectedKey ? [
-            'uuid' => $selectedKey['uuid'],
-            'name' => $selectedKey['name'] ?? 'SSH Key',
-            'public_key' => $selectedKey['public_key'] ?? '',
-        ] : null;
     }
 
     /**

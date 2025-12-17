@@ -702,9 +702,22 @@ function dashboard() {
             const remainingSeconds = seconds % 60;
             return minutes + 'm ' + remainingSeconds + 's';
         },
-        async copyToClipboard(text) {
+        copyToClipboard(text) {
             if (!text) return;
-            try { await navigator.clipboard.writeText(text); } catch (err) { console.error('Failed to copy:', err); }
+            // Fallback for non-HTTPS contexts where navigator.clipboard is undefined
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(err => console.error('Failed to copy:', err));
+            } else {
+                // Fallback using textarea
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try { document.execCommand('copy'); } catch (err) { console.error('Failed to copy:', err); }
+                document.body.removeChild(textarea);
+            }
         },
         getRepoDisplayName(repo) {
             if (!repo) return '';
