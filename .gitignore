@@ -1,0 +1,15 @@
+/node_modules
+/vendor
+.phpunit.result.cache
+phpunit.xml
+.phpunit.cache
+composer.lock
+.DS_Store
+*.swp
+*.swo
+.idea
+.vscode
+
+# Keep dist folder but ignore contents
+/dist/*
+!/dist/.gitkeep

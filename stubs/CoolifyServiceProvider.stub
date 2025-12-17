@@ -3,17 +3,21 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Stumason\Coolify\CoolifyApplicationServiceProvider;
 use Stumason\Coolify\Coolify;
 
-class CoolifyServiceProvider extends ServiceProvider
+class CoolifyServiceProvider extends CoolifyApplicationServiceProvider
 {
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
-        $this->gate();
+        parent::boot();
+
+        // Configure notifications:
+        // Coolify::routeSlackNotificationsTo('https://hooks.slack.com/services/...', '#deployments');
+        // Coolify::routeMailNotificationsTo('devops@example.com');
     }
 
     /**
@@ -23,15 +27,11 @@ class CoolifyServiceProvider extends ServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewCoolify', function ($user) {
-            return in_array($user->email, [
-                // Add admin emails here
+        Gate::define('viewCoolify', function ($user = null) {
+            return in_array(optional($user)->email, [
+                // Add authorized email addresses here:
+                // 'admin@example.com',
             ]);
-        });
-
-        Coolify::auth(function ($request) {
-            return app()->environment('local') ||
-                   Gate::check('viewCoolify', [$request->user()]);
         });
     }
 }
