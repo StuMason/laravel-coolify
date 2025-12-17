@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+use Stumason\Coolify\Coolify;
+
+class CoolifyServiceProvider extends ServiceProvider
+{
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        $this->gate();
+    }
+
+    /**
+     * Register the Coolify gate.
+     *
+     * This gate determines who can access Coolify in non-local environments.
+     */
+    protected function gate(): void
+    {
+        Gate::define('viewCoolify', function ($user) {
+            return in_array($user->email, [
+                // Add admin emails here
+            ]);
+        });
+
+        Coolify::auth(function ($request) {
+            return app()->environment('local') ||
+                   Gate::check('viewCoolify', [$request->user()]);
+        });
+    }
+}

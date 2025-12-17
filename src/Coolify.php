@@ -3,9 +3,13 @@
 namespace Stumason\Coolify;
 
 use Closure;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Js;
+use RuntimeException;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
+use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
 
@@ -97,6 +101,14 @@ class Coolify
     }
 
     /**
+     * Get the project repository instance.
+     */
+    public static function projects(): ProjectRepository
+    {
+        return app(ProjectRepository::class);
+    }
+
+    /**
      * Deploy the current application.
      */
     public static function deploy(?string $uuid = null): array
@@ -149,6 +161,8 @@ class Coolify
 
     /**
      * Get the default JavaScript variables for the Coolify dashboard.
+     *
+     * @return array<string, mixed>
      */
     public static function scriptVariables(): array
     {
@@ -156,5 +170,43 @@ class Coolify
             'path' => config('coolify.path'),
             'pollingInterval' => config('coolify.polling_interval', 10) * 1000,
         ];
+    }
+
+    /**
+     * Get the CSS for the Coolify dashboard.
+     */
+    public static function css(): HtmlString
+    {
+        $cssPath = __DIR__.'/../dist/app.css';
+
+        if (! file_exists($cssPath)) {
+            throw new RuntimeException('Unable to load the Coolify dashboard CSS. Please run `npm run build` in the package directory.');
+        }
+
+        $css = file_get_contents($cssPath);
+
+        return new HtmlString("<style>{$css}</style>");
+    }
+
+    /**
+     * Get the JS for the Coolify dashboard.
+     */
+    public static function js(): HtmlString
+    {
+        $jsPath = __DIR__.'/../dist/app.js';
+
+        if (! file_exists($jsPath)) {
+            throw new RuntimeException('Unable to load the Coolify dashboard JavaScript. Please run `npm run build` in the package directory.');
+        }
+
+        $js = file_get_contents($jsPath);
+        $coolify = Js::from(static::scriptVariables());
+
+        return new HtmlString(<<<HTML
+            <script type="module">
+                window.Coolify = {$coolify};
+                {$js}
+            </script>
+            HTML);
     }
 }

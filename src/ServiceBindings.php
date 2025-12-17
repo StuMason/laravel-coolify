@@ -8,12 +8,14 @@ use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
+use Stumason\Coolify\Contracts\TeamRepository;
 use Stumason\Coolify\Repositories\CoolifyApplicationRepository;
 use Stumason\Coolify\Repositories\CoolifyDatabaseRepository;
 use Stumason\Coolify\Repositories\CoolifyDeploymentRepository;
 use Stumason\Coolify\Repositories\CoolifyProjectRepository;
 use Stumason\Coolify\Repositories\CoolifyServerRepository;
 use Stumason\Coolify\Repositories\CoolifyServiceRepository;
+use Stumason\Coolify\Repositories\CoolifyTeamRepository;
 
 trait ServiceBindings
 {
@@ -30,5 +32,6 @@ trait ServiceBindings
         ProjectRepository::class => CoolifyProjectRepository::class,
         ServerRepository::class => CoolifyServerRepository::class,
         ServiceRepository::class => CoolifyServiceRepository::class,
+        TeamRepository::class => CoolifyTeamRepository::class,
     ];
 }

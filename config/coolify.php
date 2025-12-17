@@ -180,8 +180,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure notification channels for deployment events and alerts.
-    | Supports Slack, email, and custom webhook notifications for
-    | deployment success, failure, and health alerts.
+    | Supports Slack and email notifications for deployment success,
+    | failure, and health alerts.
     |
     */
 
@@ -190,5 +190,18 @@ return [
         'slack_channel' => env('COOLIFY_SLACK_CHANNEL'),
         'email' => env('COOLIFY_NOTIFICATION_EMAIL'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Channel
+    |--------------------------------------------------------------------------
+    |
+    | The log channel to use for Coolify deployment events. This allows
+    | you to separate Coolify-related logs from your application logs.
+    | Set to 'stack' to use your default logging configuration.
+    |
+    */
+
+    'log_channel' => env('COOLIFY_LOG_CHANNEL', 'stack'),
 
 ];

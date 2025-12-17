@@ -1,0 +1,12 @@
+providers:
+  - Stumason\Coolify\CoolifyServiceProvider
+
+env:
+  - COOLIFY_URL="https://coolify.test"
+  - COOLIFY_TOKEN="test-token"
+  - COOLIFY_APPLICATION_UUID="test-app-uuid"
+
+workbench:
+  start: '/coolify'
+  install: true
+  welcome: true

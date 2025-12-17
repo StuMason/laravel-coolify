@@ -2,6 +2,7 @@
 
 namespace Stumason\Coolify;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\CachesRoutes;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -16,10 +17,29 @@ class CoolifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerEvents();
         $this->registerRoutes();
         $this->registerResources();
         $this->registerCommands();
         $this->offerPublishing();
+    }
+
+    /**
+     * Register the Coolify events and listeners.
+     */
+    protected function registerEvents(): void
+    {
+        $dispatcher = $this->app->make(Dispatcher::class);
+
+        foreach ($this->events as $event => $listeners) {
+            foreach ($listeners as $listener) {
+                $dispatcher->listen($event, $listener);
+            }
+        }
+
+        foreach ($this->subscribers as $subscriber) {
+            $dispatcher->subscribe($subscriber);
+        }
     }
 
     /**
