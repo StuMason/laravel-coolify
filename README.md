@@ -24,7 +24,7 @@ composer require stumason/laravel-coolify
 Publish the configuration and service provider:
 
 ```bash
-php artisan coolify:install
+php artisan coolify-dashboard:install
 ```
 
 Add your Coolify credentials to `.env`:

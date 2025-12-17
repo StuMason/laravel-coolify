@@ -11,18 +11,18 @@ describe('InstallCommand', function () {
             File::delete($configPath);
         }
 
-        $this->artisan('coolify:install')
+        $this->artisan('coolify-dashboard:install')
             ->assertSuccessful();
     });
 
     it('displays installation success message', function () {
-        $this->artisan('coolify:install')
-            ->expectsOutputToContain('Coolify scaffolding installed successfully')
+        $this->artisan('coolify-dashboard:install')
+            ->expectsOutputToContain('Coolify Dashboard installed successfully')
             ->assertSuccessful();
     });
 
     it('shows helpful next steps', function () {
-        $this->artisan('coolify:install')
+        $this->artisan('coolify-dashboard:install')
             ->expectsOutputToContain('COOLIFY_TOKEN')
             ->assertSuccessful();
     });
