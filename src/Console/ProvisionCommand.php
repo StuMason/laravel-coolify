@@ -380,36 +380,15 @@ class ProvisionCommand extends Command
                 $this->newLine();
             }
 
-            $this->line('  <fg=gray>Webhook setup instructions will be shown in your dashboard at /coolify</>');
+            // ─────────────────────────────────────────────────────────────────
+            // NEXT STEPS
+            // ─────────────────────────────────────────────────────────────────
+            $this->line('  <fg=yellow;options=bold>NEXT STEPS:</>');
             $this->newLine();
-
-            // ─────────────────────────────────────────────────────────────────
-            // DEPLOY NOW?
-            // ─────────────────────────────────────────────────────────────────
-            if (! $this->option('no-interaction') && confirm('Deploy now?', true)) {
-                $this->newLine();
-                $this->line('  <fg=cyan>Triggering deployment...</>');
-
-                try {
-                    $result = $applications->deploy($appUuid);
-                    $deploymentUuid = $result['deployment_uuid'] ?? null;
-
-                    if ($deploymentUuid) {
-                        $this->line("  <fg=green>Deployment started:</> {$deploymentUuid}");
-                        $this->newLine();
-                        $coolifyUrl = config('coolify.url');
-                        $this->line("  <fg=gray>View deployment progress at:</> {$coolifyUrl}");
-                    } else {
-                        $this->line('  <fg=green>Deployment triggered</>');
-                    }
-                } catch (\Exception $e) {
-                    $this->line("  <fg=yellow>[WARNING]</> Could not trigger deployment: {$e->getMessage()}");
-                    $this->line('  <fg=gray>Run</> <fg=cyan>php artisan coolify:deploy</> <fg=gray>manually</>');
-                }
-            } else {
-                $this->line('  <fg=white>Next step:</> Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
-            }
-
+            $this->line('  <fg=white>1.</> Add the deploy key to GitHub (link above)');
+            $this->line('  <fg=white>2.</> Run <fg=cyan>composer run dev</> to start your local server');
+            $this->line('  <fg=white>3.</> Visit <fg=cyan>http://localhost:8000/coolify</> to copy the key and view webhook setup');
+            $this->line('  <fg=white>4.</> Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
             $this->newLine();
 
         } catch (CoolifyApiException $exception) {
