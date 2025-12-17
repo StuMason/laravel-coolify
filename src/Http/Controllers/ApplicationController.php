@@ -97,4 +97,61 @@ class ApplicationController extends Controller
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
         }
     }
+
+    /**
+     * Get application environment variables.
+     */
+    public function envs(string $uuid): JsonResponse
+    {
+        try {
+            return response()->json($this->applications->envs($uuid));
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
+     * Create an environment variable.
+     */
+    public function createEnv(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            $result = $this->applications->createEnv($uuid, $request->all());
+
+            return response()->json($result);
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
+     * Update an environment variable.
+     */
+    public function updateEnv(Request $request, string $uuid, string $envUuid): JsonResponse
+    {
+        try {
+            $result = $this->applications->updateEnv($uuid, array_merge(
+                $request->all(),
+                ['uuid' => $envUuid]
+            ));
+
+            return response()->json($result);
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
+     * Delete an environment variable.
+     */
+    public function deleteEnv(string $uuid, string $envUuid): JsonResponse
+    {
+        try {
+            $this->applications->deleteEnv($uuid, $envUuid);
+
+            return response()->json(['success' => true]);
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
 }

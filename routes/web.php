@@ -16,6 +16,10 @@ Route::middleware(Authenticate::class)->group(function () {
         Route::post('/applications/{uuid}/stop', 'ApplicationController@stop')->name('coolify.applications.stop');
         Route::post('/applications/{uuid}/start', 'ApplicationController@start')->name('coolify.applications.start');
         Route::get('/applications/{uuid}/logs', 'ApplicationController@logs')->name('coolify.applications.logs');
+        Route::get('/applications/{uuid}/envs', 'ApplicationController@envs')->name('coolify.applications.envs');
+        Route::post('/applications/{uuid}/envs', 'ApplicationController@createEnv')->name('coolify.applications.envs.create');
+        Route::patch('/applications/{uuid}/envs/{envUuid}', 'ApplicationController@updateEnv')->name('coolify.applications.envs.update');
+        Route::delete('/applications/{uuid}/envs/{envUuid}', 'ApplicationController@deleteEnv')->name('coolify.applications.envs.delete');
 
         // Deployment routes
         Route::get('/applications/{applicationUuid}/deployments', 'DeploymentController@index')->name('coolify.deployments.index');
@@ -26,6 +30,8 @@ Route::middleware(Authenticate::class)->group(function () {
         // Database routes
         Route::get('/databases', 'DatabaseController@index')->name('coolify.databases.index');
         Route::get('/databases/{uuid}', 'DatabaseController@show')->name('coolify.databases.show');
+        Route::post('/databases/{uuid}/start', 'DatabaseController@start')->name('coolify.databases.start');
+        Route::post('/databases/{uuid}/stop', 'DatabaseController@stop')->name('coolify.databases.stop');
         Route::post('/databases/{uuid}/restart', 'DatabaseController@restart')->name('coolify.databases.restart');
         Route::post('/databases/{uuid}/backup', 'DatabaseController@backup')->name('coolify.databases.backup');
         Route::get('/databases/{uuid}/backups', 'DatabaseController@backups')->name('coolify.databases.backups');

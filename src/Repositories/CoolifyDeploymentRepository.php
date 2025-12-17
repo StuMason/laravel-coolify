@@ -93,7 +93,14 @@ class CoolifyDeploymentRepository implements DeploymentRepository
      */
     public function logs(string $uuid): array
     {
-        return $this->client->get("deployments/{$uuid}/logs", cached: false);
+        // Logs are embedded in the deployment response, not a separate endpoint
+        $deployment = $this->get($uuid);
+        $logsJson = $deployment['logs'] ?? '[]';
+
+        // Logs are stored as JSON string
+        $logs = is_string($logsJson) ? json_decode($logsJson, true) : $logsJson;
+
+        return is_array($logs) ? $logs : [];
     }
 
     /**

@@ -171,4 +171,14 @@ class CoolifyApplicationRepository implements ApplicationRepository
     {
         return $this->client->patch("applications/{$uuid}/envs", $env);
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function deleteEnv(string $uuid, string $envUuid): bool
+    {
+        $this->client->delete("applications/{$uuid}/envs/{$envUuid}");
+
+        return true;
+    }
 }

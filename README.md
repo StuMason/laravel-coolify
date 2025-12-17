@@ -120,11 +120,35 @@ php artisan coolify:provision \
 
 Access the dashboard at `/coolify` (configurable via `COOLIFY_PATH`).
 
-The dashboard shows:
-- Application status and git info
-- Database status
-- Recent deployments
-- Deploy and restart buttons
+The dashboard provides a tabbed interface for managing your infrastructure:
+
+**Deployments Tab**
+- Recent deployment history with status indicators
+- Click any deployment to view build logs
+- Commit messages and deployment duration
+
+**App Logs Tab**
+- Real-time application logs
+- Refresh on demand
+
+**Resources Tab**
+- Database and Redis status with connection info
+- Start/Stop/Restart controls for each resource
+- Image versions and resource limits
+
+**Environment Tab**
+- View all environment variables
+- Add new variables (build-time or runtime)
+- Delete variables
+
+**Settings Tab**
+- Application details (repository, branch, build pack)
+- Project and environment info
+- Resource UUIDs for reference
+
+**Deploy Key Section**
+- Shows the public key for your deploy key
+- Direct link to add it to your GitHub repository
 
 ### Authorization
 

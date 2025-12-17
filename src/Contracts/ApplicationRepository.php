@@ -136,4 +136,9 @@ interface ApplicationRepository
      * @return array<string, mixed>
      */
     public function updateEnv(string $uuid, array $env): array;
+
+    /**
+     * Delete an environment variable from an application.
+     */
+    public function deleteEnv(string $uuid, string $envUuid): bool;
 }

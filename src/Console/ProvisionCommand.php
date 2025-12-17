@@ -323,7 +323,19 @@ class ProvisionCommand extends Command
             $envStepNum = ($dbUuid || $redisUuid) ? $stepNum + 2 : $stepNum + 1;
             $this->step($envStepNum, 'Configure Application Environment Variables');
 
-            $this->setApplicationEnvVars($applications, $appUuid, $projectUuid, $dbUuid, $redisUuid, $databases);
+            $this->setApplicationEnvVars(
+                $applications,
+                $appUuid,
+                $projectUuid,
+                $dbUuid,
+                $redisUuid,
+                $databases,
+                $serverUuid,
+                $environment,
+                $deployKey['uuid'],
+                $repoInfo['full_name'],
+                $branch
+            );
             $this->done('Environment variables configured');
 
             // ─────────────────────────────────────────────────────────────────
@@ -961,12 +973,26 @@ class ProvisionCommand extends Command
         string $projectUuid,
         ?string $dbUuid,
         ?string $redisUuid,
-        DatabaseRepository $databases
+        DatabaseRepository $databases,
+        string $serverUuid,
+        string $environment,
+        string $deployKeyUuid,
+        string $repository,
+        string $branch
     ): void {
         $envVars = [];
 
+        // Set Coolify connection (so deployed app can use this package's dashboard/API)
+        $envVars[] = ['key' => 'COOLIFY_URL', 'value' => config('coolify.url')];
+        $envVars[] = ['key' => 'COOLIFY_TOKEN', 'value' => config('coolify.token')];
+
         // Set Coolify resource UUIDs so they're available in production
+        $envVars[] = ['key' => 'COOLIFY_SERVER_UUID', 'value' => $serverUuid];
         $envVars[] = ['key' => 'COOLIFY_PROJECT_UUID', 'value' => $projectUuid];
+        $envVars[] = ['key' => 'COOLIFY_ENVIRONMENT', 'value' => $environment];
+        $envVars[] = ['key' => 'COOLIFY_DEPLOY_KEY_UUID', 'value' => $deployKeyUuid];
+        $envVars[] = ['key' => 'COOLIFY_REPOSITORY', 'value' => $repository];
+        $envVars[] = ['key' => 'COOLIFY_BRANCH', 'value' => $branch];
         $envVars[] = ['key' => 'COOLIFY_APPLICATION_UUID', 'value' => $appUuid];
 
         if ($dbUuid) {

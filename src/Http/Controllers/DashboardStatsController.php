@@ -130,12 +130,7 @@ class DashboardStatsController extends Controller
             if ($dbUuid = config('coolify.resources.database')) {
                 try {
                     $db = $databases->get($dbUuid);
-                    $stats['databases']['primary'] = [
-                        'uuid' => $db['uuid'] ?? null,
-                        'name' => $db['name'] ?? 'Unknown',
-                        'type' => $db['type'] ?? 'postgresql',
-                        'status' => $db['status'] ?? 'unknown',
-                    ];
+                    $stats['databases']['primary'] = $this->formatDatabaseInfo($db, 'database');
                 } catch (CoolifyApiException) {
                     // Database not found or error
                 }
@@ -145,12 +140,7 @@ class DashboardStatsController extends Controller
             if ($redisUuid = config('coolify.resources.redis')) {
                 try {
                     $redis = $databases->get($redisUuid);
-                    $stats['databases']['redis'] = [
-                        'uuid' => $redis['uuid'] ?? null,
-                        'name' => $redis['name'] ?? 'Unknown',
-                        'type' => $redis['type'] ?? 'redis',
-                        'status' => $redis['status'] ?? 'unknown',
-                    ];
+                    $stats['databases']['redis'] = $this->formatDatabaseInfo($redis, 'redis');
                 } catch (CoolifyApiException) {
                     // Redis not found or error
                 }
@@ -161,5 +151,52 @@ class DashboardStatsController extends Controller
         }
 
         return response()->json($stats);
+    }
+
+    /**
+     * Format database info for the dashboard.
+     */
+    protected function formatDatabaseInfo(array $db, string $category): array
+    {
+        // Determine type from database_type field
+        $dbType = $db['database_type'] ?? 'unknown';
+        $displayType = match (true) {
+            str_contains($dbType, 'postgresql') => 'PostgreSQL',
+            str_contains($dbType, 'mysql') => 'MySQL',
+            str_contains($dbType, 'mariadb') => 'MariaDB',
+            str_contains($dbType, 'redis') => 'Redis',
+            str_contains($dbType, 'dragonfly') => 'Dragonfly',
+            str_contains($dbType, 'mongodb') => 'MongoDB',
+            str_contains($dbType, 'keydb') => 'KeyDB',
+            default => $dbType,
+        };
+
+        return [
+            'uuid' => $db['uuid'] ?? null,
+            'name' => $db['name'] ?? 'Unknown',
+            'type' => $displayType,
+            'database_type' => $dbType,
+            'status' => $db['status'] ?? 'unknown',
+            'image' => $db['image'] ?? null,
+            'category' => $category,
+            // Connection info (redact passwords)
+            'internal_db_url' => $db['internal_db_url'] ?? null,
+            'external_db_url' => $db['external_db_url'] ?? null,
+            'is_public' => $db['is_public'] ?? false,
+            'public_port' => $db['public_port'] ?? null,
+            // Resource limits
+            'limits_memory' => $db['limits_memory'] ?? '0',
+            'limits_cpus' => $db['limits_cpus'] ?? '0',
+            // Timestamps
+            'started_at' => $db['started_at'] ?? null,
+            'last_online_at' => $db['last_online_at'] ?? null,
+            'created_at' => $db['created_at'] ?? null,
+            // Specific fields for postgres
+            'postgres_db' => $db['postgres_db'] ?? null,
+            'postgres_user' => $db['postgres_user'] ?? null,
+            // Specific fields for redis/dragonfly
+            'dragonfly_password' => isset($db['dragonfly_password']) ? '••••••••' : null,
+            'redis_password' => isset($db['redis_password']) ? '••••••••' : null,
+        ];
     }
 }

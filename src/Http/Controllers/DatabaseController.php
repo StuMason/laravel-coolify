@@ -39,6 +39,30 @@ class DatabaseController extends Controller
     }
 
     /**
+     * Start the database.
+     */
+    public function start(string $uuid): JsonResponse
+    {
+        try {
+            return response()->json($this->databases->start($uuid));
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
+     * Stop the database.
+     */
+    public function stop(string $uuid): JsonResponse
+    {
+        try {
+            return response()->json($this->databases->stop($uuid));
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
      * Restart the database.
      */
     public function restart(string $uuid): JsonResponse
