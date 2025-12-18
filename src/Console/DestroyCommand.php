@@ -94,11 +94,12 @@ class DestroyCommand extends Command
 
             // Filter to this project's resources by environment_id
             // (project_uuid is null in API responses, so we use environment_id instead)
-            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            // Use loose comparison (false) because PHP may cast types differently
+            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
 
-            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
 
-            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
 
             // Show what will be deleted
             $this->newLine();
@@ -157,9 +158,9 @@ class DestroyCommand extends Command
             $allDatabases = $databases->all();
             $allServices = $services->all();
 
-            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
-            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
-            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
+            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
+            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds))->values()->all();
 
             // Step 1: Stop all resources first
             foreach ($projectApps as $app) {
