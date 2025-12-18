@@ -21,7 +21,8 @@ class LogsCommand extends Command
                             {--uuid= : Application UUID (defaults to config)}
                             {--deployment= : Show logs for a specific deployment}
                             {--lines=100 : Number of lines to retrieve}
-                            {--follow : Continuously poll for new logs}';
+                            {--follow : Continuously poll for new logs}
+                            {--debug : Show debug/build logs (hidden by default)}';
 
     /**
      * The console command description.
@@ -111,6 +112,8 @@ class LogsCommand extends Command
      */
     protected function outputLogs(array $logs): void
     {
+        $showDebug = $this->option('debug');
+
         // Handle different log formats from Coolify API
         $logContent = $logs['logs'] ?? $logs['output'] ?? $logs;
 
@@ -119,7 +122,33 @@ class LogsCommand extends Command
                 if (is_string($line)) {
                     $this->line($this->formatLogLine($line));
                 } elseif (is_array($line)) {
-                    $this->line($this->formatLogLine($line['message'] ?? json_encode($line)));
+                    // Coolify deployment logs format: {output, hidden, type, timestamp, command}
+                    $isHidden = $line['hidden'] ?? false;
+
+                    // Skip hidden logs unless --debug flag is set
+                    if ($isHidden && ! $showDebug) {
+                        continue;
+                    }
+
+                    $output = $line['output'] ?? $line['message'] ?? null;
+                    $type = $line['type'] ?? 'stdout';
+                    $timestamp = $line['timestamp'] ?? null;
+
+                    if ($output) {
+                        // Format timestamp if present
+                        $prefix = '';
+                        if ($timestamp && $showDebug) {
+                            $time = substr($timestamp, 11, 8); // Extract HH:MM:SS
+                            $prefix = "<fg=gray>[{$time}]</> ";
+                        }
+
+                        // Color based on type
+                        if ($type === 'stderr') {
+                            $this->line($prefix.$this->formatLogLine($output, 'stderr'));
+                        } else {
+                            $this->line($prefix.$this->formatLogLine($output));
+                        }
+                    }
                 }
             }
         } elseif (is_string($logContent)) {
@@ -132,8 +161,17 @@ class LogsCommand extends Command
     /**
      * Format a log line with colors.
      */
-    protected function formatLogLine(string $line): string
+    protected function formatLogLine(string $line, string $type = 'stdout'): string
     {
+        // stderr is always yellow/red
+        if ($type === 'stderr') {
+            if (str_contains(strtolower($line), 'error')) {
+                return "<fg=red>{$line}</>";
+            }
+
+            return "<fg=yellow>{$line}</>";
+        }
+
         // Add color coding based on log level
         if (str_contains(strtolower($line), 'error')) {
             return "<fg=red>{$line}</>";
