@@ -7,5 +7,4 @@ parameters:
         - src
     excludePaths:
         - src/Console/ProvisionCommand.php
-    ignoreErrors:
-        - '#Function Laravel\\Prompts\\#'
+    reportUnmatchedIgnoredErrors: false

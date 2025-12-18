@@ -7,7 +7,7 @@ interface DeploymentRepository
     /**
      * Get all deployments.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -21,7 +21,7 @@ interface DeploymentRepository
     /**
      * Get deployments for a specific application.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function forApplication(string $applicationUuid): array;
 

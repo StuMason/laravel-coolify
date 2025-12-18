@@ -40,11 +40,11 @@ class Coolify
     /**
      * Set the callback that should be used to authenticate Coolify dashboard users.
      */
-    public static function auth(Closure $callback): static
+    public static function auth(Closure $callback): self
     {
         static::$authUsing = $callback;
 
-        return new static;
+        return new self;
     }
 
     /**
@@ -128,10 +128,10 @@ class Coolify
     /**
      * Specify the email address to which notifications should be routed.
      */
-    public static function routeMailNotificationsTo(string $email): static
+    public static function routeMailNotificationsTo(string $email): self
     {
         static::$email = $email;
 
-        return new static;
+        return new self;
     }
 }

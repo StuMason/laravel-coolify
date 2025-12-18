@@ -7,7 +7,7 @@ interface ApplicationRepository
     /**
      * Get all applications.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -117,7 +117,7 @@ interface ApplicationRepository
     /**
      * Get environment variables for an application.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function envs(string $uuid): array;
 

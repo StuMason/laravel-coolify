@@ -52,8 +52,8 @@ class RollbackCommand extends Command
         }
 
         try {
-            // Get recent deployments
-            $recentDeployments = $deployments->forApplication($applicationUuid);
+            // Get recent deployments (ensure numeric keys)
+            $recentDeployments = array_values($deployments->forApplication($applicationUuid));
 
             if (count($recentDeployments) < 2) {
                 $this->components->error('Not enough deployment history to rollback.');

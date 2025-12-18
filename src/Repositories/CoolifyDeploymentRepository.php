@@ -45,6 +45,9 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     {
         $deployments = $this->forApplication($applicationUuid);
 
+        // Reset array keys to ensure numeric indexing
+        $deployments = array_values($deployments);
+
         return $deployments[0] ?? null;
     }
 

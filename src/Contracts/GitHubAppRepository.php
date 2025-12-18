@@ -7,7 +7,7 @@ interface GitHubAppRepository
     /**
      * Get all GitHub Apps.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -30,7 +30,7 @@ interface GitHubAppRepository
      * Get branches for a repository.
      *
      * @param  int|string  $id  The GitHub App's internal Coolify ID (numeric) or UUID
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function branches(int|string $id, string $owner, string $repo): array;
 }
