@@ -4,6 +4,7 @@ namespace Stumason\Coolify\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
@@ -508,6 +509,8 @@ class ProvisionCommand extends Command
      * Create a new deploy key (SSH key) for this app.
      * Each app needs its own key because GitHub deploy keys can only be used on ONE repo.
      *
+     * We generate the keypair locally and send the private key to Coolify.
+     *
      * @return array{uuid: string, name: string, public_key: string}|null
      */
     protected function selectDeployKey(SecurityKeyRepository $securityKeys): ?array
@@ -515,33 +518,67 @@ class ProvisionCommand extends Command
         $appName = $this->option('name') ?? basename(base_path());
         $keyName = "{$appName}-deploy-key";
 
-        $this->line("    Creating new SSH key: {$keyName}");
+        $this->line("    Generating new SSH keypair: {$keyName}");
 
         try {
+            // Generate SSH keypair locally
+            $keyPair = $this->generateSshKeyPair($keyName);
+            if (! $keyPair) {
+                return null;
+            }
+
+            // Send private key to Coolify
             $newKey = spin(
                 callback: fn () => $securityKeys->create([
                     'name' => $keyName,
                     'description' => "Deploy key for {$appName} - created by coolify:provision",
+                    'private_key' => $keyPair['private_key'],
                 ]),
-                message: 'Creating SSH key...'
-            );
-
-            // Fetch the full key details to get the public key
-            $keyDetails = spin(
-                callback: fn () => $securityKeys->get($newKey['uuid']),
-                message: 'Fetching key details...'
+                message: 'Uploading SSH key to Coolify...'
             );
 
             return [
-                'uuid' => $keyDetails['uuid'],
-                'name' => $keyDetails['name'] ?? $keyName,
-                'public_key' => $keyDetails['public_key'] ?? '',
+                'uuid' => $newKey['uuid'],
+                'name' => $keyName,
+                'public_key' => $keyPair['public_key'],
             ];
         } catch (\Exception $e) {
             $this->components->error('Failed to create SSH key: '.$e->getMessage());
 
             return null;
         }
+    }
+
+    /**
+     * Generate an SSH keypair locally.
+     *
+     * @return array{private_key: string, public_key: string}|null
+     */
+    protected function generateSshKeyPair(string $keyName): ?array
+    {
+        $tempDir = sys_get_temp_dir();
+        $keyPath = "{$tempDir}/{$keyName}_".time();
+
+        // Generate ED25519 key (more secure, shorter than RSA)
+        $result = Process::run("ssh-keygen -t ed25519 -f {$keyPath} -N '' -C '{$keyName}' 2>&1");
+
+        if (! $result->successful()) {
+            $this->components->error('Failed to generate SSH key: '.$result->output());
+
+            return null;
+        }
+
+        $privateKey = File::get($keyPath);
+        $publicKey = File::get("{$keyPath}.pub");
+
+        // Clean up temp files
+        File::delete($keyPath);
+        File::delete("{$keyPath}.pub");
+
+        return [
+            'private_key' => $privateKey,
+            'public_key' => trim($publicKey),
+        ];
     }
 
     /**
