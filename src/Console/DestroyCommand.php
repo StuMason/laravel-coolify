@@ -151,6 +151,16 @@ class DestroyCommand extends Command
                 }
             }
 
+            // Re-fetch resources right before deletion to get fresh data
+            // (API responses can be cached/stale between showing preview and actual deletion)
+            $allApps = $applications->all();
+            $allDatabases = $databases->all();
+            $allServices = $services->all();
+
+            $projectApps = collect($allApps)->filter(fn ($app) => in_array($app['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            $projectDatabases = collect($allDatabases)->filter(fn ($db) => in_array($db['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+            $projectServices = collect($allServices)->filter(fn ($svc) => in_array($svc['environment_id'] ?? null, $projectEnvironmentIds, true))->values()->all();
+
             // Step 1: Stop all resources first
             foreach ($projectApps as $app) {
                 $this->stopApplication($applications, $app);
