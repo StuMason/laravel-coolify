@@ -983,6 +983,11 @@ class ProvisionCommand extends Command
     ): void {
         $envVars = [];
 
+        // Generate APP_KEY for Laravel
+        $appKey = 'base64:'.base64_encode(random_bytes(32));
+        $envVars[] = ['key' => 'APP_KEY', 'value' => $appKey];
+        $envVars[] = ['key' => 'APP_ENV', 'value' => 'production'];
+
         // Set Coolify connection (so deployed app can use this package's dashboard/API)
         $envVars[] = ['key' => 'COOLIFY_URL', 'value' => config('coolify.url')];
         $envVars[] = ['key' => 'COOLIFY_TOKEN', 'value' => config('coolify.token')];
