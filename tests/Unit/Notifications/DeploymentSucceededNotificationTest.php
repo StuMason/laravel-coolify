@@ -40,10 +40,4 @@ describe('DeploymentSucceededNotification', function () {
         expect($mail->subject)->toContain('Deployment Succeeded')
             ->and($mail->subject)->toContain('Test Application');
     });
-
-    it('has slack representation with success color', function () {
-        $slack = $this->notification->toSlack((object) []);
-
-        expect($slack)->not->toBeNull();
-    });
 });

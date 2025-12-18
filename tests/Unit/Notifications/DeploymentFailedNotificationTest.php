@@ -50,10 +50,4 @@ describe('DeploymentFailedNotification', function () {
         // The notification should contain the failure reason
         expect($mail)->not->toBeNull();
     });
-
-    it('has slack representation with danger color', function () {
-        $slack = $this->notification->toSlack((object) []);
-
-        expect($slack)->not->toBeNull();
-    });
 });

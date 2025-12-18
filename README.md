@@ -74,6 +74,7 @@ php artisan coolify:provision
 Uses SSH deploy keys instead of GitHub Apps. GitHub Apps have a shared rate limit (5000 req/hour across all apps) which causes random "Repository not found" errors when you have multiple projects. Deploy keys use SSH directly, no rate limits.
 
 After provisioning, you need to:
+
 1. Add the deploy key to your GitHub repo
 2. Set up a webhook for auto-deploy (the command shows you the URL)
 
@@ -88,7 +89,3 @@ Coolify::logs();
 Coolify::applications()->all();
 Coolify::databases()->all();
 ```
-
-## License
-
-MIT

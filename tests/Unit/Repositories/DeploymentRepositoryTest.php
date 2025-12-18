@@ -39,9 +39,11 @@ describe('DeploymentRepository', function () {
 
     it('fetches deployments for an application', function () {
         Http::fake([
-            '*/applications/app-123/deployments' => Http::response([
-                ['uuid' => 'deploy-1'],
-                ['uuid' => 'deploy-2'],
+            '*/deployments/applications/app-123' => Http::response([
+                'deployments' => [
+                    ['uuid' => 'deploy-1'],
+                    ['uuid' => 'deploy-2'],
+                ],
             ], 200),
         ]);
 
@@ -52,9 +54,11 @@ describe('DeploymentRepository', function () {
 
     it('gets latest deployment', function () {
         Http::fake([
-            '*/applications/app-123/deployments' => Http::response([
-                ['uuid' => 'deploy-latest', 'status' => 'finished'],
-                ['uuid' => 'deploy-old', 'status' => 'finished'],
+            '*/deployments/applications/app-123' => Http::response([
+                'deployments' => [
+                    ['uuid' => 'deploy-latest', 'status' => 'finished'],
+                    ['uuid' => 'deploy-old', 'status' => 'finished'],
+                ],
             ], 200),
         ]);
 
@@ -65,7 +69,9 @@ describe('DeploymentRepository', function () {
 
     it('returns null when no deployments', function () {
         Http::fake([
-            '*/applications/app-123/deployments' => Http::response([], 200),
+            '*/deployments/applications/app-123' => Http::response([
+                'deployments' => [],
+            ], 200),
         ]);
 
         $latest = app(DeploymentRepository::class)->latest('app-123');
@@ -75,8 +81,12 @@ describe('DeploymentRepository', function () {
 
     it('triggers a deployment', function () {
         Http::fake([
-            '*/applications/app-123/deploy' => Http::response([
-                'deployment_uuid' => 'new-deploy-uuid',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'new-deploy-uuid',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
             ], 200),
         ]);
 
@@ -114,13 +124,16 @@ describe('DeploymentRepository', function () {
 
     it('fetches deployment logs', function () {
         Http::fake([
-            '*/deployments/deploy-123/logs' => Http::response([
-                'logs' => 'Build step 1...',
+            '*/deployments/deploy-123' => Http::response([
+                'uuid' => 'deploy-123',
+                'status' => 'finished',
+                'logs' => '[{"output": "Build step 1...", "type": "stdout"}]',
             ], 200),
         ]);
 
         $result = app(DeploymentRepository::class)->logs('deploy-123');
 
-        expect($result['logs'])->toContain('Build step');
+        expect($result)->toBeArray()
+            ->and($result[0]['output'])->toContain('Build step');
     });
 });

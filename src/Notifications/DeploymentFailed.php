@@ -5,7 +5,6 @@ namespace Stumason\Coolify\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
 use Stumason\Coolify\Coolify;
 use Stumason\Coolify\Events\DeploymentFailed as DeploymentFailedEvent;
@@ -30,39 +29,11 @@ class DeploymentFailed extends Notification implements ShouldQueue
     {
         $channels = [];
 
-        if (Coolify::$slackWebhookUrl) {
-            $channels[] = 'slack';
-        }
-
         if (Coolify::$email) {
             $channels[] = 'mail';
         }
 
         return $channels;
-    }
-
-    /**
-     * Get the Slack representation of the notification.
-     */
-    public function toSlack(object $notifiable): SlackMessage
-    {
-        $applicationName = $this->event->applicationName();
-        $deploymentUuid = $this->event->deploymentUuid();
-        $reason = $this->event->reason();
-
-        return (new SlackMessage)
-            ->error()
-            ->content("Deployment failed for {$applicationName}")
-            ->attachment(function ($attachment) use ($applicationName, $deploymentUuid, $reason) {
-                $attachment
-                    ->title('Deployment Failed')
-                    ->fields([
-                        'Application' => $applicationName,
-                        'Deployment ID' => $deploymentUuid,
-                        'Status' => 'Failed',
-                        'Reason' => $reason,
-                    ]);
-            });
     }
 
     /**

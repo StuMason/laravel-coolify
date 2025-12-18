@@ -32,17 +32,6 @@ describe('DeploymentStartedNotification', function () {
         Coolify::$email = null;
     });
 
-    it('includes slack channel when webhook is configured', function () {
-        Coolify::routeSlackNotificationsTo('https://hooks.slack.com/test');
-
-        $channels = $this->notification->via((object) []);
-
-        expect($channels)->toContain('slack');
-
-        // Reset
-        Coolify::$slackWebhookUrl = null;
-    });
-
     it('excludes mail channel when not configured', function () {
         Coolify::$email = null;
 
@@ -56,11 +45,5 @@ describe('DeploymentStartedNotification', function () {
 
         expect($mail->subject)->toContain('Deployment Started')
             ->and($mail->subject)->toContain('Test Application');
-    });
-
-    it('has slack representation', function () {
-        $slack = $this->notification->toSlack((object) []);
-
-        expect($slack)->not->toBeNull();
     });
 });

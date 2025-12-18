@@ -29,8 +29,12 @@ describe('ApplicationController', function () {
 
     it('triggers deployment', function () {
         Http::fake([
-            '*/applications/app-123/deploy' => Http::response([
-                'deployment_uuid' => 'deploy-456',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-456',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
             ], 200),
         ]);
 

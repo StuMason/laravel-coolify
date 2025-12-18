@@ -71,8 +71,8 @@ class RollbackCommand extends Command
                     ->mapWithKeys(fn ($d) => [
                         $d['uuid'] => sprintf(
                             '%s - %s (%s)',
-                            $d['uuid'] ? substr($d['uuid'], 0, 8) : 'N/A',
-                            $d['git_commit_sha'] ? substr($d['git_commit_sha'], 0, 7) : 'N/A',
+                            ($d['uuid'] ?? null) ? substr($d['uuid'], 0, 8) : 'N/A',
+                            ($d['git_commit_sha'] ?? null) ? substr($d['git_commit_sha'], 0, 7) : 'N/A',
                             $d['status'] ?? 'unknown'
                         ),
                     ])
