@@ -18,16 +18,6 @@ class Coolify
     public static ?Closure $authUsing = null;
 
     /**
-     * The Slack notifications webhook URL.
-     */
-    public static ?string $slackWebhookUrl = null;
-
-    /**
-     * The Slack notifications channel.
-     */
-    public static ?string $slackChannel = null;
-
-    /**
      * The email address for notifications.
      */
     public static ?string $email = null;
@@ -50,11 +40,11 @@ class Coolify
     /**
      * Set the callback that should be used to authenticate Coolify dashboard users.
      */
-    public static function auth(Closure $callback): static
+    public static function auth(Closure $callback): self
     {
         static::$authUsing = $callback;
 
-        return new static;
+        return new self;
     }
 
     /**
@@ -138,21 +128,10 @@ class Coolify
     /**
      * Specify the email address to which notifications should be routed.
      */
-    public static function routeMailNotificationsTo(string $email): static
+    public static function routeMailNotificationsTo(string $email): self
     {
         static::$email = $email;
 
-        return new static;
-    }
-
-    /**
-     * Specify the webhook URL and channel for Slack notifications.
-     */
-    public static function routeSlackNotificationsTo(string $url, ?string $channel = null): static
-    {
-        static::$slackWebhookUrl = $url;
-        static::$slackChannel = $channel;
-
-        return new static;
+        return new self;
     }
 }

@@ -41,8 +41,12 @@ describe('ApplicationRepository', function () {
 
     it('deploys an application', function () {
         Http::fake([
-            '*/applications/app-123/deploy' => Http::response([
-                'deployment_uuid' => 'deploy-456',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-456',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
             ], 200),
         ]);
 
@@ -112,16 +116,19 @@ describe('ApplicationRepository', function () {
             ->and($envs[0]['key'])->toBe('APP_ENV');
     });
 
-    it('creates an application', function () {
+    it('creates a public application', function () {
         Http::fake([
-            '*/applications' => Http::response([
+            '*/applications/public' => Http::response([
                 'uuid' => 'new-app-uuid',
             ], 200),
         ]);
 
-        $result = app(ApplicationRepository::class)->create([
+        $result = app(ApplicationRepository::class)->createPublic([
             'name' => 'New App',
             'server_uuid' => 'server-1',
+            'project_uuid' => 'project-1',
+            'environment_name' => 'production',
+            'git_repository' => 'https://github.com/user/repo',
         ]);
 
         expect($result['uuid'])->toBe('new-app-uuid');

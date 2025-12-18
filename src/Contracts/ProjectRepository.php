@@ -7,7 +7,7 @@ interface ProjectRepository
     /**
      * Get all projects.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -42,7 +42,7 @@ interface ProjectRepository
     /**
      * Get project environments.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function environments(string $uuid): array;
 

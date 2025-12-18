@@ -2,19 +2,25 @@
 
 use Illuminate\Support\Facades\Http;
 
+beforeEach(function () {
+    Http::preventStrayRequests();
+});
+
 describe('RollbackCommand', function () {
     it('rolls back to a previous deployment', function () {
         Http::fake([
-            '*/applications/test-app-uuid/deployments' => Http::response([
-                [
-                    'uuid' => 'deployment-1',
-                    'deployment_uuid' => 'deployment-1',
-                    'status' => 'finished',
-                ],
-                [
-                    'uuid' => 'deployment-2',
-                    'deployment_uuid' => 'deployment-2',
-                    'status' => 'finished',
+            '*/deployments/applications/test-app-uuid' => Http::response([
+                'deployments' => [
+                    [
+                        'uuid' => 'deployment-1',
+                        'deployment_uuid' => 'deployment-1',
+                        'status' => 'finished',
+                    ],
+                    [
+                        'uuid' => 'deployment-2',
+                        'deployment_uuid' => 'deployment-2',
+                        'status' => 'finished',
+                    ],
                 ],
             ]),
             '*/applications/test-app-uuid/rollback' => Http::response([
@@ -23,24 +29,36 @@ describe('RollbackCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:rollback', ['--deployment' => 'deployment-2'])
+        $this->artisan('coolify:rollback', ['--deployment' => 'deployment-2', '--force' => true])
             ->assertSuccessful();
     });
 
-    it('shows available deployments when none specified', function () {
+    it('defaults to previous deployment in non-interactive mode', function () {
         Http::fake([
-            '*/applications/test-app-uuid/deployments' => Http::response([
-                [
-                    'uuid' => 'deployment-1',
-                    'deployment_uuid' => 'deployment-1',
-                    'status' => 'finished',
-                    'created_at' => '2024-01-01 10:00:00',
+            '*/deployments/applications/test-app-uuid' => Http::response([
+                'deployments' => [
+                    [
+                        'uuid' => 'deployment-current',
+                        'deployment_uuid' => 'deployment-current',
+                        'status' => 'finished',
+                        'created_at' => '2024-01-02 10:00:00',
+                    ],
+                    [
+                        'uuid' => 'deployment-previous',
+                        'deployment_uuid' => 'deployment-previous',
+                        'status' => 'finished',
+                        'created_at' => '2024-01-01 10:00:00',
+                    ],
                 ],
+            ]),
+            '*/applications/test-app-uuid/rollback' => Http::response([
+                'message' => 'Rollback initiated',
+                'deployment_uuid' => 'rollback-uuid',
             ]),
         ]);
 
-        // Without specifying a deployment, it should list options or fail gracefully
-        $this->artisan('coolify:rollback')
+        // In non-interactive mode without specifying a deployment, it defaults to the previous one
+        $this->artisan('coolify:rollback', ['--force' => true, '--no-interaction' => true])
             ->assertSuccessful();
     });
 });

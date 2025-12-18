@@ -22,8 +22,7 @@ class SendDeploymentNotification
             return;
         }
 
-        Notification::route('slack', Coolify::$slackWebhookUrl)
-            ->route('mail', Coolify::$email)
+        Notification::route('mail', Coolify::$email)
             ->notify(new DeploymentStartedNotification($event));
     }
 
@@ -36,8 +35,7 @@ class SendDeploymentNotification
             return;
         }
 
-        Notification::route('slack', Coolify::$slackWebhookUrl)
-            ->route('mail', Coolify::$email)
+        Notification::route('mail', Coolify::$email)
             ->notify(new DeploymentSucceededNotification($event));
     }
 
@@ -50,8 +48,7 @@ class SendDeploymentNotification
             return;
         }
 
-        Notification::route('slack', Coolify::$slackWebhookUrl)
-            ->route('mail', Coolify::$email)
+        Notification::route('mail', Coolify::$email)
             ->notify(new DeploymentFailedNotification($event));
     }
 
@@ -60,7 +57,7 @@ class SendDeploymentNotification
      */
     protected function shouldNotify(): bool
     {
-        return Coolify::$slackWebhookUrl !== null || Coolify::$email !== null;
+        return Coolify::$email !== null;
     }
 
     /**

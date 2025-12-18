@@ -5,7 +5,6 @@ namespace Stumason\Coolify\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
 use Stumason\Coolify\Coolify;
 use Stumason\Coolify\Events\DeploymentStarted as DeploymentStartedEvent;
@@ -30,37 +29,11 @@ class DeploymentStarted extends Notification implements ShouldQueue
     {
         $channels = [];
 
-        if (Coolify::$slackWebhookUrl) {
-            $channels[] = 'slack';
-        }
-
         if (Coolify::$email) {
             $channels[] = 'mail';
         }
 
         return $channels;
-    }
-
-    /**
-     * Get the Slack representation of the notification.
-     */
-    public function toSlack(object $notifiable): SlackMessage
-    {
-        $applicationName = $this->event->applicationName();
-        $deploymentUuid = $this->event->deploymentUuid();
-
-        return (new SlackMessage)
-            ->warning()
-            ->content("Deployment started for {$applicationName}")
-            ->attachment(function ($attachment) use ($applicationName, $deploymentUuid) {
-                $attachment
-                    ->title('Deployment Started')
-                    ->fields([
-                        'Application' => $applicationName,
-                        'Deployment ID' => $deploymentUuid,
-                        'Status' => 'In Progress',
-                    ]);
-            });
     }
 
     /**

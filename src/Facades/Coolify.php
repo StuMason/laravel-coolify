@@ -21,7 +21,6 @@ use Stumason\Coolify\Contracts\ServiceRepository;
  * @method static array status(?string $uuid = null)
  * @method static array logs(?string $uuid = null)
  * @method static \Stumason\Coolify\Coolify routeMailNotificationsTo(string $email)
- * @method static \Stumason\Coolify\Coolify routeSlackNotificationsTo(string $url, ?string $channel = null)
  *
  * @see \Stumason\Coolify\Coolify
  */

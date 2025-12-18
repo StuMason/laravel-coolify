@@ -7,7 +7,7 @@ interface TeamRepository
     /**
      * Get all teams.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -21,7 +21,7 @@ interface TeamRepository
     /**
      * Get team members.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function members(): array;
 

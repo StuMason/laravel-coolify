@@ -15,8 +15,7 @@ class CoolifyServiceProvider extends CoolifyApplicationServiceProvider
     {
         parent::boot();
 
-        // Configure notifications:
-        // Coolify::routeSlackNotificationsTo('https://hooks.slack.com/services/...', '#deployments');
+        // Configure email notifications:
         // Coolify::routeMailNotificationsTo('devops@example.com');
     }
 

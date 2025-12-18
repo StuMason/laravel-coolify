@@ -7,7 +7,7 @@ interface DatabaseRepository
     /**
      * Get all databases.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -110,7 +110,7 @@ interface DatabaseRepository
     /**
      * Get backup history for the database.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function backups(string $uuid): array;
 }

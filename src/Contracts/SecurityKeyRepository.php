@@ -7,7 +7,7 @@ interface SecurityKeyRepository
     /**
      * Get all SSH keys.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 

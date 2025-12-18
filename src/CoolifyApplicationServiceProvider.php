@@ -36,7 +36,7 @@ class CoolifyApplicationServiceProvider extends ServiceProvider
     protected function gate(): void
     {
         Gate::define('viewCoolify', function ($user = null) {
-            return in_array(optional($user)->email, [
+            return in_array($user?->email, [
                 //
             ]);
         });

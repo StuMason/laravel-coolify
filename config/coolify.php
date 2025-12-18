@@ -227,14 +227,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure notification channels for deployment events and alerts.
-    | Supports Slack and email notifications for deployment success,
-    | failure, and health alerts.
+    | Email notifications for deployment success, failure, and health alerts.
     |
     */
 
     'notifications' => [
-        'slack_webhook_url' => env('COOLIFY_SLACK_WEBHOOK'),
-        'slack_channel' => env('COOLIFY_SLACK_CHANNEL'),
         'email' => env('COOLIFY_NOTIFICATION_EMAIL'),
     ],
 

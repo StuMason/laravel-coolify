@@ -7,7 +7,7 @@ interface ServerRepository
     /**
      * Get all servers.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function all(): array;
 
@@ -49,7 +49,7 @@ interface ServerRepository
     /**
      * Get server domains.
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public function domains(string $uuid): array;
 

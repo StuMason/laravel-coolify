@@ -24,8 +24,12 @@ describe('Coolify facade', function () {
 
     it('deploys using configured UUID', function () {
         Http::fake([
-            '*/applications/test-app-uuid/deploy' => Http::response([
-                'deployment_uuid' => 'deploy-123',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-123',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'test-app-uuid',
+                ]],
             ], 200),
         ]);
 
@@ -36,8 +40,12 @@ describe('Coolify facade', function () {
 
     it('deploys using custom UUID', function () {
         Http::fake([
-            '*/applications/custom-uuid/deploy' => Http::response([
-                'deployment_uuid' => 'deploy-456',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-456',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'custom-uuid',
+                ]],
             ], 200),
         ]);
 
@@ -105,12 +113,5 @@ describe('Coolify notifications', function () {
         Coolify::routeMailNotificationsTo('admin@example.com');
 
         expect(Coolify::$email)->toBe('admin@example.com');
-    });
-
-    it('configures Slack notifications', function () {
-        Coolify::routeSlackNotificationsTo('https://hooks.slack.com/xxx', '#deployments');
-
-        expect(Coolify::$slackWebhookUrl)->toBe('https://hooks.slack.com/xxx')
-            ->and(Coolify::$slackChannel)->toBe('#deployments');
     });
 });

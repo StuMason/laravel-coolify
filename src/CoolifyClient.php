@@ -214,7 +214,7 @@ class CoolifyClient
     {
         // Extract the resource type from the endpoint (e.g., 'applications' from 'applications/uuid')
         $parts = explode('/', trim($endpoint, '/'));
-        $resource = $parts[0] ?? '';
+        $resource = $parts[0];
 
         Cache::forget("coolify:{$resource}:list");
     }

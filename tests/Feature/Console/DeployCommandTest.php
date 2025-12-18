@@ -25,8 +25,12 @@ describe('coolify:deploy command', function () {
 
     it('triggers deployment successfully', function () {
         Http::fake([
-            '*/applications/test-app-uuid/deploy' => Http::response([
-                'deployment_uuid' => 'new-deployment-123',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'new-deployment-123',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'test-app-uuid',
+                ]],
             ], 200),
         ]);
 
@@ -39,7 +43,11 @@ describe('coolify:deploy command', function () {
     it('deploys specific tag', function () {
         Http::fake([
             '*/deploy' => Http::response([
-                'deployment_uuid' => 'tag-deployment-123',
+                'deployments' => [[
+                    'deployment_uuid' => 'tag-deployment-123',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'test-app-uuid',
+                ]],
             ], 200),
         ]);
 
@@ -54,8 +62,12 @@ describe('coolify:deploy command', function () {
 
     it('can use custom UUID', function () {
         Http::fake([
-            '*/applications/custom-uuid/deploy' => Http::response([
-                'deployment_uuid' => 'deploy-123',
+            '*/deploy' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-123',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'custom-uuid',
+                ]],
             ], 200),
         ]);
 
@@ -63,7 +75,7 @@ describe('coolify:deploy command', function () {
             ->assertSuccessful();
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'custom-uuid');
+            return $request['uuid'] === 'custom-uuid';
         });
     });
 });

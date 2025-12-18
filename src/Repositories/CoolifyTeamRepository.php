@@ -12,9 +12,7 @@ class CoolifyTeamRepository implements TeamRepository
     ) {}
 
     /**
-     * Get all teams.
-     *
-     * @return array<int, array<string, mixed>>
+     * @inheritDoc
      */
     public function all(): array
     {
@@ -32,9 +30,7 @@ class CoolifyTeamRepository implements TeamRepository
     }
 
     /**
-     * Get team members.
-     *
-     * @return array<int, array<string, mixed>>
+     * @inheritDoc
      */
     public function members(): array
     {

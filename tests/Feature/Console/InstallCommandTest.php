@@ -1,6 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+
+beforeEach(function () {
+    Http::preventStrayRequests();
+    // Set as unconfigured so coolify:status is not called
+    config(['coolify.token' => null]);
+});
 
 describe('InstallCommand', function () {
     it('publishes the configuration file', function () {
