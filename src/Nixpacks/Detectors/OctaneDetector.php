@@ -29,7 +29,9 @@ class OctaneDetector implements PackageDetector
         $server = config('octane.server', 'swoole');
 
         if ($server === 'swoole') {
-            return ['php83Extensions.swoole'];
+            $phpVersion = $this->getPhpMajorMinor();
+
+            return ["php{$phpVersion}Extensions.swoole"];
         }
 
         if ($server === 'roadrunner') {
@@ -38,6 +40,11 @@ class OctaneDetector implements PackageDetector
 
         // FrankenPHP doesn't need extra nix packages
         return [];
+    }
+
+    protected function getPhpMajorMinor(): string
+    {
+        return PHP_MAJOR_VERSION.PHP_MINOR_VERSION;
     }
 
     public function getBuildCommands(): array

@@ -22,7 +22,7 @@ class SchedulerDetector implements PackageDetector
 
         // Check Kernel.php for schedule method with actual tasks
         if (File::exists($kernelPath)) {
-            $content = File::get($kernelPath);
+            $content = $this->stripComments(File::get($kernelPath));
             // Look for actual schedule commands, not just empty method
             if (preg_match('/\$schedule->(command|call|job|exec)\s*\(/', $content)) {
                 return true;
@@ -31,13 +31,30 @@ class SchedulerDetector implements PackageDetector
 
         // Check routes/console.php for Schedule facade usage (Laravel 11+ style)
         if (File::exists($consolePath)) {
-            $content = File::get($consolePath);
+            $content = $this->stripComments(File::get($consolePath));
             if (str_contains($content, 'Schedule::')) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Strip PHP comments from content to avoid false positives.
+     */
+    protected function stripComments(string $content): string
+    {
+        // Remove single-line comments (// ...)
+        $content = preg_replace('#//.*$#m', '', $content);
+
+        // Remove multi-line comments (/* ... */)
+        $content = preg_replace('#/\*.*?\*/#s', '', $content);
+
+        // Remove hash comments (# ...)
+        $content = preg_replace('/#.*$/m', '', $content);
+
+        return $content ?? '';
     }
 
     public function getProcesses(): array

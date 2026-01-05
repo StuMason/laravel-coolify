@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\File;
 use Stumason\Coolify\Nixpacks\Detectors\HorizonDetector;
 use Stumason\Coolify\Nixpacks\Detectors\OctaneDetector;
@@ -119,10 +121,11 @@ describe('HorizonDetector', function () {
         ]);
     });
 
-    it('requires redis nix package', function () {
+    it('requires redis nix package with dynamic php version', function () {
         $detector = new HorizonDetector;
+        $phpVersion = PHP_MAJOR_VERSION.PHP_MINOR_VERSION;
 
-        expect($detector->getNixPackages())->toContain('php83Extensions.redis');
+        expect($detector->getNixPackages())->toContain("php{$phpVersion}Extensions.redis");
     });
 });
 
