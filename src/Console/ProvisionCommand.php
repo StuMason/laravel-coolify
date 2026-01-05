@@ -334,7 +334,9 @@ class ProvisionCommand extends Command
                 $environment,
                 $deployKey['uuid'],
                 $repoInfo['full_name'],
-                $branch
+                $branch,
+                $appName,
+                $domain
             );
             $this->done('Environment variables configured');
 
@@ -979,14 +981,18 @@ class ProvisionCommand extends Command
         string $environment,
         string $deployKeyUuid,
         string $repository,
-        string $branch
+        string $branch,
+        string $appName,
+        string $domain
     ): void {
         $envVars = [];
 
-        // Generate APP_KEY for Laravel
-        $appKey = 'base64:'.base64_encode(random_bytes(32));
-        $envVars[] = ['key' => 'APP_KEY', 'value' => $appKey];
+        // Core Laravel app config
+        $envVars[] = ['key' => 'APP_NAME', 'value' => $appName];
         $envVars[] = ['key' => 'APP_ENV', 'value' => 'production'];
+        $envVars[] = ['key' => 'APP_KEY', 'value' => 'base64:'.base64_encode(random_bytes(32))];
+        $envVars[] = ['key' => 'APP_URL', 'value' => "https://{$domain}"];
+        $envVars[] = ['key' => 'ASSET_URL', 'value' => "https://{$domain}"];
 
         // Set Coolify connection (so deployed app can use this package's dashboard/API)
         $envVars[] = ['key' => 'COOLIFY_URL', 'value' => config('coolify.url')];
@@ -1053,6 +1059,29 @@ class ProvisionCommand extends Command
             }
         }
 
+        // Copy REVERB_* vars from local .env (credentials)
+        $reverbVars = $this->getLocalEnvVars(['REVERB_']);
+        foreach ($reverbVars as $key => $value) {
+            $envVars[] = ['key' => $key, 'value' => $value];
+        }
+
+        // Copy VITE_* vars from local .env (with variable interpolation)
+        $viteVars = $this->getLocalEnvVars(['VITE_']);
+        foreach ($viteVars as $key => $value) {
+            $envVars[] = ['key' => $key, 'value' => $value];
+        }
+
+        // Override VITE_REVERB_* with production values (browser needs to connect to prod domain)
+        $envVars[] = ['key' => 'VITE_REVERB_HOST', 'value' => $domain];
+        $envVars[] = ['key' => 'VITE_REVERB_PORT', 'value' => '443'];
+        $envVars[] = ['key' => 'VITE_REVERB_SCHEME', 'value' => 'https'];
+
+        $copiedCount = count($reverbVars) + count($viteVars);
+        if ($copiedCount > 0) {
+            $this->line("    Copying <fg=white>{$copiedCount}</> REVERB/VITE vars from local .env");
+            $this->line('    Overriding VITE_REVERB_HOST/PORT/SCHEME for production');
+        }
+
         $this->line("    Setting <fg=white>".count($envVars)."</> environment variables...");
 
         spin(
@@ -1065,6 +1094,79 @@ class ProvisionCommand extends Command
         );
 
         $this->line('    <fg=green>Environment variables configured on Coolify</>');
+    }
+
+    /**
+     * Get environment variables from local .env file matching given prefixes.
+     * Resolves variable interpolation like ${APP_NAME} to actual values.
+     *
+     * @param  array<string>  $prefixes  Array of prefixes to match (e.g., ['REVERB_', 'VITE_'])
+     * @return array<string, string>  Key-value pairs of matching env vars with resolved values
+     */
+    protected function getLocalEnvVars(array $prefixes): array
+    {
+        $envPath = base_path('.env');
+
+        if (! File::exists($envPath)) {
+            return [];
+        }
+
+        $content = File::get($envPath);
+        $lines = explode("\n", $content);
+
+        // First pass: collect all env vars for interpolation
+        $allVars = [];
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            // Skip comments and empty lines
+            if (empty($line) || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            // Parse KEY=value
+            if (preg_match('/^([A-Z_][A-Z0-9_]*)=(.*)$/i', $line, $matches)) {
+                $key = $matches[1];
+                $value = $matches[2];
+
+                // Remove quotes if present
+                $value = trim($value, '"\'');
+
+                $allVars[$key] = $value;
+            }
+        }
+
+        // Second pass: resolve interpolation and filter by prefix
+        $result = [];
+        foreach ($allVars as $key => $value) {
+            // Check if key matches any of the prefixes
+            $matches = false;
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($key, $prefix)) {
+                    $matches = true;
+                    break;
+                }
+            }
+
+            if (! $matches) {
+                continue;
+            }
+
+            // Resolve ${VAR} and $VAR references
+            $resolved = preg_replace_callback(
+                '/\$\{([A-Z_][A-Z0-9_]*)\}|\$([A-Z_][A-Z0-9_]*)/i',
+                function ($m) use ($allVars) {
+                    $varName = $m[1] ?: $m[2];
+
+                    return $allVars[$varName] ?? '';
+                },
+                $value
+            );
+
+            $result[$key] = $resolved;
+        }
+
+        return $result;
     }
 
     /**
