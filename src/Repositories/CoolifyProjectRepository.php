@@ -12,7 +12,7 @@ class CoolifyProjectRepository implements ProjectRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +20,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +28,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function create(array $data): array
     {
@@ -36,7 +36,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function update(string $uuid, array $data): array
     {
@@ -44,7 +44,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function delete(string $uuid): bool
     {
@@ -54,7 +54,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function environments(string $uuid): array
     {
@@ -62,7 +62,7 @@ class CoolifyProjectRepository implements ProjectRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function environment(string $projectUuid, string $environmentName): array
     {

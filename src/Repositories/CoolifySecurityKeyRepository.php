@@ -12,7 +12,7 @@ class CoolifySecurityKeyRepository implements SecurityKeyRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +20,7 @@ class CoolifySecurityKeyRepository implements SecurityKeyRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +28,7 @@ class CoolifySecurityKeyRepository implements SecurityKeyRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function create(array $data): array
     {
@@ -36,7 +36,7 @@ class CoolifySecurityKeyRepository implements SecurityKeyRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function update(string $uuid, array $data): array
     {
@@ -44,7 +44,7 @@ class CoolifySecurityKeyRepository implements SecurityKeyRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function delete(string $uuid): bool
     {

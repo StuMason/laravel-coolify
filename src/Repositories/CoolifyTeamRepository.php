@@ -12,7 +12,7 @@ class CoolifyTeamRepository implements TeamRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -30,7 +30,7 @@ class CoolifyTeamRepository implements TeamRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function members(): array
     {

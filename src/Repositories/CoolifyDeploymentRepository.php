@@ -12,7 +12,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +20,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +28,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function forApplication(string $applicationUuid): array
     {
@@ -39,7 +39,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function latest(string $applicationUuid): ?array
     {
@@ -52,7 +52,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function trigger(string $applicationUuid, array $options = []): array
     {
@@ -73,18 +73,18 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function deployTag(string $applicationUuid, string $tag): array
     {
-        return $this->client->post("deploy", [
+        return $this->client->post('deploy', [
             'uuid' => $applicationUuid,
             'tag' => $tag,
         ]);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function cancel(string $uuid): array
     {
@@ -92,7 +92,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function logs(string $uuid): array
     {
@@ -107,7 +107,7 @@ class CoolifyDeploymentRepository implements DeploymentRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function rollback(string $applicationUuid, string $deploymentUuid): array
     {
