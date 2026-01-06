@@ -13,7 +13,7 @@ class ReverbDetector implements PackageDetector
 
     public function isInstalled(): bool
     {
-        return class_exists(\Laravel\Reverb\Reverb::class);
+        return class_exists(\Laravel\Reverb\ReverbServiceProvider::class);
     }
 
     public function getProcesses(): array
