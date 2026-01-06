@@ -53,10 +53,8 @@ describe('NixpacksGenerator', function () {
         expect($content)->toContain('nginx.template.conf');
         expect($content)->toContain('start.sh');
 
-        // Build commands
-        expect($content)->toContain('php artisan config:cache');
-        expect($content)->toContain('php artisan route:cache');
-        expect($content)->toContain('php artisan view:cache');
+        // Build commands - uses optimize for all caching
+        expect($content)->toContain('php artisan optimize');
     });
 
     it('writes nixpacks.toml file', function () {
@@ -139,6 +137,15 @@ describe('NixpacksGenerator', function () {
         expect($content)->toContain('root /app/public');
         expect($content)->toContain('/index.php?$query_string');
         expect($content)->toContain('fastcgi_pass 127.0.0.1:9000');
+    });
+
+    it('uses auto worker_processes in nginx config', function () {
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        $content = $generator->generate();
+
+        expect($content)->toContain('worker_processes auto');
     });
 
     it('generates start script with migrations', function () {
@@ -472,6 +479,33 @@ describe('NixpacksGenerator node dependencies', function () {
         $content = $generator->generate();
 
         expect($content)->not->toContain('nodejs');
+    });
+
+    it('includes node_modules in cacheDirectories when package.json exists', function () {
+        File::put(base_path('package.json'), '{}');
+
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        $content = $generator->generate();
+
+        expect($content)->toContain('node_modules');
+
+        File::delete(base_path('package.json'));
+    });
+
+    it('excludes node_modules from cacheDirectories when no package.json', function () {
+        $packageJson = base_path('package.json');
+        if (File::exists($packageJson)) {
+            File::delete($packageJson);
+        }
+
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        $content = $generator->generate();
+
+        expect($content)->not->toContain('node_modules');
     });
 });
 
