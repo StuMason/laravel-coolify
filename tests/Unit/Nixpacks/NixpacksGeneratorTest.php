@@ -165,10 +165,10 @@ describe('NixpacksGenerator', function () {
 
         $content = $generator->generate();
 
-        expect($content)->toContain('onlyIncludeFiles');
+        // Caches vendor and composer cache directories
         expect($content)->toContain('cacheDirectories');
-        expect($content)->toContain('composer.json');
-        expect($content)->toContain('composer.lock');
+        expect($content)->toContain('vendor');
+        expect($content)->toContain('/root/.composer/cache');
     });
 });
 
@@ -481,7 +481,7 @@ describe('NixpacksGenerator node dependencies', function () {
         expect($content)->not->toContain('nodejs');
     });
 
-    it('includes node_modules in cacheDirectories when package.json exists', function () {
+    it('combines npm ci and npm run build in single command when package.json exists', function () {
         File::put(base_path('package.json'), '{}');
 
         $generator = new NixpacksGenerator;
@@ -489,23 +489,26 @@ describe('NixpacksGenerator node dependencies', function () {
 
         $content = $generator->generate();
 
-        expect($content)->toContain('node_modules');
+        // npm ci and npm run build must be in same command so node_modules persists
+        // (Docker mount caching is ephemeral - only available during each RUN command)
+        expect($content)->toContain('npm ci && npm run build');
 
         File::delete(base_path('package.json'));
     });
 
-    it('excludes node_modules from cacheDirectories when no package.json', function () {
-        $packageJson = base_path('package.json');
-        if (File::exists($packageJson)) {
-            File::delete($packageJson);
-        }
+    it('does not cache node_modules (docker mount caching is ephemeral)', function () {
+        File::put(base_path('package.json'), '{}');
 
         $generator = new NixpacksGenerator;
         $generator->detect();
 
         $content = $generator->generate();
 
-        expect($content)->not->toContain('node_modules');
+        // node_modules should NOT be in cacheDirectories because Docker mount caching
+        // is ephemeral and doesn't persist between build phases
+        expect($content)->not->toContain('"node_modules"');
+
+        File::delete(base_path('package.json'));
     });
 });
 

@@ -127,27 +127,17 @@ TOML;
     {
         $lines = ['[phases.install]'];
 
-        // Only include files needed for dependency installation - enables caching
-        $includeFiles = ['composer.json', 'composer.lock'];
-        if ($this->hasNodeDependencies()) {
-            $includeFiles[] = 'package.json';
-            $includeFiles[] = 'package-lock.json';
-        }
-        $filesStr = implode('", "', $includeFiles);
-        $lines[] = "onlyIncludeFiles = [\"{$filesStr}\"]";
-
         // Cache directories for faster rebuilds
-        $cacheDirectories = ['"vendor"', '"/root/.composer/cache"'];
-        if ($this->hasNodeDependencies()) {
-            $cacheDirectories[] = '"node_modules"';
-        }
-        $lines[] = 'cacheDirectories = ['.implode(', ', $cacheDirectories).']';
+        // Note: node_modules is NOT cached because it uses Docker mount caching which is ephemeral
+        // and wouldn't persist to the postbuild phase. Instead we run npm ci && npm run build together.
+        $lines[] = 'cacheDirectories = ["vendor", "/root/.composer/cache"]';
 
         $lines[] = 'cmds = [';
         $lines[] = '    "composer install --no-dev --optimize-autoloader --no-scripts",';
 
         if ($this->hasNodeDependencies()) {
-            $lines[] = '    "npm ci",';
+            // Run npm install and build in the same command so node_modules persists
+            $lines[] = '    "npm ci && npm run build",';
         }
 
         $lines[] = ']';
@@ -183,11 +173,8 @@ TOML;
         $lines[] = 'dependsOn = ["build"]';
         $lines[] = 'cmds = [';
 
-        if ($this->hasNodeDependencies()) {
-            $lines[] = '    "npm run build",';
-        }
-
         // Laravel optimization - handles config, route, view, and event caching
+        // Note: npm run build is now in install phase (combined with npm ci)
         $lines[] = '    "php artisan optimize",';
         $lines[] = ']';
         $lines[] = '';

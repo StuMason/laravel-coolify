@@ -138,13 +138,19 @@
                             <h3 class="text-lg font-medium text-white">Deployment Logs</h3>
                             <p class="text-sm text-gray-400" x-text="'Commit: ' + (selectedDeployment?.commit || 'N/A')"></p>
                         </div>
-                        <button @click="selectedDeployment = null" class="text-gray-400 hover:text-white">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center text-sm text-gray-400 cursor-pointer">
+                                <input type="checkbox" x-model="showDebugLogs" class="rounded bg-gray-900 border-gray-600 text-green-600 mr-2">
+                                Show build logs
+                            </label>
+                            <button @click="selectedDeployment = null" class="text-gray-400 hover:text-white">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="p-4 max-h-96 overflow-auto bg-gray-900">
+                    <div class="p-4 max-h-[600px] overflow-auto bg-gray-900">
                         <div x-show="loadingLogs" class="text-center py-8 text-gray-400">Loading logs...</div>
                         <pre x-show="!loadingLogs" class="text-xs text-gray-300 font-mono whitespace-pre-wrap" x-html="formatDeploymentLogs(deploymentLogs)"></pre>
                     </div>
@@ -447,6 +453,7 @@ function dashboard() {
         selectedDeployment: null,
         deploymentLogs: [],
         loadingLogs: false,
+        showDebugLogs: true, // Show build/debug logs by default
 
         // App logs
         appLogs: '',
@@ -527,11 +534,12 @@ function dashboard() {
         formatDeploymentLogs(logs) {
             if (!logs || !logs.length) return 'No logs available';
             return logs
-                .filter(l => !l.hidden)
+                .filter(l => this.showDebugLogs || !l.hidden)
                 .map(l => {
                     const time = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : '';
                     const color = l.type === 'stderr' ? 'text-red-400' : 'text-gray-300';
-                    return `<span class="text-gray-500">[${time}]</span> <span class="${color}">${this.escapeHtml(l.output)}</span>`;
+                    const hiddenBadge = l.hidden ? '<span class="text-blue-400">[build]</span> ' : '';
+                    return `<span class="text-gray-500">[${time}]</span> ${hiddenBadge}<span class="${color}">${this.escapeHtml(l.output)}</span>`;
                 })
                 .join('\n');
         },
