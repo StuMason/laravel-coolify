@@ -3,6 +3,7 @@
 namespace Stumason\Coolify\Console;
 
 use Illuminate\Console\Command;
+use Stumason\Coolify\Console\Concerns\StreamsDeploymentLogs;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\CoolifyClient;
@@ -15,6 +16,8 @@ use function Laravel\Prompts\spin;
 #[AsCommand(name: 'coolify:deploy')]
 class DeployCommand extends Command
 {
+    use StreamsDeploymentLogs;
+
     /**
      * The name and signature of the console command.
      *
@@ -24,7 +27,8 @@ class DeployCommand extends Command
                             {--uuid= : Application UUID (defaults to config)}
                             {--tag= : Deploy a specific git tag}
                             {--force : Force deployment without confirmation}
-                            {--wait : Wait for deployment to complete}';
+                            {--wait : Wait for deployment to complete and stream logs}
+                            {--debug : Show debug/build logs (enabled by default with --wait)}';
 
     /**
      * The console command description.
@@ -95,7 +99,10 @@ class DeployCommand extends Command
                 $this->components->twoColumnDetail('Deployment UUID', $deploymentUuid);
 
                 if ($this->option('wait')) {
-                    return $this->waitForDeployment($deployments, $deploymentUuid);
+                    // Debug is enabled by default with --wait (that's where the interesting stuff is)
+                    $showDebug = $this->option('debug') !== false;
+
+                    return $this->streamDeploymentLogs($deployments, $deploymentUuid, $showDebug);
                 }
 
                 $this->newLine();
@@ -109,62 +116,6 @@ class DeployCommand extends Command
 
             return self::FAILURE;
         }
-
-        return self::SUCCESS;
-    }
-
-    /**
-     * Wait for a deployment to complete.
-     */
-    protected function waitForDeployment(DeploymentRepository $deployments, string $uuid): int
-    {
-        $this->newLine();
-        $this->components->info('Waiting for deployment to complete...');
-
-        $maxAttempts = 120; // 10 minutes with 5 second intervals
-        $attempts = 0;
-
-        while ($attempts < $maxAttempts) {
-            try {
-                $deployment = $deployments->get($uuid);
-                $status = strtolower($deployment['status'] ?? 'unknown');
-
-                if ($status === 'finished' || $status === 'success') {
-                    $this->newLine();
-                    $this->components->info('Deployment completed successfully!');
-
-                    return self::SUCCESS;
-                }
-
-                if ($status === 'failed' || $status === 'error') {
-                    $this->newLine();
-                    $this->components->error('Deployment failed.');
-
-                    return self::FAILURE;
-                }
-
-                if ($status === 'cancelled') {
-                    $this->newLine();
-                    $this->components->warn('Deployment was cancelled.');
-
-                    return self::FAILURE;
-                }
-
-                // Still in progress
-                $this->output->write('.');
-
-            } catch (CoolifyApiException $e) {
-                $this->components->error("Failed to check deployment status: {$e->getMessage()}");
-
-                return self::FAILURE;
-            }
-
-            sleep(5);
-            $attempts++;
-        }
-
-        $this->newLine();
-        $this->components->warn('Timed out waiting for deployment. It may still be in progress.');
 
         return self::SUCCESS;
     }

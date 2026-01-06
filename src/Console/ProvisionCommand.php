@@ -6,8 +6,10 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Stumason\Coolify\Console\Concerns\StreamsDeploymentLogs;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
+use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\GitHubAppRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\SecurityKeyRepository;
@@ -27,6 +29,8 @@ use function Laravel\Prompts\warning;
 #[AsCommand(name: 'coolify:provision')]
 class ProvisionCommand extends Command
 {
+    use StreamsDeploymentLogs;
+
     protected $signature = 'coolify:provision
                             {--name= : Application name}
                             {--domain= : Application domain}
@@ -40,6 +44,7 @@ class ProvisionCommand extends Command
                             {--with-dragonfly : Create Dragonfly (Redis) instance}
                             {--with-redis : Create Redis instance}
                             {--all : Create app with Postgres and Dragonfly}
+                            {--deploy : Trigger first deployment after provisioning}
                             {--force : Skip confirmations}';
 
     protected $description = 'Provision a complete Laravel application stack on Coolify';
@@ -85,7 +90,8 @@ class ProvisionCommand extends Command
         ApplicationRepository $applications,
         DatabaseRepository $databases,
         SecurityKeyRepository $securityKeys,
-        GitHubAppRepository $githubApps
+        GitHubAppRepository $githubApps,
+        DeploymentRepository $deployments
     ): int {
         if (! $client->isConfigured()) {
             $this->components->error('Coolify is not configured. Please set COOLIFY_URL and COOLIFY_TOKEN in your .env file.');
@@ -102,6 +108,13 @@ class ProvisionCommand extends Command
         $this->newLine();
         $this->components->info('Provisioning Laravel Stack on Coolify');
         $this->newLine();
+
+        // ─────────────────────────────────────────────────────────────────
+        // PRE-FLIGHT CHECKS
+        // ─────────────────────────────────────────────────────────────────
+        if (! $this->runPreflightChecks()) {
+            return self::FAILURE;
+        }
 
         try {
             // ─────────────────────────────────────────────────────────────────
@@ -383,14 +396,50 @@ class ProvisionCommand extends Command
             }
 
             // ─────────────────────────────────────────────────────────────────
-            // NEXT STEPS
+            // WEBHOOK URL
             // ─────────────────────────────────────────────────────────────────
-            $this->line('  <fg=yellow;options=bold>NEXT STEPS:</>');
             $this->newLine();
-            $this->line('  <fg=white>1.</> Add the deploy key to GitHub (link above)');
-            $this->line('  <fg=white>2.</> Run <fg=cyan>composer run dev</> to start your local server');
-            $this->line('  <fg=white>3.</> Visit <fg=cyan>http://localhost:8000/coolify</> to copy the key and view webhook setup');
-            $this->line('  <fg=white>4.</> Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
+            $this->line('  <fg=yellow;options=bold>GITHUB WEBHOOK (for automatic deploys):</>');
+            $coolifyUrl = rtrim(config('coolify.url'), '/');
+            $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events";
+            $this->newLine();
+            $this->line("  <fg=cyan>{$webhookUrl}</>");
+            $this->newLine();
+            $this->line('  <fg=gray>Add this to GitHub → Settings → Webhooks</>');
+            $this->line('  <fg=gray>Content-type: application/json, Events: Push</>');
+
+            // ─────────────────────────────────────────────────────────────────
+            // DEPLOY OR NEXT STEPS
+            // ─────────────────────────────────────────────────────────────────
+            if ($this->option('deploy')) {
+                $this->newLine();
+                $this->line('  <fg=yellow;options=bold>FIRST DEPLOYMENT</>');
+                $this->newLine();
+
+                $result = spin(
+                    callback: fn () => $deployments->trigger($appUuid),
+                    message: 'Triggering deployment...'
+                );
+
+                $deploymentUuid = $result['deployment_uuid'] ?? $result['uuid'] ?? null;
+
+                if ($deploymentUuid) {
+                    // Stream logs with debug enabled (that's where the interesting stuff is)
+                    return $this->streamDeploymentLogs($deployments, $deploymentUuid, showDebug: true);
+                } else {
+                    $this->components->warn('Could not get deployment UUID. Check Coolify dashboard for status.');
+                }
+            } else {
+                $this->newLine();
+                $this->line('  <fg=yellow;options=bold>NEXT STEPS:</>');
+                $this->newLine();
+                $this->line('  <fg=white>1.</> Add the deploy key to GitHub (link above)');
+                $this->line('  <fg=white>2.</> Run <fg=cyan>composer run dev</> to start your local server');
+                $this->line('  <fg=white>3.</> Visit <fg=cyan>http://localhost:8000/coolify</> to copy the key and view webhook setup');
+                $this->line('  <fg=white>4.</> Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
+                $this->newLine();
+                $this->line('  <fg=gray>Or run with --deploy flag to deploy automatically</>');
+            }
             $this->newLine();
 
         } catch (CoolifyApiException $exception) {
@@ -1210,5 +1259,135 @@ class ProvisionCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * Run pre-flight checks before provisioning.
+     */
+    protected function runPreflightChecks(): bool
+    {
+        $this->line('  <fg=cyan;options=bold>PRE-FLIGHT CHECKS</>');
+        $this->newLine();
+
+        $allPassed = true;
+
+        // Check 1: Git repository exists
+        $gitCheck = $this->checkGitRepository();
+        if ($gitCheck === false) {
+            $allPassed = false;
+        }
+
+        // Check 2: nixpacks.toml exists
+        $nixpacksCheck = $this->checkNixpacksToml();
+        if ($nixpacksCheck === false) {
+            $allPassed = false;
+        }
+
+        $this->newLine();
+
+        return $allPassed;
+    }
+
+    /**
+     * Check if a git repository exists and has a remote.
+     */
+    protected function checkGitRepository(): bool
+    {
+        // Check if .git directory exists
+        if (! File::isDirectory(base_path('.git'))) {
+            $this->line('    <fg=red>[✗]</> Git repository not found');
+            $this->newLine();
+            $this->line('        <fg=yellow>This project needs to be a git repository on GitHub.</>');
+            $this->newLine();
+            $this->line('        <fg=white>To create one:</>');
+            $this->line('        <fg=gray>1.</> git init');
+            $this->line('        <fg=gray>2.</> git add .');
+            $this->line('        <fg=gray>3.</> git commit -m "Initial commit"');
+            $this->line('        <fg=gray>4.</> gh repo create --private --source=. --push');
+            $this->newLine();
+
+            return false;
+        }
+
+        // Check if remote origin exists
+        $result = Process::run('git remote get-url origin 2>/dev/null');
+
+        if (! $result->successful() || empty(trim($result->output()))) {
+            $this->line('    <fg=red>[✗]</> No GitHub remote found');
+            $this->newLine();
+            $this->line('        <fg=yellow>This project needs a GitHub remote to deploy.</>');
+            $this->newLine();
+            $this->line('        <fg=white>To create one:</>');
+            $this->line('        <fg=gray>gh repo create --private --source=. --push</>');
+            $this->newLine();
+
+            return false;
+        }
+
+        $remoteUrl = trim($result->output());
+
+        // Check if it's a GitHub URL
+        if (! str_contains($remoteUrl, 'github.com')) {
+            $this->line('    <fg=yellow>[!]</> Remote is not GitHub: '.$remoteUrl);
+            $this->newLine();
+            $this->line('        <fg=gray>Coolify works best with GitHub repositories.</>');
+            $this->newLine();
+
+            // Don't fail, just warn - might work with other git hosts
+            return true;
+        }
+
+        $this->line('    <fg=green>[✓]</> Git repository: '.$this->extractRepoName($remoteUrl));
+
+        return true;
+    }
+
+    /**
+     * Extract repository name from git URL.
+     */
+    protected function extractRepoName(string $url): string
+    {
+        // Handle SSH format: git@github.com:owner/repo.git
+        if (preg_match('/github\.com[:\\/]([^\\/]+\\/[^\\/]+?)(?:\.git)?$/', $url, $matches)) {
+            return $matches[1];
+        }
+
+        return $url;
+    }
+
+    /**
+     * Check if nixpacks.toml exists.
+     */
+    protected function checkNixpacksToml(): bool
+    {
+        $nixpacksPath = base_path('nixpacks.toml');
+
+        if (! File::exists($nixpacksPath)) {
+            $this->line('    <fg=yellow>[!]</> nixpacks.toml not found');
+            $this->newLine();
+            $this->line('        <fg=gray>Run:</> php artisan coolify:install');
+            $this->line('        <fg=gray>This will generate an optimized nixpacks.toml for your Laravel app.</>');
+            $this->newLine();
+
+            if (! $this->option('force') && ! $this->option('no-interaction')) {
+                if (confirm('Would you like to generate nixpacks.toml now?', true)) {
+                    $this->call('coolify:install', ['--force' => true]);
+                    $this->newLine();
+
+                    if (File::exists($nixpacksPath)) {
+                        $this->line('    <fg=green>[✓]</> nixpacks.toml generated');
+
+                        return true;
+                    }
+                }
+            }
+
+            // Warn but don't fail - Coolify can build without nixpacks.toml
+            return true;
+        }
+
+        $this->line('    <fg=green>[✓]</> nixpacks.toml found');
+
+        return true;
     }
 }
