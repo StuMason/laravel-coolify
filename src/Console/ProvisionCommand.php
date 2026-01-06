@@ -735,16 +735,21 @@ class ProvisionCommand extends Command
                         return [$fullName => $fullName];
                     })->toArray();
 
-                    // Pre-fill with current repo if it exists in the list
-                    $default = ($currentRepo && isset($repoChoices[$currentRepo])) ? $currentRepo : '';
-
+                    // If current repo exists in the list, show it first when search is empty
                     $selected = search(
                         label: 'Search and select repository:',
-                        options: fn (string $value) => collect($repoChoices)
-                            ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)))
-                            ->toArray(),
-                        placeholder: $currentRepo ? "Current: {$currentRepo}" : 'Type to search...',
-                        default: $default
+                        options: function (string $value) use ($repoChoices, $currentRepo) {
+                            $filtered = collect($repoChoices)
+                                ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)));
+
+                            // If no search value and current repo exists, put it first
+                            if (empty($value) && $currentRepo && isset($repoChoices[$currentRepo])) {
+                                $filtered = $filtered->sortBy(fn ($name) => $name === $currentRepo ? 0 : 1);
+                            }
+
+                            return $filtered->toArray();
+                        },
+                        placeholder: $currentRepo ? "Current: {$currentRepo} (press Enter)" : 'Type to search...',
                     );
 
                     if ($selected) {
