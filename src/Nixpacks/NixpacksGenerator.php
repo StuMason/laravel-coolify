@@ -137,7 +137,11 @@ TOML;
         $lines[] = "onlyIncludeFiles = [\"{$filesStr}\"]";
 
         // Cache directories for faster rebuilds
-        $lines[] = 'cacheDirectories = ["vendor", "/root/.composer/cache"]';
+        $cacheDirectories = ['"vendor"', '"/root/.composer/cache"'];
+        if ($this->hasNodeDependencies()) {
+            $cacheDirectories[] = '"node_modules"';
+        }
+        $lines[] = 'cacheDirectories = ['.implode(', ', $cacheDirectories).']';
 
         $lines[] = 'cmds = [';
         $lines[] = '    "composer install --no-dev --optimize-autoloader --no-scripts",';
@@ -183,13 +187,8 @@ TOML;
             $lines[] = '    "npm run build",';
         }
 
-        // Laravel optimizations - clear first, then cache
-        $lines[] = '    "php artisan config:clear",';
-        $lines[] = '    "php artisan route:clear",';
-        $lines[] = '    "php artisan view:clear",';
-        $lines[] = '    "php artisan config:cache",';
-        $lines[] = '    "php artisan route:cache",';
-        $lines[] = '    "php artisan view:cache",';
+        // Laravel optimization - handles config, route, view, and event caching
+        $lines[] = '    "php artisan optimize",';
         $lines[] = ']';
         $lines[] = '';
 
@@ -369,7 +368,7 @@ TOML;
         $template = <<<NGINX
 "nginx.template.conf" = '''
 user www-data www-data;
-worker_processes 5;
+worker_processes auto;
 daemon off;
 
 worker_rlimit_nofile 8192;
