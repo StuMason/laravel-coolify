@@ -709,6 +709,9 @@ class ProvisionCommand extends Command
             ];
         }
 
+        // Get current repo from git remote to use as default
+        $currentRepo = $this->getCurrentGitRepo();
+
         // Try to fetch repos from GitHub App if available
         if ($githubApp) {
             try {
@@ -732,12 +735,16 @@ class ProvisionCommand extends Command
                         return [$fullName => $fullName];
                     })->toArray();
 
+                    // Pre-fill with current repo if it exists in the list
+                    $default = ($currentRepo && isset($repoChoices[$currentRepo])) ? $currentRepo : '';
+
                     $selected = search(
                         label: 'Search and select repository:',
                         options: fn (string $value) => collect($repoChoices)
                             ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)))
                             ->toArray(),
-                        placeholder: 'Type to search...'
+                        placeholder: $currentRepo ? "Current: {$currentRepo}" : 'Type to search...',
+                        default: $default
                     );
 
                     if ($selected) {
@@ -760,6 +767,7 @@ class ProvisionCommand extends Command
         $repo = text(
             label: 'Enter repository (owner/repo)',
             placeholder: 'e.g. StuMason/my-laravel-app',
+            default: $currentRepo ?? '',
             required: true,
             validate: fn (string $value) => str_contains($value, '/')
                 ? null
@@ -773,6 +781,27 @@ class ProvisionCommand extends Command
             'repo' => $repoName,
             'full_name' => $repo,
         ];
+    }
+
+    /**
+     * Get the current repository from git remote origin.
+     */
+    protected function getCurrentGitRepo(): ?string
+    {
+        $result = Process::run('git remote get-url origin 2>/dev/null');
+
+        if (! $result->successful() || empty(trim($result->output()))) {
+            return null;
+        }
+
+        $remoteUrl = trim($result->output());
+
+        // Only return if it's a GitHub URL
+        if (! str_contains($remoteUrl, 'github.com')) {
+            return null;
+        }
+
+        return $this->extractRepoName($remoteUrl);
     }
 
     /**
