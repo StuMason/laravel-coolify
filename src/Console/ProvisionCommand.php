@@ -20,6 +20,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\note;
+use function Laravel\Prompts\pause;
 use function Laravel\Prompts\search;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\spin;
@@ -396,20 +397,23 @@ class ProvisionCommand extends Command
             $this->line('  <fg=gray>Database credentials set on Coolify application</>');
 
             // ─────────────────────────────────────────────────────────────────
-            // DEPLOY KEY SETUP
+            // DEPLOY KEY SETUP (with confirmation)
             // ─────────────────────────────────────────────────────────────────
             $this->newLine();
-            $this->line('  <fg=yellow;options=bold>IMPORTANT: Add Deploy Key to GitHub</>');
+            $this->line('  <fg=yellow;options=bold>╔══════════════════════════════════════════════════════════════╗</>');
+            $this->line('  <fg=yellow;options=bold>║  REQUIRED: Add Deploy Key to GitHub                         ║</>');
+            $this->line('  <fg=yellow;options=bold>╚══════════════════════════════════════════════════════════════╝</>');
             $this->newLine();
 
             // Fetch and display the public key
             $publicKey = $deployKey['public_key'] ?? null;
             if ($publicKey) {
-                $this->line('  <fg=white>1. Go to:</> <fg=cyan>https://github.com/'.$repoInfo['full_name'].'/settings/keys</>');
-                $this->line('  <fg=white>2. Click "Add deploy key"</>');
-                $this->line('  <fg=white>3. Add this public key:</>');
+                $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/keys</>');
+                $this->line('  <fg=white>2.</> Click "<fg=green>Add deploy key</>"');
+                $this->line('  <fg=white>3.</> Title: <fg=gray>'.$appName.'-deploy-key</>');
+                $this->line('  <fg=white>4.</> Paste this public key:');
                 $this->newLine();
-                $this->line("  <fg=gray>{$publicKey}</>");
+                $this->line("  <fg=white;bg=gray> {$publicKey} </>");
                 $this->newLine();
             } else {
                 $this->line("  <fg=white>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
@@ -417,18 +421,32 @@ class ProvisionCommand extends Command
                 $this->newLine();
             }
 
+            // Wait for user to confirm they've added the deploy key
+            if (! $this->option('no-interaction')) {
+                pause('Press ENTER once you have added the deploy key to GitHub...');
+            }
+
             // ─────────────────────────────────────────────────────────────────
-            // WEBHOOK URL
+            // WEBHOOK URL (optional, with confirmation)
             // ─────────────────────────────────────────────────────────────────
             $this->newLine();
-            $this->line('  <fg=yellow;options=bold>GITHUB WEBHOOK (for automatic deploys):</>');
+            $this->line('  <fg=cyan;options=bold>OPTIONAL: GitHub Webhook (for automatic deploys)</>');
+            $this->newLine();
             $coolifyUrl = rtrim(config('coolify.url'), '/');
             $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events";
+            $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/hooks</>');
+            $this->line('  <fg=white>2.</> Click "<fg=green>Add webhook</>"');
+            $this->line('  <fg=white>3.</> Payload URL: <fg=gray>'.$webhookUrl.'</>');
+            $this->line('  <fg=white>4.</> Content type: <fg=gray>application/json</>');
+            $this->line('  <fg=white>5.</> Events: <fg=gray>Just the push event</>');
             $this->newLine();
-            $this->line("  <fg=cyan>{$webhookUrl}</>");
-            $this->newLine();
-            $this->line('  <fg=gray>Add this to GitHub → Settings → Webhooks</>');
-            $this->line('  <fg=gray>Content-type: application/json, Events: Push</>');
+
+            if (! $this->option('no-interaction')) {
+                $skipWebhook = ! confirm('Have you set up the webhook? (or skip for now)', default: false);
+                if ($skipWebhook) {
+                    $this->line('  <fg=gray>Skipped webhook setup - you can add it later for auto-deploys</>');
+                }
+            }
 
             // ─────────────────────────────────────────────────────────────────
             // DEPLOY OR NEXT STEPS
