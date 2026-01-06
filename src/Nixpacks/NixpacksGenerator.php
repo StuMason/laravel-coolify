@@ -128,14 +128,14 @@ TOML;
         $lines = ['[phases.install]'];
 
         // Cache composer's global cache for faster downloads
-        // Note: vendor dir uses Docker mount cache but runs AFTER COPY in postbuild
         $lines[] = 'cacheDirectories = ["/root/.composer/cache"]';
 
-        // Install phase only runs npm (if needed) since it happens BEFORE COPY
-        // Composer runs in postbuild AFTER COPY so vendor persists in final image
+        // Install phase runs npm ci to install node_modules (happens BEFORE COPY)
+        // npm run build is deferred to postbuild because plugins like @laravel/vite-plugin-wayfinder
+        // need the vendor directory (which is installed via composer in postbuild)
         if ($this->hasNodeDependencies()) {
             $lines[] = 'cmds = [';
-            $lines[] = '    "npm ci && npm run build",';
+            $lines[] = '    "npm ci",';
             $lines[] = ']';
         } else {
             $lines[] = 'cmds = []';
@@ -173,9 +173,12 @@ TOML;
         $lines[] = 'dependsOn = ["build"]';
 
         // postbuild runs AFTER `COPY . /app` so vendor will persist in final image
-        // This is where we run composer install and artisan optimize
+        // Order matters: composer first (for autoloader), then npm build (needs vendor for wayfinder), then optimize
         $lines[] = 'cmds = [';
         $lines[] = '    "composer install --no-dev --optimize-autoloader",';
+        if ($this->hasNodeDependencies()) {
+            $lines[] = '    "npm run build",';
+        }
         $lines[] = '    "php artisan optimize",';
         $lines[] = ']';
         $lines[] = '';

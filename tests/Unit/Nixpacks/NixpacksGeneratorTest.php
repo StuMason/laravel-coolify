@@ -86,6 +86,7 @@ describe('NixpacksGenerator', function () {
 
         $content = $generator->generate();
 
+        // npm ci runs in install phase, npm run build in postbuild (needs vendor for wayfinder)
         expect($content)->toContain('npm ci');
         expect($content)->toContain('npm run build');
         expect($content)->toContain('nodejs_22');
@@ -482,7 +483,7 @@ describe('NixpacksGenerator node dependencies', function () {
         expect($content)->not->toContain('nodejs');
     });
 
-    it('combines npm ci and npm run build in single command when package.json exists', function () {
+    it('separates npm ci and npm run build into different phases when package.json exists', function () {
         File::put(base_path('package.json'), '{}');
 
         $generator = new NixpacksGenerator;
@@ -490,9 +491,12 @@ describe('NixpacksGenerator node dependencies', function () {
 
         $content = $generator->generate();
 
-        // npm ci and npm run build must be in same command so node_modules persists
-        // (Docker mount caching is ephemeral - only available during each RUN command)
-        expect($content)->toContain('npm ci && npm run build');
+        // npm ci runs in install phase (before COPY)
+        // npm run build runs in postbuild phase (after composer, needs vendor for wayfinder plugin)
+        expect($content)->toContain('[phases.install]');
+        expect($content)->toContain('"npm ci"');
+        expect($content)->toContain('[phases.postbuild]');
+        expect($content)->toContain('"npm run build"');
 
         File::delete(base_path('package.json'));
     });
