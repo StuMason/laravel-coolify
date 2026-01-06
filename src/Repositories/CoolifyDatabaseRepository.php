@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Repositories;
 
 use Stumason\Coolify\Contracts\DatabaseRepository;
@@ -12,7 +14,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +22,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +30,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createPostgres(array $data): array
     {
@@ -36,7 +38,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createMysql(array $data): array
     {
@@ -44,7 +46,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createMariadb(array $data): array
     {
@@ -52,7 +54,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createRedis(array $data): array
     {
@@ -60,7 +62,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createDragonfly(array $data): array
     {
@@ -68,7 +70,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createMongodb(array $data): array
     {
@@ -76,7 +78,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function update(string $uuid, array $data): array
     {
@@ -84,7 +86,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function delete(string $uuid): bool
     {
@@ -94,7 +96,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function start(string $uuid): array
     {
@@ -102,7 +104,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function stop(string $uuid): array
     {
@@ -110,7 +112,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function restart(string $uuid): array
     {
@@ -118,7 +120,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function backup(string $uuid): array
     {
@@ -126,7 +128,7 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function backups(string $uuid): array
     {

@@ -91,7 +91,7 @@ class DeployCommand extends Command
             $deploymentUuid = $result['deployment_uuid'] ?? $result['uuid'] ?? null;
 
             if ($deploymentUuid) {
-                $this->components->info("Deployment triggered successfully!");
+                $this->components->info('Deployment triggered successfully!');
                 $this->components->twoColumnDetail('Deployment UUID', $deploymentUuid);
 
                 if ($this->option('wait')) {

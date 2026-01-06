@@ -1,17 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Stumason\Coolify\Nixpacks\NixpacksGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\warning;
 
-#[AsCommand(name: 'coolify-dashboard:install')]
+#[AsCommand(name: 'coolify:install')]
 class InstallCommand extends Command
 {
     /**
@@ -19,35 +22,52 @@ class InstallCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'coolify-dashboard:install';
+    protected $signature = 'coolify:install
+                            {--force : Overwrite existing files}
+                            {--no-nixpacks : Skip nixpacks.toml generation}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Install the Coolify dashboard for managing deployments';
+    protected $description = 'Install Laravel Coolify: publish config and generate nixpacks.toml';
 
     /**
      * Execute the console command.
      */
     public function handle(): int
     {
-        info('Installing Coolify Dashboard...');
+        info('Installing Laravel Coolify...');
+        $this->newLine();
 
+        // Publish config and service provider
         collect([
-            'Service Provider' => fn () => $this->callSilent('vendor:publish', ['--tag' => 'coolify-provider']) == 0,
-            'Configuration' => fn () => $this->callSilent('vendor:publish', ['--tag' => 'coolify-config']) == 0,
+            'Service Provider' => fn () => $this->callSilent('vendor:publish', [
+                '--tag' => 'coolify-provider',
+                '--force' => $this->option('force'),
+            ]) == 0,
+            'Configuration' => fn () => $this->callSilent('vendor:publish', [
+                '--tag' => 'coolify-config',
+                '--force' => $this->option('force'),
+            ]) == 0,
         ])->each(fn ($task, $description) => $this->components->task($description, $task));
 
         $this->registerCoolifyServiceProvider();
 
-        info('Coolify Dashboard installed successfully.');
+        // Generate nixpacks.toml
+        if (! $this->option('no-nixpacks')) {
+            $this->newLine();
+            $this->generateNixpacks();
+        }
+
+        // Summary
+        $this->newLine();
+        info('Laravel Coolify installed successfully!');
         $this->newLine();
 
         // Check if .env is configured
         if ($this->isConfigured()) {
-            // Just run the status check automatically, no need to ask
             $this->call('coolify:status', ['--all' => true]);
             $this->newLine();
             info('Run `php artisan coolify:provision` to set up your infrastructure.');
@@ -67,6 +87,67 @@ class InstallCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Generate nixpacks.toml based on detected packages.
+     */
+    protected function generateNixpacks(): void
+    {
+        $generator = new NixpacksGenerator;
+
+        // Handle existing file - early returns reduce nesting
+        if ($generator->exists() && ! $this->option('force')) {
+            if ($this->option('no-interaction')) {
+                warning('nixpacks.toml already exists. Use --force to overwrite.');
+
+                return;
+            }
+
+            if (! confirm(label: 'nixpacks.toml already exists. Overwrite?', default: false)) {
+                warning('Skipping nixpacks.toml generation.');
+
+                return;
+            }
+        }
+
+        $this->line('  <fg=cyan>Generating nixpacks.toml...</>');
+        $this->newLine();
+
+        // Run detection
+        $detected = $generator->detect();
+
+        if (empty($detected)) {
+            $this->line('  No additional packages detected (base Laravel app).');
+        } else {
+            $this->line('  <fg=green>Detected packages:</>');
+            foreach ($detected as $detector) {
+                $this->line("    <fg=white>✓</> {$detector->name()}");
+            }
+        }
+
+        $this->newLine();
+
+        // Generate and write
+        $path = $generator->write();
+        $summary = $generator->getSummary();
+
+        $this->line('  <fg=green>Generated nixpacks.toml with:</>');
+
+        foreach ($summary['processes'] as $name => $command) {
+            $this->line("    <fg=white>•</> {$name}: <fg=gray>{$command}</>");
+        }
+
+        if (! empty($summary['nix_packages'])) {
+            $this->newLine();
+            $this->line('  <fg=green>Nix packages:</>');
+            foreach ($summary['nix_packages'] as $package) {
+                $this->line("    <fg=white>•</> {$package}");
+            }
+        }
+
+        $this->newLine();
+        $this->components->task('nixpacks.toml', fn () => true);
     }
 
     /**
@@ -103,10 +184,13 @@ class InstallCommand extends Command
             ));
         }
 
-        file_put_contents(app_path('Providers/CoolifyServiceProvider.php'), str_replace(
-            'namespace App\Providers;',
-            "namespace {$namespace}\Providers;",
-            file_get_contents(app_path('Providers/CoolifyServiceProvider.php'))
-        ));
+        $providerPath = app_path('Providers/CoolifyServiceProvider.php');
+        if (file_exists($providerPath)) {
+            file_put_contents($providerPath, str_replace(
+                'namespace App\Providers;',
+                "namespace {$namespace}\Providers;",
+                file_get_contents($providerPath)
+            ));
+        }
     }
 }

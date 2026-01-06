@@ -1,12 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Stumason\Coolify\Coolify;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
+use Stumason\Coolify\Coolify;
 
 beforeEach(function () {
     Http::preventStrayRequests();

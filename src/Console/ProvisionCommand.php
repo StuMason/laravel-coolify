@@ -17,7 +17,6 @@ use Stumason\Coolify\Exceptions\CoolifyApiException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
 use function Laravel\Prompts\search;
 use function Laravel\Prompts\select;
@@ -1082,7 +1081,7 @@ class ProvisionCommand extends Command
             $this->line('    Overriding VITE_REVERB_HOST/PORT/SCHEME for production');
         }
 
-        $this->line("    Setting <fg=white>".count($envVars)."</> environment variables...");
+        $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
         spin(
             callback: function () use ($applications, $appUuid, $envVars): void {
@@ -1101,7 +1100,7 @@ class ProvisionCommand extends Command
      * Resolves variable interpolation like ${APP_NAME} to actual values.
      *
      * @param  array<string>  $prefixes  Array of prefixes to match (e.g., ['REVERB_', 'VITE_'])
-     * @return array<string, string>  Key-value pairs of matching env vars with resolved values
+     * @return array<string, string> Key-value pairs of matching env vars with resolved values
      */
     protected function getLocalEnvVars(array $prefixes): array
     {

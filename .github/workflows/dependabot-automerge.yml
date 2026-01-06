@@ -1,0 +1,81 @@
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: ["Tests", "Lint"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PHP 8.3 tests
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-php83
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "test (8.3, 12.*)"
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 600
+          intervalSeconds: 30
+
+      - name: Wait for PHP 8.4 tests
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-php84
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "test (8.4, 12.*)"
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 600
+          intervalSeconds: 30
+
+      - name: Wait for lint
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-lint
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "lint"
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 600
+          intervalSeconds: 30
+
+      - name: Auto-merge minor/patch updates
+        if: |
+          steps.wait-for-php83.outputs.conclusion == 'success' &&
+          steps.wait-for-php84.outputs.conclusion == 'success' &&
+          steps.wait-for-lint.outputs.conclusion == 'success' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge security updates
+        if: |
+          steps.wait-for-php83.outputs.conclusion == 'success' &&
+          steps.wait-for-php84.outputs.conclusion == 'success' &&
+          steps.wait-for-lint.outputs.conclusion == 'success' &&
+          steps.metadata.outputs.dependency-type == 'direct:production' &&
+          steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          # Only auto-merge major security updates
+          if [[ "${{ steps.metadata.outputs.ghsa }}" != "" ]]; then
+            gh pr merge --auto --squash "$PR_URL"
+          fi
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Repositories;
 
 use Stumason\Coolify\Contracts\ApplicationRepository;
@@ -12,7 +14,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +22,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +30,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createPublic(array $data): array
     {
@@ -36,7 +38,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createPrivateGithubApp(array $data): array
     {
@@ -45,7 +47,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createPrivateDeployKey(array $data): array
     {
@@ -53,7 +55,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createDockerfile(array $data): array
     {
@@ -61,7 +63,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createDockerImage(array $data): array
     {
@@ -69,7 +71,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createDockerCompose(array $data): array
     {
@@ -77,7 +79,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function update(string $uuid, array $data): array
     {
@@ -85,7 +87,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function delete(string $uuid): bool
     {
@@ -95,7 +97,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function deploy(string $uuid): array
     {
@@ -115,7 +117,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function start(string $uuid): array
     {
@@ -123,7 +125,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function stop(string $uuid): array
     {
@@ -131,7 +133,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function restart(string $uuid): array
     {
@@ -139,7 +141,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function logs(string $uuid, int $lines = 100): array
     {
@@ -149,7 +151,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function envs(string $uuid): array
     {
@@ -157,7 +159,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function createEnv(string $uuid, array $env): array
     {
@@ -165,7 +167,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function updateEnv(string $uuid, array $env): array
     {
@@ -173,7 +175,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function deleteEnv(string $uuid, string $envUuid): bool
     {

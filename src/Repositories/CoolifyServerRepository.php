@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Repositories;
 
 use Stumason\Coolify\Contracts\ServerRepository;
@@ -12,7 +14,7 @@ class CoolifyServerRepository implements ServerRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +22,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +30,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function create(array $data): array
     {
@@ -36,7 +38,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function update(string $uuid, array $data): array
     {
@@ -44,7 +46,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function delete(string $uuid): bool
     {
@@ -54,7 +56,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function resources(string $uuid): array
     {
@@ -62,7 +64,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function domains(string $uuid): array
     {
@@ -70,7 +72,7 @@ class CoolifyServerRepository implements ServerRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function validate(string $uuid): array
     {

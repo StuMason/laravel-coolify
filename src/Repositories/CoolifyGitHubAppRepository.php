@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Repositories;
 
 use Stumason\Coolify\Contracts\GitHubAppRepository;
@@ -12,7 +14,7 @@ class CoolifyGitHubAppRepository implements GitHubAppRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -20,7 +22,7 @@ class CoolifyGitHubAppRepository implements GitHubAppRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function get(string $uuid): array
     {
@@ -28,7 +30,7 @@ class CoolifyGitHubAppRepository implements GitHubAppRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function repositories(int|string $id): array
     {
@@ -36,7 +38,7 @@ class CoolifyGitHubAppRepository implements GitHubAppRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function branches(int|string $id, string $owner, string $repo): array
     {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Repositories;
 
 use Stumason\Coolify\Contracts\TeamRepository;
@@ -12,7 +14,7 @@ class CoolifyTeamRepository implements TeamRepository
     ) {}
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function all(): array
     {
@@ -30,7 +32,7 @@ class CoolifyTeamRepository implements TeamRepository
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function members(): array
     {
