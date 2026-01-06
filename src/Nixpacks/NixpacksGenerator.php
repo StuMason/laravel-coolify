@@ -6,7 +6,6 @@ namespace Stumason\Coolify\Nixpacks;
 
 use Illuminate\Support\Facades\File;
 use Stumason\Coolify\Nixpacks\Detectors\HorizonDetector;
-use Stumason\Coolify\Nixpacks\Detectors\OctaneDetector;
 use Stumason\Coolify\Nixpacks\Detectors\PackageDetector;
 use Stumason\Coolify\Nixpacks\Detectors\ReverbDetector;
 use Stumason\Coolify\Nixpacks\Detectors\SchedulerDetector;
@@ -25,7 +24,6 @@ class NixpacksGenerator
             new HorizonDetector,
             new ReverbDetector,
             new SchedulerDetector,
-            new OctaneDetector,
         ];
     }
 
@@ -55,20 +53,6 @@ class NixpacksGenerator
     public function getDetected(): array
     {
         return $this->detected;
-    }
-
-    /**
-     * Check if a specific package type is detected.
-     */
-    public function hasOctane(): bool
-    {
-        foreach ($this->detected as $detector) {
-            if ($detector instanceof OctaneDetector) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -160,16 +144,10 @@ class NixpacksGenerator
     }
 
     /**
-     * Get the web server command (php-fpm or Octane).
+     * Get the web server command.
      */
     protected function getWebCommand(): string
     {
-        foreach ($this->detected as $detector) {
-            if ($detector instanceof OctaneDetector) {
-                return $detector->getWebCommand();
-            }
-        }
-
         return 'php-fpm';
     }
 

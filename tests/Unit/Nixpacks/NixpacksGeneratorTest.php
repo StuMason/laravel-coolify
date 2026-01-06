@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
 use Stumason\Coolify\Nixpacks\Detectors\HorizonDetector;
-use Stumason\Coolify\Nixpacks\Detectors\OctaneDetector;
 use Stumason\Coolify\Nixpacks\Detectors\ReverbDetector;
 use Stumason\Coolify\Nixpacks\Detectors\SchedulerDetector;
 use Stumason\Coolify\Nixpacks\NixpacksGenerator;
@@ -158,30 +157,5 @@ describe('SchedulerDetector', function () {
         expect($detector->getProcesses())->toBe([
             'scheduler' => 'php artisan schedule:work',
         ]);
-    });
-});
-
-describe('OctaneDetector', function () {
-    it('returns correct name', function () {
-        $detector = new OctaneDetector;
-
-        expect($detector->name())->toBe('Laravel Octane');
-    });
-
-    it('returns empty processes (web is handled separately)', function () {
-        $detector = new OctaneDetector;
-
-        expect($detector->getProcesses())->toBe([]);
-    });
-
-    it('returns octane start command', function () {
-        $detector = new OctaneDetector;
-
-        // Default is swoole when config is not set
-        $command = $detector->getWebCommand();
-
-        expect($command)->toContain('php artisan octane:start');
-        expect($command)->toContain('--host=0.0.0.0');
-        expect($command)->toContain('--port=8000');
     });
 });
