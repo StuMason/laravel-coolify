@@ -153,9 +153,9 @@ TOML;
         $lines[] = 'dependsOn = ["install"]';
         $lines[] = 'cmds = [';
         $lines[] = '    # Create required directories';
-        $lines[] = '    "mkdir -p /var/log /app/storage/framework/{views,cache,sessions} /app/bootstrap/cache /etc/supervisor/conf.d",';
+        $lines[] = '    "mkdir -p /var/log/nginx /app/storage/framework/{views,cache,sessions} /app/bootstrap/cache /etc/supervisor/conf.d",';
         $lines[] = '';
-        $lines[] = '    # Set permissions';
+        $lines[] = '    # Set permissions (ignore errors - www-data may not exist in container)';
         $lines[] = '    "chown -R www-data:www-data /var/log /app/storage /app/bootstrap/cache 2>/dev/null || true",';
         $lines[] = '';
         $lines[] = '    # Allow nginx to bind to privileged ports (80) without running as root';
@@ -360,9 +360,9 @@ TOML;
         $extraLocationStr = implode("\n\n", $extraLocations);
 
         // Use nowdoc for the template since it contains special characters
+        // Note: No 'user' directive - nixpacks containers don't have www-data user
         $template = <<<NGINX
 "nginx.template.conf" = '''
-user www-data www-data;
 worker_processes auto;
 daemon off;
 
