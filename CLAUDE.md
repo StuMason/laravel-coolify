@@ -80,3 +80,33 @@ All HTTP calls are mocked using `Http::fake()`.
 2. **Service Bindings** - Defined in `ServiceBindings` trait, bound in service provider
 3. **Authentication** - `Coolify::auth()` callback, defaults to local-only access
 4. **Caching** - API responses cached with configurable TTL, mutations clear cache
+
+## Git Workflow
+
+**NEVER push directly to main.** Always follow this workflow:
+
+1. Create a feature branch from main
+2. Make changes and commit
+3. Run tests (`composer test`) and lint (`composer lint`)
+4. Create a PR to main
+5. Address review feedback
+6. Merge PR
+7. Tag release if needed
+
+```bash
+# Example workflow
+git checkout -b feature/my-feature
+# ... make changes ...
+composer test && composer lint
+git add -A && git commit -m "feat: description"
+git push -u origin feature/my-feature
+gh pr create --title "feat: description" --body "..."
+# ... address feedback ...
+gh pr merge
+git checkout main && git pull
+git tag v1.x.x && git push origin v1.x.x
+```
+
+## Future Tasks
+
+- [ ] Add Nightwatch detector (Laravel monitoring package)
