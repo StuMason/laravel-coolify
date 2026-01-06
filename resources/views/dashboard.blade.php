@@ -537,9 +537,21 @@ function dashboard() {
                 .filter(l => this.showDebugLogs || !l.hidden)
                 .map(l => {
                     const time = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : '';
-                    const color = l.type === 'stderr' ? 'text-red-400' : 'text-gray-300';
+                    const output = l.output || '';
+                    const lowerOutput = output.toLowerCase();
+
+                    // Determine color based on content, not just stderr
+                    let color = 'text-gray-300';
+                    if (lowerOutput.includes('error') || lowerOutput.includes('failed') || lowerOutput.includes('fatal')) {
+                        color = 'text-red-400';
+                    } else if (l.type === 'stderr' || lowerOutput.includes('warning') || lowerOutput.includes('warn')) {
+                        color = 'text-yellow-400';
+                    } else if (lowerOutput.includes('success') || lowerOutput.includes('completed') || lowerOutput.includes('done')) {
+                        color = 'text-green-400';
+                    }
+
                     const hiddenBadge = l.hidden ? '<span class="text-blue-400">[build]</span> ' : '';
-                    return `<span class="text-gray-500">[${time}]</span> ${hiddenBadge}<span class="${color}">${this.escapeHtml(l.output)}</span>`;
+                    return `<span class="text-gray-500">[${time}]</span> ${hiddenBadge}<span class="${color}">${this.escapeHtml(output)}</span>`;
                 })
                 .join('\n');
         },
