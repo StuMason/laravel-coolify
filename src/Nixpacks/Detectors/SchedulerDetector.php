@@ -42,19 +42,22 @@ class SchedulerDetector implements PackageDetector
 
     /**
      * Strip PHP comments from content to avoid false positives.
+     * Uses PHP's tokenizer for accurate parsing.
      */
     protected function stripComments(string $content): string
     {
-        // Remove single-line comments (// ...)
-        $content = preg_replace('#//.*$#m', '', $content);
+        $tokens = token_get_all($content);
+        $output = '';
 
-        // Remove multi-line comments (/* ... */)
-        $content = preg_replace('#/\*.*?\*/#s', '', $content);
+        foreach ($tokens as $token) {
+            if (is_string($token)) {
+                $output .= $token;
+            } elseif ($token[0] !== T_COMMENT && $token[0] !== T_DOC_COMMENT) {
+                $output .= $token[1];
+            }
+        }
 
-        // Remove hash comments (# ...)
-        $content = preg_replace('/#.*$/m', '', $content);
-
-        return $content ?? '';
+        return $output;
     }
 
     public function getProcesses(): array

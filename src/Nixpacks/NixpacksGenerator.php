@@ -124,13 +124,23 @@ class NixpacksGenerator
 
     /**
      * Write the nixpacks.toml file.
+     *
+     * @throws \RuntimeException If the file cannot be written
      */
     public function write(?string $path = null): string
     {
         $path = $path ?? base_path('nixpacks.toml');
         $content = $this->generate();
 
-        File::put($path, $content);
+        try {
+            File::put($path, $content);
+        } catch (\Exception $e) {
+            throw new \RuntimeException(
+                "Failed to write nixpacks.toml: {$e->getMessage()}",
+                0,
+                $e
+            );
+        }
 
         return $path;
     }
