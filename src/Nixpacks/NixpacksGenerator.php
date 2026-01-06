@@ -149,16 +149,11 @@ class NixpacksGenerator
         $basePath = base_path();
 
         // Validate path is within project directory (security check)
-        if ($realPath !== false && ! str_starts_with($realPath, $basePath)) {
+        // realpath returns false if directory doesn't exist, so this also validates existence
+        if ($realPath === false || ! str_starts_with($realPath, $basePath)) {
             throw new \InvalidArgumentException(
                 'Path must be within the project directory'
             );
-        }
-
-        // Validate directory exists
-        $directory = dirname($path);
-        if (! File::isDirectory($directory)) {
-            throw new \InvalidArgumentException("Directory does not exist: {$directory}");
         }
 
         $content = $this->generate();

@@ -324,7 +324,7 @@ describe('NixpacksGenerator error handling', function () {
         $invalidPath = '/nonexistent/directory/nixpacks.toml';
 
         expect(fn () => $generator->write($invalidPath))
-            ->toThrow(\InvalidArgumentException::class, 'Directory does not exist');
+            ->toThrow(\InvalidArgumentException::class, 'Path must be within the project directory');
     });
 
     it('throws exception when path is outside project directory', function () {
