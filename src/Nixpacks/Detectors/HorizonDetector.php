@@ -16,27 +16,32 @@ class HorizonDetector implements PackageDetector
         return class_exists(\Laravel\Horizon\Horizon::class);
     }
 
-    public function getProcesses(): array
+    public function getSupervisorConfig(): ?string
     {
-        return [
-            'horizon' => 'php artisan horizon',
-        ];
+        return <<<'CONF'
+[program:worker-horizon]
+process_name=%(program_name)s
+command=php /app/artisan horizon
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+numprocs=1
+startsecs=0
+stopwaitsecs=3600
+stdout_logfile=/var/log/worker-horizon.log
+stderr_logfile=/var/log/worker-horizon.log
+CONF;
     }
 
-    public function getNixPackages(): array
+    public function getNginxLocationBlocks(): array
     {
-        // Nixpacks auto-detects PHP extensions from composer.json's ext-* requirements
-        // Users should add "ext-redis": "*" to composer.json for Redis support
         return [];
     }
 
-    public function getBuildCommands(): array
+    public function getPhpExtensions(): array
     {
-        return [];
-    }
-
-    public function getEnvVars(): array
-    {
-        return [];
+        // Horizon requires Redis - pcntl is for signal handling
+        return ['redis', 'pcntl'];
     }
 }

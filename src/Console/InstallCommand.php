@@ -134,15 +134,16 @@ class InstallCommand extends Command
 
         $this->line('  <fg=green>Generated nixpacks.toml with:</>');
 
-        foreach ($summary['processes'] as $name => $command) {
-            $this->line("    <fg=white>•</> {$name}: <fg=gray>{$command}</>");
+        $this->line('  <fg=cyan>Supervisor workers:</>');
+        foreach ($summary['workers'] as $worker) {
+            $this->line("    <fg=white>•</> {$worker}");
         }
 
-        if (! empty($summary['nix_packages'])) {
+        if (! empty($summary['php_extensions'])) {
             $this->newLine();
-            $this->line('  <fg=green>Nix packages:</>');
-            foreach ($summary['nix_packages'] as $package) {
-                $this->line("    <fg=white>•</> {$package}");
+            $this->line('  <fg=cyan>PHP extensions:</>');
+            foreach ($summary['php_extensions'] as $extension) {
+                $this->line("    <fg=white>•</> {$extension}");
             }
         }
 

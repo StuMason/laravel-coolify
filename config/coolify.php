@@ -254,18 +254,36 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configuration options for the nixpacks.toml generator. These settings
-    | control how the generated nixpacks configuration is built.
+    | control PHP version, Node version, nginx settings, and PHP-FPM tuning.
+    | The generator creates a production-ready supervisor-based setup.
     |
     */
 
     'nixpacks' => [
-        // Node.js version to use when package.json is detected.
-        // See available versions: https://search.nixos.org/packages?query=nodejs
-        'node_version' => env('COOLIFY_NODE_VERSION', 'nodejs_20'),
+        // PHP version to use. Available: php81, php82, php83, php84
+        // See: https://search.nixos.org/packages?query=php
+        'php_version' => env('COOLIFY_PHP_VERSION', 'php84'),
 
-        // Web server command. Change to 'php artisan octane:start --host=0.0.0.0 --port=8080'
-        // for Laravel Octane support.
-        'web_command' => env('COOLIFY_WEB_COMMAND', 'php-fpm'),
+        // Node.js version to use when package.json is detected.
+        // See: https://search.nixos.org/packages?query=nodejs
+        'node_version' => env('COOLIFY_NODE_VERSION', 'nodejs_22'),
+
+        // Nginx configuration
+        'nginx' => [
+            'client_max_body_size' => env('COOLIFY_NGINX_MAX_BODY_SIZE', '35M'),
+            'upload_max_filesize' => env('COOLIFY_UPLOAD_MAX_FILESIZE', '30M'),
+            'post_max_size' => env('COOLIFY_POST_MAX_SIZE', '35M'),
+        ],
+
+        // PHP-FPM pool configuration
+        // Tune these based on your server's available memory
+        // Rule of thumb: max_children = (available RAM - 512MB) / 50MB per process
+        'phpfpm' => [
+            'max_children' => env('COOLIFY_PHPFPM_MAX_CHILDREN', 50),
+            'start_servers' => env('COOLIFY_PHPFPM_START_SERVERS', 18),
+            'min_spare_servers' => env('COOLIFY_PHPFPM_MIN_SPARE', 4),
+            'max_spare_servers' => env('COOLIFY_PHPFPM_MAX_SPARE', 32),
+        ],
     ],
 
 ];

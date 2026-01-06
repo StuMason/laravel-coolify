@@ -16,7 +16,6 @@ class SchedulerDetector implements PackageDetector
     public function isInstalled(): bool
     {
         // Check routes/console.php first (Laravel 11+ style - more common now)
-        // This is the preferred location for scheduled tasks in modern Laravel
         $consolePath = base_path('routes/console.php');
         if (File::exists($consolePath)) {
             $content = $this->stripComments(File::get($consolePath));
@@ -47,7 +46,6 @@ class SchedulerDetector implements PackageDetector
         try {
             $tokens = @token_get_all($content);
         } catch (\Throwable) {
-            // If tokenization fails (syntax error), return original content
             return $content;
         }
 
@@ -64,24 +62,29 @@ class SchedulerDetector implements PackageDetector
         return $output;
     }
 
-    public function getProcesses(): array
+    public function getSupervisorConfig(): ?string
     {
-        return [
-            'scheduler' => 'php artisan schedule:work',
-        ];
+        return <<<'CONF'
+[program:worker-scheduler]
+process_name=%(program_name)s
+command=php /app/artisan schedule:work
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+numprocs=1
+startsecs=0
+stdout_logfile=/var/log/worker-scheduler.log
+stderr_logfile=/var/log/worker-scheduler.log
+CONF;
     }
 
-    public function getNixPackages(): array
+    public function getNginxLocationBlocks(): array
     {
         return [];
     }
 
-    public function getBuildCommands(): array
-    {
-        return [];
-    }
-
-    public function getEnvVars(): array
+    public function getPhpExtensions(): array
     {
         return [];
     }

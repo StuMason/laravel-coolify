@@ -17,30 +17,26 @@ interface PackageDetector
     public function isInstalled(): bool;
 
     /**
-     * Get the processes this package requires.
+     * Get the supervisor worker configuration for this package.
+     * Returns null if no worker is needed.
      *
-     * @return array<string, string> Process name => command
+     * The config should be a valid supervisor [program:x] section.
      */
-    public function getProcesses(): array;
+    public function getSupervisorConfig(): ?string;
 
     /**
-     * Get any Nix packages required for this detector.
+     * Get any nginx location blocks required by this package.
+     * For example, Reverb needs a WebSocket proxy block.
      *
-     * @return array<string>
+     * @return array<string> Array of nginx location block strings
      */
-    public function getNixPackages(): array;
+    public function getNginxLocationBlocks(): array;
 
     /**
-     * Get any build commands required.
+     * Get any PHP extensions required by this package.
+     * These will be added to the php.withExtensions nix expression.
      *
-     * @return array<string>
+     * @return array<string> Extension names (e.g., 'redis', 'pcntl')
      */
-    public function getBuildCommands(): array;
-
-    /**
-     * Get any environment variables this package needs.
-     *
-     * @return array<string, string>
-     */
-    public function getEnvVars(): array;
+    public function getPhpExtensions(): array;
 }
