@@ -1371,13 +1371,19 @@ class ProvisionCommand extends Command
 
             if (! $this->option('force') && ! $this->option('no-interaction')) {
                 if (confirm('Would you like to generate nixpacks.toml now?', true)) {
-                    $this->call('coolify:install', ['--force' => true]);
+                    $exitCode = $this->call('coolify:install', ['--force' => true]);
                     $this->newLine();
 
-                    if (File::exists($nixpacksPath)) {
+                    if ($exitCode === self::SUCCESS && File::exists($nixpacksPath)) {
                         $this->line('    <fg=green>[✓]</> nixpacks.toml generated');
 
                         return true;
+                    }
+
+                    if ($exitCode !== self::SUCCESS) {
+                        $this->line('    <fg=red>[✗]</> Failed to generate nixpacks.toml');
+
+                        return true; // Don't fail provisioning, just warn
                     }
                 }
             }

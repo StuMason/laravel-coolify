@@ -23,7 +23,7 @@ trait StreamsDeploymentLogs
 
         $maxAttempts = 180; // 15 minutes with 5 second intervals
         $attempts = 0;
-        $lastLogCount = 0;
+        $seenLogHashes = [];
         $status = 'in_progress';
 
         while ($attempts < $maxAttempts) {
@@ -34,15 +34,15 @@ trait StreamsDeploymentLogs
 
                 // Fetch and display new log entries
                 $logs = $deployments->logs($deploymentUuid);
-                $logEntries = $logs['logs'] ?? $logs['output'] ?? $logs ?? [];
+                $logEntries = $this->extractLogEntries($logs);
 
-                if (is_array($logEntries)) {
-                    // Output only new log entries
-                    $newEntries = array_slice($logEntries, $lastLogCount);
-                    foreach ($newEntries as $entry) {
+                // Output only new log entries (track by content hash to handle API reordering)
+                foreach ($logEntries as $entry) {
+                    $hash = $this->hashLogEntry($entry);
+                    if (! isset($seenLogHashes[$hash])) {
+                        $seenLogHashes[$hash] = true;
                         $this->outputLogEntry($entry, $showDebug);
                     }
-                    $lastLogCount = count($logEntries);
                 }
 
                 // Check if deployment is complete
@@ -165,5 +165,52 @@ trait StreamsDeploymentLogs
         }
 
         return $line;
+    }
+
+    /**
+     * Extract log entries from API response.
+     *
+     * @return array<int, mixed>
+     */
+    protected function extractLogEntries(mixed $logs): array
+    {
+        if (! is_array($logs)) {
+            return [];
+        }
+
+        if (isset($logs['logs']) && is_array($logs['logs'])) {
+            return $logs['logs'];
+        }
+
+        if (isset($logs['output']) && is_array($logs['output'])) {
+            return $logs['output'];
+        }
+
+        // If it's already an indexed array of log entries
+        if (array_is_list($logs)) {
+            return $logs;
+        }
+
+        return [];
+    }
+
+    /**
+     * Generate a hash for a log entry to track duplicates.
+     */
+    protected function hashLogEntry(mixed $entry): string
+    {
+        if (is_string($entry)) {
+            return md5($entry);
+        }
+
+        if (is_array($entry)) {
+            // Use output + timestamp for unique identification
+            $output = $entry['output'] ?? $entry['message'] ?? '';
+            $timestamp = $entry['timestamp'] ?? '';
+
+            return md5($output.$timestamp);
+        }
+
+        return md5(serialize($entry));
     }
 }
