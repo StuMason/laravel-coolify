@@ -44,7 +44,13 @@ class SchedulerDetector implements PackageDetector
      */
     protected function stripComments(string $content): string
     {
-        $tokens = token_get_all($content);
+        try {
+            $tokens = @token_get_all($content);
+        } catch (\Throwable) {
+            // If tokenization fails (syntax error), return original content
+            return $content;
+        }
+
         $output = '';
 
         foreach ($tokens as $token) {
