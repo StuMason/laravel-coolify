@@ -96,21 +96,16 @@ class InstallCommand extends Command
     {
         $generator = new NixpacksGenerator;
 
-        // Check if nixpacks.toml already exists
+        // Handle existing file - early returns reduce nesting
         if ($generator->exists() && ! $this->option('force')) {
-            if (! $this->option('no-interaction')) {
-                $overwrite = confirm(
-                    label: 'nixpacks.toml already exists. Overwrite?',
-                    default: false
-                );
-
-                if (! $overwrite) {
-                    warning('Skipping nixpacks.toml generation.');
-
-                    return;
-                }
-            } else {
+            if ($this->option('no-interaction')) {
                 warning('nixpacks.toml already exists. Use --force to overwrite.');
+
+                return;
+            }
+
+            if (! confirm(label: 'nixpacks.toml already exists. Overwrite?', default: false)) {
+                warning('Skipping nixpacks.toml generation.');
 
                 return;
             }

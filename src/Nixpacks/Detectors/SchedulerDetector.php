@@ -15,24 +15,22 @@ class SchedulerDetector implements PackageDetector
 
     public function isInstalled(): bool
     {
-        // Check if Console/Kernel.php has scheduled tasks defined
-        // or if routes/console.php has Schedule usage
-        $kernelPath = app_path('Console/Kernel.php');
+        // Check routes/console.php first (Laravel 11+ style - more common now)
+        // This is the preferred location for scheduled tasks in modern Laravel
         $consolePath = base_path('routes/console.php');
-
-        // Check Kernel.php for schedule method with actual tasks
-        if (File::exists($kernelPath)) {
-            $content = $this->stripComments(File::get($kernelPath));
-            // Look for actual schedule commands, not just empty method
-            if (preg_match('/\$schedule->(command|call|job|exec)\s*\(/', $content)) {
+        if (File::exists($consolePath)) {
+            $content = $this->stripComments(File::get($consolePath));
+            if (str_contains($content, 'Schedule::')) {
                 return true;
             }
         }
 
-        // Check routes/console.php for Schedule facade usage (Laravel 11+ style)
-        if (File::exists($consolePath)) {
-            $content = $this->stripComments(File::get($consolePath));
-            if (str_contains($content, 'Schedule::')) {
+        // Fall back to Console/Kernel.php for older Laravel versions
+        $kernelPath = app_path('Console/Kernel.php');
+        if (File::exists($kernelPath)) {
+            $content = $this->stripComments(File::get($kernelPath));
+            // Look for actual schedule commands, not just empty method
+            if (preg_match('/\$schedule->(command|call|job|exec)\s*\(/', $content)) {
                 return true;
             }
         }

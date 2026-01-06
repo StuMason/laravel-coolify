@@ -248,4 +248,20 @@ return [
 
     'log_channel' => env('COOLIFY_LOG_CHANNEL', 'stack'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Nixpacks Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration options for the nixpacks.toml generator. These settings
+    | control how the generated nixpacks configuration is built.
+    |
+    */
+
+    'nixpacks' => [
+        // Node.js version to use when package.json is detected.
+        // See available versions: https://search.nixos.org/packages?query=nodejs
+        'node_version' => env('COOLIFY_NODE_VERSION', 'nodejs_20'),
+    ],
+
 ];

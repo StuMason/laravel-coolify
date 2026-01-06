@@ -18,6 +18,12 @@ class NixpacksGenerator
     /** @var array<PackageDetector> */
     protected array $detected = [];
 
+    /** @var bool Whether detection has been run */
+    protected bool $hasDetected = false;
+
+    /** @var bool|null Cached result of hasNodeDependencies */
+    protected ?bool $hasNode = null;
+
     public function __construct()
     {
         $this->detectors = [
@@ -29,11 +35,16 @@ class NixpacksGenerator
 
     /**
      * Run detection and return list of detected packages.
+     * Results are cached - subsequent calls return cached results.
      *
      * @return array<PackageDetector>
      */
     public function detect(): array
     {
+        if ($this->hasDetected) {
+            return $this->detected;
+        }
+
         $this->detected = [];
 
         foreach ($this->detectors as $detector) {
@@ -41,6 +52,8 @@ class NixpacksGenerator
                 $this->detected[] = $detector;
             }
         }
+
+        $this->hasDetected = true;
 
         return $this->detected;
     }
@@ -125,11 +138,19 @@ class NixpacksGenerator
     /**
      * Write the nixpacks.toml file.
      *
+     * @throws \InvalidArgumentException If the directory does not exist
      * @throws \RuntimeException If the file cannot be written
      */
     public function write(?string $path = null): string
     {
         $path = $path ?? base_path('nixpacks.toml');
+
+        // Validate directory exists
+        $directory = dirname($path);
+        if (! File::isDirectory($directory)) {
+            throw new \InvalidArgumentException("Directory does not exist: {$directory}");
+        }
+
         $content = $this->generate();
 
         try {
@@ -174,9 +195,9 @@ class NixpacksGenerator
             $packages = array_merge($packages, $detector->getNixPackages());
         }
 
-        // Add Node.js if needed
+        // Add Node.js if needed (version configurable via config)
         if ($this->hasNodeDependencies()) {
-            $packages[] = 'nodejs_20';
+            $packages[] = config('coolify.nixpacks.node_version', 'nodejs_20');
         }
 
         return array_unique($packages);
@@ -200,10 +221,15 @@ class NixpacksGenerator
 
     /**
      * Check if the project has Node.js dependencies.
+     * Result is cached to avoid repeated file system checks.
      */
     protected function hasNodeDependencies(): bool
     {
-        return File::exists(base_path('package.json'));
+        if ($this->hasNode === null) {
+            $this->hasNode = File::exists(base_path('package.json'));
+        }
+
+        return $this->hasNode;
     }
 
     /**

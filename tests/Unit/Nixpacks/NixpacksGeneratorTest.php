@@ -120,11 +120,11 @@ describe('HorizonDetector', function () {
         ]);
     });
 
-    it('requires redis nix package with dynamic php version', function () {
+    it('returns empty nix packages (extensions handled via composer.json)', function () {
         $detector = new HorizonDetector;
-        $phpVersion = PHP_MAJOR_VERSION.PHP_MINOR_VERSION;
 
-        expect($detector->getNixPackages())->toContain("php{$phpVersion}Extensions.redis");
+        // Nixpacks auto-detects PHP extensions from composer.json's ext-* requirements
+        expect($detector->getNixPackages())->toBe([]);
     });
 });
 
@@ -301,6 +301,37 @@ describe('NixpacksGenerator error handling', function () {
 
         // Should always have web process
         expect($summary['processes'])->toHaveKey('web');
+    });
+
+    it('throws exception when directory does not exist', function () {
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        $invalidPath = '/nonexistent/directory/nixpacks.toml';
+
+        expect(fn () => $generator->write($invalidPath))
+            ->toThrow(\InvalidArgumentException::class, 'Directory does not exist');
+    });
+});
+
+describe('NixpacksGenerator caching', function () {
+    it('caches detection results on subsequent calls', function () {
+        $generator = new NixpacksGenerator;
+
+        // First call runs detection
+        $first = $generator->detect();
+
+        // Second call should return cached results
+        $second = $generator->detect();
+
+        expect($first)->toBe($second);
+    });
+
+    it('returns detected packages from getDetected after detect', function () {
+        $generator = new NixpacksGenerator;
+        $detected = $generator->detect();
+
+        expect($generator->getDetected())->toBe($detected);
     });
 });
 

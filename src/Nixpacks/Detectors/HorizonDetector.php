@@ -25,15 +25,9 @@ class HorizonDetector implements PackageDetector
 
     public function getNixPackages(): array
     {
-        // Horizon requires Redis - use phpXXExtensions based on PHP version
-        $phpVersion = $this->getPhpMajorMinor();
-
-        return ["php{$phpVersion}Extensions.redis"];
-    }
-
-    protected function getPhpMajorMinor(): string
-    {
-        return PHP_MAJOR_VERSION.PHP_MINOR_VERSION;
+        // Nixpacks auto-detects PHP extensions from composer.json's ext-* requirements
+        // Users should add "ext-redis": "*" to composer.json for Redis support
+        return [];
     }
 
     public function getBuildCommands(): array
