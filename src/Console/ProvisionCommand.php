@@ -94,13 +94,35 @@ class ProvisionCommand extends Command
         DeploymentRepository $deployments
     ): int {
         if (! $client->isConfigured()) {
-            $this->components->error('Coolify is not configured. Please set COOLIFY_URL and COOLIFY_TOKEN in your .env file.');
+            $this->components->error('Coolify is not configured.');
+            $this->newLine();
+            $this->line('  <fg=yellow;options=bold>SETUP REQUIRED:</>');
+            $this->newLine();
+            $this->line('  Add to your <fg=cyan>.env</> file:');
+            $this->newLine();
+            $this->line('    <fg=white>COOLIFY_URL=</><fg=gray>https://your-coolify-instance.com</>');
+            $this->line('    <fg=white>COOLIFY_TOKEN=</><fg=gray>your-api-token</>');
+            $this->newLine();
+            $this->line('  <fg=yellow;options=bold>TO GET YOUR API TOKEN:</>');
+            $this->newLine();
+            $this->line('  1. Go to your Coolify dashboard');
+            $this->line('  2. Navigate to <fg=cyan>Security → API Tokens</>');
+            $this->line('  3. Create a new token (must be root-level, not team-level)');
+            $this->newLine();
 
             return self::FAILURE;
         }
 
         if (! $client->testConnection()) {
-            $this->components->error('Cannot connect to Coolify. Please check your configuration.');
+            $this->components->error('Cannot connect to Coolify.');
+            $this->newLine();
+            $this->line('  <fg=yellow>Please check your configuration:</>');
+            $this->newLine();
+            $this->line('    <fg=white>COOLIFY_URL=</><fg=gray>'.config('coolify.url', '(not set)').'</>');
+            $this->line('    <fg=white>COOLIFY_TOKEN=</><fg=gray>'.(config('coolify.token') ? '****'.substr(config('coolify.token'), -4) : '(not set)').'</>');
+            $this->newLine();
+            $this->line('  <fg=gray>Ensure your Coolify instance is accessible and the token is valid.</>');
+            $this->newLine();
 
             return self::FAILURE;
         }
@@ -687,6 +709,9 @@ class ProvisionCommand extends Command
             ];
         }
 
+        // Get current repo from git remote to use as default
+        $currentRepo = $this->getCurrentGitRepo();
+
         // Try to fetch repos from GitHub App if available
         if ($githubApp) {
             try {
@@ -710,12 +735,16 @@ class ProvisionCommand extends Command
                         return [$fullName => $fullName];
                     })->toArray();
 
+                    // Pre-fill with current repo if it exists in the list
+                    $default = ($currentRepo && isset($repoChoices[$currentRepo])) ? $currentRepo : '';
+
                     $selected = search(
                         label: 'Search and select repository:',
                         options: fn (string $value) => collect($repoChoices)
                             ->filter(fn ($name) => empty($value) || Str::contains(strtolower($name), strtolower($value)))
                             ->toArray(),
-                        placeholder: 'Type to search...'
+                        placeholder: $currentRepo ? "Current: {$currentRepo}" : 'Type to search...',
+                        default: $default
                     );
 
                     if ($selected) {
@@ -738,6 +767,7 @@ class ProvisionCommand extends Command
         $repo = text(
             label: 'Enter repository (owner/repo)',
             placeholder: 'e.g. StuMason/my-laravel-app',
+            default: $currentRepo ?? '',
             required: true,
             validate: fn (string $value) => str_contains($value, '/')
                 ? null
@@ -751,6 +781,27 @@ class ProvisionCommand extends Command
             'repo' => $repoName,
             'full_name' => $repo,
         ];
+    }
+
+    /**
+     * Get the current repository from git remote origin.
+     */
+    protected function getCurrentGitRepo(): ?string
+    {
+        $result = Process::run('git remote get-url origin 2>/dev/null');
+
+        if (! $result->successful() || empty(trim($result->output()))) {
+            return null;
+        }
+
+        $remoteUrl = trim($result->output());
+
+        // Only return if it's a GitHub URL
+        if (! str_contains($remoteUrl, 'github.com')) {
+            return null;
+        }
+
+        return $this->extractRepoName($remoteUrl);
     }
 
     /**
