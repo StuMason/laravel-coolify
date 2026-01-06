@@ -127,20 +127,20 @@ TOML;
     {
         $lines = ['[phases.install]'];
 
-        // Cache directories for faster rebuilds
-        // Note: node_modules is NOT cached because it uses Docker mount caching which is ephemeral
-        // and wouldn't persist to the postbuild phase. Instead we run npm ci && npm run build together.
-        $lines[] = 'cacheDirectories = ["vendor", "/root/.composer/cache"]';
+        // Cache composer's global cache for faster downloads
+        // Note: vendor dir uses Docker mount cache but runs AFTER COPY in postbuild
+        $lines[] = 'cacheDirectories = ["/root/.composer/cache"]';
 
-        $lines[] = 'cmds = [';
-        $lines[] = '    "composer install --no-dev --optimize-autoloader --no-scripts",';
-
+        // Install phase only runs npm (if needed) since it happens BEFORE COPY
+        // Composer runs in postbuild AFTER COPY so vendor persists in final image
         if ($this->hasNodeDependencies()) {
-            // Run npm install and build in the same command so node_modules persists
+            $lines[] = 'cmds = [';
             $lines[] = '    "npm ci && npm run build",';
+            $lines[] = ']';
+        } else {
+            $lines[] = 'cmds = []';
         }
 
-        $lines[] = ']';
         $lines[] = '';
 
         return implode("\n", $lines);
@@ -171,10 +171,11 @@ TOML;
     {
         $lines = ['[phases.postbuild]'];
         $lines[] = 'dependsOn = ["build"]';
-        $lines[] = 'cmds = [';
 
-        // Laravel optimization - handles config, route, view, and event caching
-        // Note: npm run build is now in install phase (combined with npm ci)
+        // postbuild runs AFTER `COPY . /app` so vendor will persist in final image
+        // This is where we run composer install and artisan optimize
+        $lines[] = 'cmds = [';
+        $lines[] = '    "composer install --no-dev --optimize-autoloader",';
         $lines[] = '    "php artisan optimize",';
         $lines[] = ']';
         $lines[] = '';

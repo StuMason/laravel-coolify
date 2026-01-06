@@ -53,7 +53,8 @@ describe('NixpacksGenerator', function () {
         expect($content)->toContain('nginx.template.conf');
         expect($content)->toContain('start.sh');
 
-        // Build commands - uses optimize for all caching
+        // Composer and optimize run in postbuild (after COPY)
+        expect($content)->toContain('composer install');
         expect($content)->toContain('php artisan optimize');
     });
 
@@ -159,16 +160,16 @@ describe('NixpacksGenerator', function () {
         expect($content)->toContain('supervisord -c /etc/supervisord.conf -n');
     });
 
-    it('uses install phase with caching for fast builds', function () {
+    it('runs composer in postbuild phase after COPY', function () {
         $generator = new NixpacksGenerator;
         $generator->detect();
 
         $content = $generator->generate();
 
-        // Caches vendor and composer cache directories
-        expect($content)->toContain('cacheDirectories');
-        expect($content)->toContain('vendor');
-        expect($content)->toContain('/root/.composer/cache');
+        // postbuild runs after COPY so vendor persists in final image
+        expect($content)->toContain('[phases.postbuild]');
+        expect($content)->toContain('composer install --no-dev --optimize-autoloader');
+        expect($content)->toContain('php artisan optimize');
     });
 });
 
