@@ -108,6 +108,7 @@ TOML;
             "\"{$phpVersion}Packages.composer\"",
             '"nginx"',
             '"python311Packages.supervisor"',
+            '"libcap"', // For setcap to allow nginx to bind to port 80
         ];
 
         if ($this->hasNodeDependencies()) {
@@ -156,6 +157,9 @@ TOML;
         $lines[] = '';
         $lines[] = '    # Set permissions';
         $lines[] = '    "chown -R www-data:www-data /var/log /app/storage /app/bootstrap/cache 2>/dev/null || true",';
+        $lines[] = '';
+        $lines[] = '    # Allow nginx to bind to privileged ports (80) without running as root';
+        $lines[] = '    "setcap \'cap_net_bind_service=+ep\' $(which nginx) 2>/dev/null || true",';
         $lines[] = '';
         $lines[] = '    # Copy supervisor configs';
         $lines[] = '    "cp /assets/worker-*.conf /etc/supervisor/conf.d/",';
