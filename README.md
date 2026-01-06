@@ -28,14 +28,20 @@ This will:
 2. Detect installed packages (Horizon, Reverb, Scheduler)
 3. Generate an optimized `nixpacks.toml`
 
+### Configure Coolify API Access
+
 Add to `.env`:
 
 ```env
-COOLIFY_URL=https://app.coolify.io
+COOLIFY_URL=https://your-coolify-instance.com
 COOLIFY_TOKEN=your-api-token
 ```
 
-The token needs to be a **root-level API token** (created by a Coolify admin under Keys & Tokens > API Tokens).
+To get your API token, go to **Security → API Tokens** in your Coolify dashboard:
+
+![API Token Creation](docs/api-key-needed.png)
+
+> **Note:** The token must be a **root-level API token** created by a Coolify admin. Team-level tokens will not have sufficient permissions.
 
 ## Nixpacks Generation
 
