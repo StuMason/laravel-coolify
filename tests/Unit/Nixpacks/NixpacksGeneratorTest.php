@@ -103,6 +103,20 @@ describe('NixpacksGenerator', function () {
 
         expect($content)->toContain('cmd = "php-fpm"');
     });
+
+    it('uses configurable web command', function () {
+        config(['coolify.nixpacks.web_command' => 'php artisan octane:start --host=0.0.0.0 --port=8080']);
+
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        $content = $generator->generate();
+
+        expect($content)->toContain('cmd = "php artisan octane:start --host=0.0.0.0 --port=8080"');
+
+        // Reset config
+        config(['coolify.nixpacks.web_command' => 'php-fpm']);
+    });
 });
 
 describe('HorizonDetector', function () {
@@ -311,6 +325,17 @@ describe('NixpacksGenerator error handling', function () {
 
         expect(fn () => $generator->write($invalidPath))
             ->toThrow(\InvalidArgumentException::class, 'Directory does not exist');
+    });
+
+    it('throws exception when path is outside project directory', function () {
+        $generator = new NixpacksGenerator;
+        $generator->detect();
+
+        // Try to write outside of project directory
+        $outsidePath = '/tmp/nixpacks.toml';
+
+        expect(fn () => $generator->write($outsidePath))
+            ->toThrow(\InvalidArgumentException::class, 'Path must be within the project directory');
     });
 });
 

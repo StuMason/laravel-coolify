@@ -138,12 +138,22 @@ class NixpacksGenerator
     /**
      * Write the nixpacks.toml file.
      *
-     * @throws \InvalidArgumentException If the directory does not exist
-     * @throws \RuntimeException If the file cannot be written
+     * @throws \InvalidArgumentException If the directory does not exist or path is outside base_path
      */
     public function write(?string $path = null): string
     {
         $path = $path ?? base_path('nixpacks.toml');
+
+        // Resolve to real path for comparison (handles ../ etc)
+        $realPath = realpath(dirname($path));
+        $basePath = base_path();
+
+        // Validate path is within project directory (security check)
+        if ($realPath !== false && ! str_starts_with($realPath, $basePath)) {
+            throw new \InvalidArgumentException(
+                'Path must be within the project directory'
+            );
+        }
 
         // Validate directory exists
         $directory = dirname($path);
@@ -153,15 +163,7 @@ class NixpacksGenerator
 
         $content = $this->generate();
 
-        try {
-            File::put($path, $content);
-        } catch (\Exception $e) {
-            throw new \RuntimeException(
-                "Failed to write nixpacks.toml: {$e->getMessage()}",
-                0,
-                $e
-            );
-        }
+        File::put($path, $content);
 
         return $path;
     }
@@ -176,10 +178,11 @@ class NixpacksGenerator
 
     /**
      * Get the web server command.
+     * Configurable via config('coolify.nixpacks.web_command') for Octane support.
      */
     protected function getWebCommand(): string
     {
-        return 'php-fpm';
+        return config('coolify.nixpacks.web_command', 'php-fpm');
     }
 
     /**
