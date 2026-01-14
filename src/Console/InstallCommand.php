@@ -54,6 +54,7 @@ class InstallCommand extends Command
         ])->each(fn ($task, $description) => $this->components->task($description, $task));
 
         $this->registerCoolifyServiceProvider();
+        $this->configureTrustedProxies();
 
         // Generate nixpacks.toml
         if (! $this->option('no-nixpacks')) {
@@ -192,6 +193,37 @@ class InstallCommand extends Command
                 "namespace {$namespace}\Providers;",
                 file_get_contents($providerPath)
             ));
+        }
+    }
+
+    /**
+     * Configure TrustProxies middleware in bootstrap/app.php for Coolify's reverse proxy.
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $appPath = $this->laravel->bootstrapPath('app.php');
+
+        if (! file_exists($appPath)) {
+            return;
+        }
+
+        $content = file_get_contents($appPath);
+
+        // Already configured
+        if (Str::contains($content, 'trustProxies')) {
+            return;
+        }
+
+        // Find the withMiddleware callback and add trustProxies
+        // Pattern: ->withMiddleware(function (Middleware $middleware) {
+        $pattern = '/(->withMiddleware\s*\(\s*function\s*\(\s*Middleware\s+\$middleware\s*\)\s*\{)/';
+
+        if (preg_match($pattern, $content)) {
+            $replacement = '$1'.PHP_EOL.'        $middleware->trustProxies(at: \'*\');';
+            $content = preg_replace($pattern, $replacement, $content);
+            file_put_contents($appPath, $content);
+
+            $this->components->task('Configure TrustProxies', fn () => true);
         }
     }
 }
