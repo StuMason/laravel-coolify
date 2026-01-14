@@ -1244,16 +1244,41 @@ class ProvisionCommand extends Command
 
         $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
+        // Get existing env vars to determine if we need to create or update
+        $existingEnvs = spin(
+            callback: fn () => $applications->envs($appUuid),
+            message: '    Fetching existing environment variables...'
+        );
+
+        // Build a map of existing env var keys to their UUIDs
+        $existingKeys = [];
+        foreach ($existingEnvs as $env) {
+            if (isset($env['key'])) {
+                $existingKeys[$env['key']] = $env['uuid'] ?? null;
+            }
+        }
+
+        $created = 0;
+        $updated = 0;
+
         spin(
-            callback: function () use ($applications, $appUuid, $envVars): void {
+            callback: function () use ($applications, $appUuid, $envVars, $existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
-                    $applications->createEnv($appUuid, $env);
+                    if (isset($existingKeys[$env['key']])) {
+                        // Env var exists - update it
+                        $applications->updateEnv($appUuid, $env);
+                        $updated++;
+                    } else {
+                        // Env var doesn't exist - create it
+                        $applications->createEnv($appUuid, $env);
+                        $created++;
+                    }
                 }
             },
             message: '    Pushing to Coolify...'
         );
 
-        $this->line('    <fg=green>Environment variables configured on Coolify</>');
+        $this->line("    <fg=green>Environment variables configured on Coolify</> (created: {$created}, updated: {$updated})");
     }
 
     /**
