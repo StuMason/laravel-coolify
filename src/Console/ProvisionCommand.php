@@ -408,12 +408,24 @@ class ProvisionCommand extends Command
             // Fetch and display the public key
             $publicKey = $deployKey['public_key'] ?? null;
             if ($publicKey) {
+                $this->line('  <fg=white>Option A: Via GitHub UI</>');
+                $this->line('  <fg=gray>────────────────────────</>');
                 $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/keys</>');
                 $this->line('  <fg=white>2.</> Click "<fg=green>Add deploy key</>"');
                 $this->line('  <fg=white>3.</> Title: <fg=gray>'.$appName.'-deploy-key</>');
                 $this->line('  <fg=white>4.</> Paste this public key:');
                 $this->newLine();
                 $this->line("  <fg=white;bg=gray> {$publicKey} </>");
+                $this->newLine();
+
+                // CLI option for power users
+                $escapedKey = addslashes(trim($publicKey));
+                $this->line('  <fg=white>Option B: Via CLI (recommended)</>');
+                $this->line('  <fg=gray>──────────────────────────────────</>');
+                $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/keys --method POST \\</>");
+                $this->line("    <fg=cyan>-f title=\"{$appName}-deploy-key\" \\</>");
+                $this->line("    <fg=cyan>-f key=\"{$escapedKey}\" \\</>");
+                $this->line('    <fg=cyan>-f read_only=true</>');
                 $this->newLine();
             } else {
                 $this->line("  <fg=white>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
@@ -434,11 +446,24 @@ class ProvisionCommand extends Command
             $this->newLine();
             $coolifyUrl = rtrim(config('coolify.url'), '/');
             $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events";
+
+            $this->line('  <fg=white>Option A: Via GitHub UI</>');
+            $this->line('  <fg=gray>────────────────────────</>');
             $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/hooks</>');
             $this->line('  <fg=white>2.</> Click "<fg=green>Add webhook</>"');
             $this->line('  <fg=white>3.</> Payload URL: <fg=gray>'.$webhookUrl.'</>');
             $this->line('  <fg=white>4.</> Content type: <fg=gray>application/json</>');
             $this->line('  <fg=white>5.</> Events: <fg=gray>Just the push event</>');
+            $this->newLine();
+
+            $this->line('  <fg=white>Option B: Via CLI</>');
+            $this->line('  <fg=gray>─────────────────</>');
+            $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/hooks --method POST \\</>");
+            $this->line('    <fg=cyan>-f name="web" \\</>');
+            $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\" \\</>");
+            $this->line('    <fg=cyan>-f "config[content_type]=json" \\</>');
+            $this->line('    <fg=cyan>-f "events[]=push" \\</>');
+            $this->line('    <fg=cyan>-f active=true</>');
             $this->newLine();
 
             if (! $this->option('no-interaction')) {
@@ -1060,7 +1085,7 @@ class ProvisionCommand extends Command
             'private_key_uuid' => $deployKeyUuid,
             'git_repository' => "git@github.com:{$gitRepository}.git",
             'git_branch' => $branch,
-            'build_pack' => 'nixpacks',
+            'build_pack' => 'dockerfile',
             'ports_exposes' => '8080',
             'name' => $appName,
             'domains' => "https://{$domain}",
@@ -1211,9 +1236,9 @@ class ProvisionCommand extends Command
             $envVars[] = ['key' => 'REVERB_PORT', 'value' => '443'];
             $envVars[] = ['key' => 'REVERB_SCHEME', 'value' => 'https'];
 
-            // Copy other REVERB_* vars from local .env
+            // Copy other REVERB_* vars from local .env (skip ones we already set above)
             foreach ($reverbVars as $key => $value) {
-                if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET'])) {
+                if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET', 'REVERB_HOST', 'REVERB_PORT', 'REVERB_SCHEME'])) {
                     continue;
                 }
                 $envVars[] = ['key' => $key, 'value' => $value];
@@ -1242,18 +1267,59 @@ class ProvisionCommand extends Command
             $this->line('    Copying <fg=white>'.count($viteVars).'</> VITE vars from local .env');
         }
 
+        // Deduplicate env vars by key (later values override earlier ones)
+        $uniqueEnvVars = [];
+        foreach ($envVars as $env) {
+            $uniqueEnvVars[$env['key']] = $env;
+        }
+        $envVars = array_values($uniqueEnvVars);
+
         $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
+        // Get existing env vars to determine if we need to create or update
+        $existingEnvs = spin(
+            callback: fn () => $applications->envs($appUuid),
+            message: '    Fetching existing environment variables...'
+        );
+
+        // Build a map of existing env var keys to their UUIDs
+        $existingKeys = [];
+        foreach ($existingEnvs as $env) {
+            if (isset($env['key'])) {
+                $existingKeys[$env['key']] = $env['uuid'] ?? null;
+            }
+        }
+
+        $created = 0;
+        $updated = 0;
+
         spin(
-            callback: function () use ($applications, $appUuid, $envVars): void {
+            callback: function () use ($applications, $appUuid, $envVars, &$existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
-                    $applications->createEnv($appUuid, $env);
+                    if (isset($existingKeys[$env['key']]) && $existingKeys[$env['key']]) {
+                        // Env var exists - update it (include the env var UUID)
+                        $applications->updateEnv($appUuid, array_merge($env, [
+                            'uuid' => $existingKeys[$env['key']],
+                        ]));
+                        $updated++;
+                    } else {
+                        // Env var doesn't exist - create it
+                        $result = $applications->createEnv($appUuid, $env);
+                        // Track the created var to avoid duplicate create attempts
+                        if (isset($result['uuid'])) {
+                            $existingKeys[$env['key']] = $result['uuid'];
+                        } else {
+                            // Mark as created even without UUID to prevent duplicate creates
+                            $existingKeys[$env['key']] = true;
+                        }
+                        $created++;
+                    }
                 }
             },
             message: '    Pushing to Coolify...'
         );
 
-        $this->line('    <fg=green>Environment variables configured on Coolify</>');
+        $this->line("    <fg=green>Environment variables configured on Coolify</> (created: {$created}, updated: {$updated})");
     }
 
     /**
@@ -1389,9 +1455,9 @@ class ProvisionCommand extends Command
             $allPassed = false;
         }
 
-        // Check 2: nixpacks.toml exists
-        $nixpacksCheck = $this->checkNixpacksToml();
-        if ($nixpacksCheck === false) {
+        // Check 2: Dockerfile exists
+        $dockerfileCheck = $this->checkDockerfile();
+        if ($dockerfileCheck === false) {
             $allPassed = false;
         }
 
@@ -1468,43 +1534,43 @@ class ProvisionCommand extends Command
     }
 
     /**
-     * Check if nixpacks.toml exists.
+     * Check if Dockerfile exists.
      */
-    protected function checkNixpacksToml(): bool
+    protected function checkDockerfile(): bool
     {
-        $nixpacksPath = base_path('nixpacks.toml');
+        $dockerfilePath = base_path('Dockerfile');
 
-        if (! File::exists($nixpacksPath)) {
-            $this->line('    <fg=yellow>[!]</> nixpacks.toml not found');
+        if (! File::exists($dockerfilePath)) {
+            $this->line('    <fg=yellow>[!]</> Dockerfile not found');
             $this->newLine();
             $this->line('        <fg=gray>Run:</> php artisan coolify:install');
-            $this->line('        <fg=gray>This will generate an optimized nixpacks.toml for your Laravel app.</>');
+            $this->line('        <fg=gray>This will generate an optimized Dockerfile for your Laravel app.</>');
             $this->newLine();
 
             if (! $this->option('force') && ! $this->option('no-interaction')) {
-                if (confirm('Would you like to generate nixpacks.toml now?', true)) {
+                if (confirm('Would you like to generate Dockerfile now?', true)) {
                     $exitCode = $this->call('coolify:install', ['--force' => true]);
                     $this->newLine();
 
-                    if ($exitCode === self::SUCCESS && File::exists($nixpacksPath)) {
-                        $this->line('    <fg=green>[✓]</> nixpacks.toml generated');
+                    if ($exitCode === self::SUCCESS && File::exists($dockerfilePath)) {
+                        $this->line('    <fg=green>[✓]</> Dockerfile generated');
 
                         return true;
                     }
 
                     if ($exitCode !== self::SUCCESS) {
-                        $this->line('    <fg=red>[✗]</> Failed to generate nixpacks.toml');
+                        $this->line('    <fg=red>[✗]</> Failed to generate Dockerfile');
 
                         return true; // Don't fail provisioning, just warn
                     }
                 }
             }
 
-            // Warn but don't fail - Coolify can build without nixpacks.toml
+            // Warn but don't fail - Coolify can build without Dockerfile
             return true;
         }
 
-        $this->line('    <fg=green>[✓]</> nixpacks.toml found');
+        $this->line('    <fg=green>[✓]</> Dockerfile found');
 
         return true;
     }
