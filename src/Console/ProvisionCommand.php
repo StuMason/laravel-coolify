@@ -1118,9 +1118,6 @@ class ProvisionCommand extends Command
         $envVars[] = ['key' => 'APP_URL', 'value' => "https://{$domain}"];
         $envVars[] = ['key' => 'ASSET_URL', 'value' => "https://{$domain}"];
 
-        // Trusted proxies for Coolify's reverse proxy (fixes mixed content errors)
-        $envVars[] = ['key' => 'TRUSTED_PROXIES', 'value' => '*'];
-
         // Log management best practices (prevents runaway log files)
         $envVars[] = ['key' => 'LOG_STACK', 'value' => 'daily'];
         $envVars[] = ['key' => 'LOG_DAILY_MAX_FILES', 'value' => '7'];
