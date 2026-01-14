@@ -408,12 +408,24 @@ class ProvisionCommand extends Command
             // Fetch and display the public key
             $publicKey = $deployKey['public_key'] ?? null;
             if ($publicKey) {
+                $this->line('  <fg=white>Option A: Via GitHub UI</>');
+                $this->line('  <fg=gray>────────────────────────</>');
                 $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/keys</>');
                 $this->line('  <fg=white>2.</> Click "<fg=green>Add deploy key</>"');
                 $this->line('  <fg=white>3.</> Title: <fg=gray>'.$appName.'-deploy-key</>');
                 $this->line('  <fg=white>4.</> Paste this public key:');
                 $this->newLine();
                 $this->line("  <fg=white;bg=gray> {$publicKey} </>");
+                $this->newLine();
+
+                // CLI option for power users
+                $escapedKey = addslashes(trim($publicKey));
+                $this->line('  <fg=white>Option B: Via CLI (recommended)</>');
+                $this->line('  <fg=gray>──────────────────────────────────</>');
+                $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/keys --method POST \\</>");
+                $this->line("    <fg=cyan>-f title=\"{$appName}-deploy-key\" \\</>");
+                $this->line("    <fg=cyan>-f key=\"{$escapedKey}\" \\</>");
+                $this->line('    <fg=cyan>-f read_only=true</>');
                 $this->newLine();
             } else {
                 $this->line("  <fg=white>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
@@ -434,11 +446,24 @@ class ProvisionCommand extends Command
             $this->newLine();
             $coolifyUrl = rtrim(config('coolify.url'), '/');
             $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events";
+
+            $this->line('  <fg=white>Option A: Via GitHub UI</>');
+            $this->line('  <fg=gray>────────────────────────</>');
             $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/hooks</>');
             $this->line('  <fg=white>2.</> Click "<fg=green>Add webhook</>"');
             $this->line('  <fg=white>3.</> Payload URL: <fg=gray>'.$webhookUrl.'</>');
             $this->line('  <fg=white>4.</> Content type: <fg=gray>application/json</>');
             $this->line('  <fg=white>5.</> Events: <fg=gray>Just the push event</>');
+            $this->newLine();
+
+            $this->line('  <fg=white>Option B: Via CLI</>');
+            $this->line('  <fg=gray>─────────────────</>');
+            $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/hooks --method POST \\</>");
+            $this->line("    <fg=cyan>-f name=\"web\" \\</>");
+            $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\" \\</>");
+            $this->line('    <fg=cyan>-f "config[content_type]=json" \\</>');
+            $this->line('    <fg=cyan>-f "events[]=push" \\</>');
+            $this->line('    <fg=cyan>-f active=true</>');
             $this->newLine();
 
             if (! $this->option('no-interaction')) {
