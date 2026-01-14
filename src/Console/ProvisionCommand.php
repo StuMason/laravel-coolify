@@ -1264,9 +1264,11 @@ class ProvisionCommand extends Command
         spin(
             callback: function () use ($applications, $appUuid, $envVars, $existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
-                    if (isset($existingKeys[$env['key']])) {
-                        // Env var exists - update it
-                        $applications->updateEnv($appUuid, $env);
+                    if (isset($existingKeys[$env['key']]) && $existingKeys[$env['key']]) {
+                        // Env var exists - update it (include the env var UUID)
+                        $applications->updateEnv($appUuid, array_merge($env, [
+                            'uuid' => $existingKeys[$env['key']],
+                        ]));
                         $updated++;
                     } else {
                         // Env var doesn't exist - create it
