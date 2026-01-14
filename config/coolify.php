@@ -250,23 +250,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Nixpacks Configuration
+    | Docker Configuration
     |--------------------------------------------------------------------------
     |
-    | Configuration options for the nixpacks.toml generator. These settings
-    | control PHP version, Node version, nginx settings, and PHP-FPM tuning.
-    | The generator creates a production-ready supervisor-based setup.
+    | Configuration options for the Dockerfile generator. These settings
+    | control PHP version, nginx settings, and PHP runtime tuning.
+    | The generator creates a production-ready multi-stage Dockerfile with
+    | supervisor managing php-fpm, nginx, and detected workers.
     |
     */
 
-    'nixpacks' => [
-        // PHP version to use. Available: php81, php82, php83, php84
-        // See: https://search.nixos.org/packages?query=php
-        'php_version' => env('COOLIFY_PHP_VERSION', 'php84'),
+    'docker' => [
+        // PHP version for the production image (e.g., '8.3', '8.4')
+        'php_version' => env('COOLIFY_PHP_VERSION', '8.4'),
 
-        // Node.js version to use when package.json is detected.
-        // See: https://search.nixos.org/packages?query=nodejs
-        'node_version' => env('COOLIFY_NODE_VERSION', 'nodejs_22'),
+        // Health check endpoint path
+        'health_check_path' => env('COOLIFY_HEALTH_CHECK_PATH', '/up'),
 
         // Nginx configuration
         'nginx' => [
@@ -275,14 +274,10 @@ return [
             'post_max_size' => env('COOLIFY_POST_MAX_SIZE', '35M'),
         ],
 
-        // PHP-FPM pool configuration
-        // Tune these based on your server's available memory
-        // Rule of thumb: max_children = (available RAM - 512MB) / 50MB per process
-        'phpfpm' => [
-            'max_children' => env('COOLIFY_PHPFPM_MAX_CHILDREN', 50),
-            'start_servers' => env('COOLIFY_PHPFPM_START_SERVERS', 18),
-            'min_spare_servers' => env('COOLIFY_PHPFPM_MIN_SPARE', 4),
-            'max_spare_servers' => env('COOLIFY_PHPFPM_MAX_SPARE', 32),
+        // PHP runtime configuration
+        'php' => [
+            'memory_limit' => env('COOLIFY_PHP_MEMORY_LIMIT', '256M'),
+            'max_execution_time' => env('COOLIFY_PHP_MAX_EXECUTION_TIME', 60),
         ],
     ],
 

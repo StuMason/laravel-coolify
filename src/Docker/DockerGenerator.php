@@ -112,6 +112,9 @@ class DockerGenerator
      */
     public function generateDockerfile(): string
     {
+        $phpVersion = config('coolify.docker.php_version') ?? '8.4';
+        $healthCheckPath = config('coolify.docker.health_check_path') ?? '/up';
+
         $phpExtensions = $this->getPhpExtensions();
         $extensionList = implode(' ', $phpExtensions);
 
@@ -126,7 +129,10 @@ class DockerGenerator
             ? "\nENV CHROMIUM_PATH=/usr/bin/chromium \\\n    BROWSERSHOT_CHROME_PATH=/usr/bin/chromium"
             : '';
 
-        $healthCheckPath = config('coolify.docker.health_check_path', '/up');
+        // Build frontend stage only if package.json exists
+        $hasNode = $this->hasNodeDependencies();
+        $frontendStage = $hasNode ? $this->getFrontendBuildStage() : '';
+        $frontendCopy = $hasNode ? 'COPY --from=frontend-build /app/public/build ./public/build' : '# No frontend build (no package.json detected)';
 
         return <<<DOCKERFILE
 # ============================================
@@ -144,27 +150,11 @@ RUN composer install \\
     --no-autoloader \\
     --prefer-dist \\
     --ignore-platform-reqs
-
+{$frontendStage}
 # ============================================
-# Stage 2: Frontend Build
+# Stage 2: Production Image
 # ============================================
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY vite.config.* tsconfig.json* ./
-COPY resources ./resources
-COPY public ./public
-
-RUN npm run build
-
-# ============================================
-# Stage 3: Production Image
-# ============================================
-FROM php:8.4-fpm-bookworm AS production
+FROM php:{$phpVersion}-fpm-bookworm AS production
 
 LABEL maintainer="Laravel Coolify" \\
       description="Laravel application deployed via Coolify"
@@ -205,7 +195,7 @@ COPY bootstrap ./bootstrap
 COPY config ./config
 COPY database ./database
 COPY public ./public
-COPY --from=frontend-build /app/public/build ./public/build
+{$frontendCopy}
 COPY routes ./routes
 COPY storage ./storage
 COPY resources/views ./resources/views
@@ -229,6 +219,32 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
 EXPOSE 8080
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+DOCKERFILE;
+    }
+
+    /**
+     * Get the frontend build stage for the Dockerfile.
+     */
+    protected function getFrontendBuildStage(): string
+    {
+        return <<<'DOCKERFILE'
+
+# ============================================
+# Frontend Build Stage
+# ============================================
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+COPY vite.config.* tsconfig.json* ./
+COPY resources ./resources
+COPY public ./public
+
+RUN npm run build
+
 DOCKERFILE;
     }
 
@@ -280,9 +296,9 @@ CONF;
      */
     public function generateNginxConf(): string
     {
-        $clientMaxBodySize = config('coolify.docker.nginx.client_max_body_size', '35M');
-        $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize', '30M');
-        $postMaxSize = config('coolify.docker.nginx.post_max_size', '35M');
+        $clientMaxBodySize = config('coolify.docker.nginx.client_max_body_size') ?? '35M';
+        $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize') ?? '30M';
+        $postMaxSize = config('coolify.docker.nginx.post_max_size') ?? '35M';
 
         // Collect nginx location blocks from detectors
         $extraLocations = [];
@@ -386,10 +402,10 @@ NGINX;
      */
     public function generatePhpIni(): string
     {
-        $memoryLimit = config('coolify.docker.php.memory_limit', '256M');
-        $maxExecutionTime = config('coolify.docker.php.max_execution_time', 60);
-        $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize', '30M');
-        $postMaxSize = config('coolify.docker.nginx.post_max_size', '35M');
+        $memoryLimit = config('coolify.docker.php.memory_limit') ?? '256M';
+        $maxExecutionTime = config('coolify.docker.php.max_execution_time') ?? 60;
+        $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize') ?? '30M';
+        $postMaxSize = config('coolify.docker.nginx.post_max_size') ?? '35M';
 
         return <<<INI
 ; PHP Configuration for Production
