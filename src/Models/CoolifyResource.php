@@ -3,6 +3,7 @@
 namespace Stumason\Coolify\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -60,9 +61,11 @@ class CoolifyResource extends Model
      */
     public function setAsDefault(): self
     {
-        static::where('is_default', true)->update(['is_default' => false]);
-        $this->update(['is_default' => true]);
+        return DB::transaction(function () {
+            static::where('is_default', true)->update(['is_default' => false]);
+            $this->update(['is_default' => true]);
 
-        return $this;
+            return $this;
+        });
     }
 }

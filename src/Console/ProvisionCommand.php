@@ -356,7 +356,7 @@ class ProvisionCommand extends Command
             }
 
             // Save resource configuration to database
-            CoolifyResource::updateOrCreate(
+            $resource = CoolifyResource::updateOrCreate(
                 ['name' => $appName],
                 [
                     'server_uuid' => $serverUuid,
@@ -368,9 +368,9 @@ class ProvisionCommand extends Command
                     'application_uuid' => $appUuid,
                     'database_uuid' => $dbUuid,
                     'redis_uuid' => $redisUuid,
-                    'is_default' => true,
                 ]
             );
+            $resource->setAsDefault();
 
             $this->newLine();
             $this->line('  <fg=gray>Resource configuration saved to database</>');

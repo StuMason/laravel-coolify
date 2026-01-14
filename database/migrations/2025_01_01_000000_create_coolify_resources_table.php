@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('application_uuid')->nullable();
             $table->string('database_uuid')->nullable();
             $table->string('redis_uuid')->nullable();
-            $table->boolean('is_default')->default(false);
+            $table->boolean('is_default')->default(false)->index();
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
