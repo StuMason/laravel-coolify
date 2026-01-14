@@ -18,22 +18,7 @@ return [
     // Team ID (for multi-team setups)
     'team_id' => env('COOLIFY_TEAM_ID'),
 
-    // Application UUID (set by provision)
-    'application_uuid' => env('COOLIFY_APPLICATION_UUID'),
-
-    // Server UUID
-    'server_uuid' => env('COOLIFY_SERVER_UUID'),
-
-    // Project UUID
-    'project_uuid' => env('COOLIFY_PROJECT_UUID'),
-
-    // Environment name
-    'environment' => env('COOLIFY_ENVIRONMENT', 'production'),
-
-    // Deploy key UUID for git access
-    'deploy_key_uuid' => env('COOLIFY_DEPLOY_KEY_UUID'),
-
-    // GitHub App UUID (optional)
+    // GitHub App UUID (optional, for repo listing)
     'github_app_uuid' => env('COOLIFY_GITHUB_APP_UUID'),
 
     // Dashboard URI path
@@ -44,12 +29,6 @@ return [
 
     // Dashboard middleware
     'middleware' => ['web'],
-
-    // Associated resource UUIDs
-    'resources' => [
-        'database' => env('COOLIFY_DATABASE_UUID'),
-        'redis' => env('COOLIFY_REDIS_UUID'),
-    ],
 
     // Dashboard auto-refresh interval (seconds)
     'polling_interval' => env('COOLIFY_POLLING_INTERVAL', 10),
@@ -84,3 +63,32 @@ return [
     ],
 ];
 ```
+
+## Resource Configuration
+
+Resource UUIDs (application, database, redis, etc.) are stored in the `coolify_resources` database table, not in config. Run the migration after installing:
+
+```bash
+php artisan migrate
+```
+
+See [Database Schema](#database-schema) for the table structure.
+
+## Database Schema
+
+The `coolify_resources` table stores provisioned resource information:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `name` | string | Unique resource name |
+| `server_uuid` | string | Coolify server |
+| `project_uuid` | string | Coolify project |
+| `environment` | string | Environment (production, staging) |
+| `deploy_key_uuid` | string | SSH key for git access |
+| `repository` | string | GitHub repository (owner/repo) |
+| `branch` | string | Git branch |
+| `application_uuid` | string | Coolify application |
+| `database_uuid` | string | PostgreSQL instance |
+| `redis_uuid` | string | Dragonfly/Redis instance |
+| `is_default` | boolean | Default resource for commands |
+| `metadata` | json | Additional data |

@@ -14,7 +14,7 @@ Interactive prompt shows recent deployments to choose from.
 ## Options
 
 ```bash
---uuid=         # Application UUID (defaults to COOLIFY_APPLICATION_UUID)
+--uuid=         # Application UUID (defaults to provisioned app)
 --deployment=   # Specific deployment UUID to rollback to
 --force         # Rollback without confirmation
 ```

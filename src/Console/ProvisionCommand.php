@@ -16,6 +16,7 @@ use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
@@ -55,34 +56,6 @@ class ProvisionCommand extends Command
     protected ?string $postgresInternalUrl = null;
 
     protected ?string $redisInternalUrl = null;
-
-    /**
-     * Save a key-value pair to the .env file immediately.
-     */
-    protected function saveToEnv(string $key, string $value): void
-    {
-        $envPath = base_path('.env');
-
-        if (! File::exists($envPath)) {
-            return;
-        }
-
-        $content = File::get($envPath);
-
-        // Check if the key already exists
-        if (preg_match("/^{$key}=/m", $content)) {
-            // Update existing key
-            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
-        } else {
-            // Add new key (with a Coolify section header if needed)
-            if (! str_contains($content, '# Coolify Resources')) {
-                $content .= "\n# Coolify Resources\n";
-            }
-            $content .= "{$key}={$value}\n";
-        }
-
-        File::put($envPath, $content);
-    }
 
     public function handle(
         CoolifyClient $client,
@@ -149,7 +122,6 @@ class ProvisionCommand extends Command
             if (! $serverUuid) {
                 return self::FAILURE;
             }
-            $this->saveToEnv('COOLIFY_SERVER_UUID', $serverUuid);
             $this->done("Server selected: {$serverUuid}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -161,7 +133,6 @@ class ProvisionCommand extends Command
             if (! $projectUuid) {
                 return self::FAILURE;
             }
-            $this->saveToEnv('COOLIFY_PROJECT_UUID', $projectUuid);
             $this->done("Project selected: {$projectUuid}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -170,7 +141,6 @@ class ProvisionCommand extends Command
             $this->step(3, 'Set Environment');
 
             $environment = $this->option('environment') ?? 'production';
-            $this->saveToEnv('COOLIFY_ENVIRONMENT', $environment);
             $this->done("Environment: {$environment}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -182,7 +152,6 @@ class ProvisionCommand extends Command
             if (! $deployKey) {
                 return self::FAILURE;
             }
-            $this->saveToEnv('COOLIFY_DEPLOY_KEY_UUID', $deployKey['uuid']);
             $this->done("Deploy Key: {$deployKey['name']}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -196,7 +165,6 @@ class ProvisionCommand extends Command
             if (! $repoInfo) {
                 return self::FAILURE;
             }
-            $this->saveToEnv('COOLIFY_REPOSITORY', $repoInfo['full_name']);
             $this->done("Repository: {$repoInfo['full_name']}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -208,7 +176,6 @@ class ProvisionCommand extends Command
             if (! $branch) {
                 return self::FAILURE;
             }
-            $this->saveToEnv('COOLIFY_BRANCH', $branch);
             $this->done("Branch: {$branch}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -281,7 +248,6 @@ class ProvisionCommand extends Command
                 $this->line('    Creating PostgreSQL...');
                 $dbUuid = $this->createPostgres($databases, $serverUuid, $projectUuid, $environment, $appName);
                 if ($dbUuid) {
-                    $this->saveToEnv('COOLIFY_DATABASE_UUID', $dbUuid);
                     $this->line("    <fg=green>PostgreSQL created:</> {$dbUuid}");
                 }
             }
@@ -291,7 +257,6 @@ class ProvisionCommand extends Command
                 $redisUuid = $this->createDragonfly($databases, $serverUuid, $projectUuid, $environment, $appName);
                 $cacheType = 'Dragonfly';
                 if ($redisUuid) {
-                    $this->saveToEnv('COOLIFY_REDIS_UUID', $redisUuid);
                     $this->line("    <fg=green>Dragonfly created:</> {$redisUuid}");
                 }
             } elseif ($withRedis) {
@@ -299,7 +264,6 @@ class ProvisionCommand extends Command
                 $redisUuid = $this->createRedis($databases, $serverUuid, $projectUuid, $environment, $appName);
                 $cacheType = 'Redis';
                 if ($redisUuid) {
-                    $this->saveToEnv('COOLIFY_REDIS_UUID', $redisUuid);
                     $this->line("    <fg=green>Redis created:</> {$redisUuid}");
                 }
             }
@@ -329,7 +293,6 @@ class ProvisionCommand extends Command
             if (! $appUuid) {
                 throw new CoolifyApiException('Failed to create application');
             }
-            $this->saveToEnv('COOLIFY_APPLICATION_UUID', $appUuid);
             $this->done("Application created: {$appUuid}");
 
             // ─────────────────────────────────────────────────────────────────
@@ -392,8 +355,25 @@ class ProvisionCommand extends Command
                 $this->components->twoColumnDetail('  '.$cacheType, $redisUuid);
             }
 
+            // Save resource configuration to database
+            CoolifyResource::updateOrCreate(
+                ['name' => $appName],
+                [
+                    'server_uuid' => $serverUuid,
+                    'project_uuid' => $projectUuid,
+                    'environment' => $environment,
+                    'deploy_key_uuid' => $deployKey['uuid'],
+                    'repository' => $repoInfo['full_name'],
+                    'branch' => $branch,
+                    'application_uuid' => $appUuid,
+                    'database_uuid' => $dbUuid,
+                    'redis_uuid' => $redisUuid,
+                    'is_default' => true,
+                ]
+            );
+
             $this->newLine();
-            $this->line('  <fg=gray>.env file updated with Coolify UUIDs</>');
+            $this->line('  <fg=gray>Resource configuration saved to database</>');
             $this->line('  <fg=gray>Database credentials set on Coolify application</>');
 
             // ─────────────────────────────────────────────────────────────────

@@ -3,21 +3,52 @@ title: Multiple Applications
 description: Manage multiple apps from one Laravel install
 ---
 
-## Single Laravel, Multiple Environments
+## Multiple Environments
 
-Use different `.env` files per environment:
+Provision separate environments within the same project:
 
 ```bash
-# Staging
-php artisan coolify:status --uuid=staging-uuid
-
 # Production
-php artisan coolify:status --uuid=prod-uuid
+php artisan coolify:provision \
+  --name="My App" \
+  --environment=production \
+  --branch=main \
+  --all
+
+# Staging
+php artisan coolify:provision \
+  --name="My App Staging" \
+  --environment=staging \
+  --branch=develop \
+  --all
 ```
 
-## Multiple Apps in One Project
+Each provisioning creates a separate record in `coolify_resources`. The most recent becomes the default.
 
-Coolify projects can contain multiple applications:
+## Using Specific Resources
+
+Override the default with `--uuid`:
+
+```bash
+# Deploy staging
+php artisan coolify:deploy --uuid=staging-app-uuid
+
+# Check production status
+php artisan coolify:status --uuid=prod-app-uuid
+
+# View staging logs
+php artisan coolify:logs --uuid=staging-app-uuid
+```
+
+## View All Resources
+
+```bash
+php artisan coolify:status --all
+```
+
+Shows all applications and databases across your Coolify instance.
+
+## Coolify Project Structure
 
 ```mermaid
 graph TB
@@ -35,37 +66,11 @@ graph TB
     end
 ```
 
-Provision each environment separately:
+## Dashboard
 
-```bash
-# Production
-php artisan coolify:provision \
-  --environment=production \
-  --branch=main
+The dashboard shows the default resource. To manage multiple environments:
 
-# Staging
-php artisan coolify:provision \
-  --environment=staging \
-  --branch=develop
-```
+1. Use Coolify's web UI for full environment management
+2. Or use `--uuid` flags with artisan commands
 
-## Shared Resources
-
-For cost savings, staging can share production's database (separate schema) or use SQLite:
-
-```bash
-# Staging with its own smaller resources
-php artisan coolify:provision \
-  --environment=staging \
-  --with-postgres
-```
-
-## Dashboard Access
-
-Configure dashboard to show specific environment:
-
-```bash
-COOLIFY_APPLICATION_UUID=your-app-uuid
-```
-
-Switch environments by updating this value.
+The dashboard includes a direct link to the Coolify console for each resource.

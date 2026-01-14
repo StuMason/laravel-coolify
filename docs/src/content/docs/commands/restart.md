@@ -12,7 +12,7 @@ php artisan coolify:restart
 ## Options
 
 ```bash
---uuid=   # Application UUID (defaults to COOLIFY_APPLICATION_UUID)
+--uuid=   # Application UUID (defaults to provisioned app)
 --force   # Restart without confirmation
 ```
 

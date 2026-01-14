@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
+use Stumason\Coolify\Models\CoolifyResource;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -16,11 +17,12 @@ describe('coolify:deploy command', function () {
     });
 
     it('shows error when no application UUID', function () {
-        config(['coolify.application_uuid' => null]);
+        // Clear the default resource so no application UUID exists
+        CoolifyResource::query()->delete();
 
         $this->artisan('coolify:deploy', ['--force' => true])
             ->assertFailed()
-            ->expectsOutputToContain('No application UUID');
+            ->expectsOutputToContain('No application configured');
     });
 
     it('triggers deployment successfully', function () {

@@ -7,6 +7,7 @@ use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'coolify:logs')]
@@ -59,10 +60,10 @@ class LogsCommand extends Command
      */
     protected function showApplicationLogs(ApplicationRepository $applications): int
     {
-        $uuid = $this->option('uuid') ?? config('coolify.application_uuid');
+        $uuid = $this->option('uuid') ?? CoolifyResource::getDefault()?->application_uuid;
 
         if (! $uuid) {
-            $this->components->error('No application UUID configured. Set COOLIFY_APPLICATION_UUID in your .env file or use --uuid option.');
+            $this->components->error('No application configured. Run coolify:provision first or use --uuid option.');
 
             return self::FAILURE;
         }

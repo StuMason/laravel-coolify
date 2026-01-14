@@ -3,9 +3,19 @@ title: CI/CD Integration
 description: Integrate with GitHub Actions and other CI systems
 ---
 
-## GitHub Actions
+## Recommended: Coolify Webhooks
 
-Deploy on push to main:
+The simplest CI/CD approach is to use Coolify's built-in webhooks. When you provision with `coolify:provision`, a webhook is automatically configured.
+
+1. Go to your GitHub repository settings
+2. Add the webhook URL shown in the Coolify dashboard
+3. Enable "Auto Deploy" in Coolify application settings
+
+Coolify handles deployments automatically on push - no GitHub Actions required.
+
+## GitHub Actions (Optional)
+
+If you need to run tests or other steps before deploying, use the `--uuid` option:
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -16,25 +26,30 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+      - run: composer install
+      - run: php artisan test
 
-      - name: Install dependencies
-        run: composer install --no-dev --prefer-dist
-
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - run: composer install --no-dev
       - name: Deploy to Coolify
         env:
           COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
-          COOLIFY_APPLICATION_UUID: ${{ secrets.COOLIFY_APPLICATION_UUID }}
-        run: php artisan coolify:deploy --force --wait
+        run: php artisan coolify:deploy --uuid=${{ secrets.COOLIFY_APP_UUID }} --force --wait
 ```
 
 ## Required Secrets
@@ -43,15 +58,7 @@ Add to GitHub repository settings:
 
 - `COOLIFY_URL` - Your Coolify instance URL
 - `COOLIFY_TOKEN` - API token
-- `COOLIFY_APPLICATION_UUID` - Application UUID from provision
-
-## Coolify Webhooks
-
-Alternative: Configure Coolify's built-in webhooks for auto-deploy on push.
-
-1. Go to application settings in Coolify
-2. Enable "Auto Deploy"
-3. Add webhook URL to GitHub repository settings
+- `COOLIFY_APP_UUID` - Application UUID (shown after provisioning)
 
 ## Deployment Strategies
 
@@ -75,7 +82,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: php artisan coolify:deploy --tag=${{ github.ref_name }} --force
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - run: composer install --no-dev
+      - name: Deploy tag
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: php artisan coolify:deploy --uuid=${{ secrets.COOLIFY_APP_UUID }} --tag=${{ github.ref_name }} --force
 ```
 
 ## Status Checks
@@ -85,6 +100,6 @@ Wait for deployment and fail workflow on deployment failure:
 ```yaml
 - name: Deploy and verify
   run: |
-    php artisan coolify:deploy --force --wait
+    php artisan coolify:deploy --uuid=${{ secrets.COOLIFY_APP_UUID }} --force --wait
     # Exit code reflects deployment status
 ```

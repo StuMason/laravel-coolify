@@ -5,29 +5,17 @@ description: Configure Laravel Coolify
 
 ## Environment Variables
 
-Core:
+Add to your `.env`:
 
 ```bash
 COOLIFY_URL=https://your-coolify.com  # Coolify instance URL
 COOLIFY_TOKEN=your-api-token          # API token
 ```
 
-Resource UUIDs (set by coolify:provision):
-
-```bash
-COOLIFY_APPLICATION_UUID=   # Your app in Coolify
-COOLIFY_SERVER_UUID=        # Target server
-COOLIFY_PROJECT_UUID=       # Project container
-COOLIFY_DATABASE_UUID=      # PostgreSQL instance
-COOLIFY_REDIS_UUID=         # Dragonfly instance
-COOLIFY_DEPLOY_KEY_UUID=    # SSH key for git
-```
-
 Optional:
 
 ```bash
 COOLIFY_TEAM_ID=            # Team ID (if multiple teams)
-COOLIFY_ENVIRONMENT=production
 COOLIFY_PATH=coolify        # Dashboard URI path
 COOLIFY_TIMEOUT=60          # API request timeout
 COOLIFY_CACHE_TTL=30        # API cache duration
@@ -42,6 +30,17 @@ COOLIFY_HEALTH_CHECK_PATH=/up
 COOLIFY_NGINX_MAX_BODY_SIZE=35M
 COOLIFY_PHP_MEMORY_LIMIT=256M
 ```
+
+## Database Migration
+
+Resource configuration is stored in the database. Run the migration after installing:
+
+```bash
+php artisan vendor:publish --tag=coolify-migrations
+php artisan migrate
+```
+
+This creates the `coolify_resources` table that stores application, database, and server UUIDs after provisioning.
 
 ## Dashboard Authentication
 

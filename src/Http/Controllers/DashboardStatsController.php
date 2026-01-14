@@ -9,6 +9,7 @@ use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Models\CoolifyResource;
 
 class DashboardStatsController extends Controller
 {
@@ -38,8 +39,11 @@ class DashboardStatsController extends Controller
                 return response()->json($stats);
             }
 
+            // Get resource configuration from database
+            $resource = CoolifyResource::getDefault();
+
             // Get deploy key info if configured
-            if ($deployKeyUuid = config('coolify.deploy_key_uuid')) {
+            if ($deployKeyUuid = $resource?->deploy_key_uuid) {
                 try {
                     $key = $securityKeys->get($deployKeyUuid);
                     $stats['deployKey'] = [
@@ -53,7 +57,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get application status
-            if ($uuid = config('coolify.application_uuid')) {
+            if ($uuid = $resource?->application_uuid) {
                 try {
                     $app = $applications->get($uuid);
 
@@ -71,7 +75,7 @@ class DashboardStatsController extends Controller
                     // Build proper Coolify dashboard URL
                     // Format: /project/{project_uuid}/environment/{environment_uuid}/application/{app_uuid}
                     $coolifyUrl = rtrim(config('coolify.url'), '/');
-                    $projectUuid = $app['project']['uuid'] ?? config('coolify.project_uuid');
+                    $projectUuid = $app['project']['uuid'] ?? $resource->project_uuid;
                     $environmentUuid = $app['environment']['uuid'] ?? null;
                     $coolifyDashboardUrl = null;
                     if ($projectUuid && $environmentUuid) {
@@ -127,7 +131,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get database status
-            if ($dbUuid = config('coolify.resources.database')) {
+            if ($dbUuid = $resource?->database_uuid) {
                 try {
                     $db = $databases->get($dbUuid);
                     $stats['databases']['primary'] = $this->formatDatabaseInfo($db, 'database');
@@ -137,7 +141,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get redis status
-            if ($redisUuid = config('coolify.resources.redis')) {
+            if ($redisUuid = $resource?->redis_uuid) {
                 try {
                     $redis = $databases->get($redisUuid);
                     $stats['databases']['redis'] = $this->formatDatabaseInfo($redis, 'redis');

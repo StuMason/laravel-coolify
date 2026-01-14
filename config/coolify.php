@@ -43,76 +43,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Application UUID
-    |--------------------------------------------------------------------------
-    |
-    | The UUID of this application in Coolify. This links your Laravel app
-    | to its corresponding Coolify application for deployments, logs,
-    | and monitoring. Find this in your Coolify application settings.
-    |
-    */
-
-    'application_uuid' => env('COOLIFY_APPLICATION_UUID'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Server UUID
-    |--------------------------------------------------------------------------
-    |
-    | The UUID of the server where this application is deployed. Used for
-    | server-level monitoring and resource management. Find this in your
-    | Coolify server settings.
-    |
-    */
-
-    'server_uuid' => env('COOLIFY_SERVER_UUID'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Project UUID
-    |--------------------------------------------------------------------------
-    |
-    | The UUID of the project this application belongs to in Coolify.
-    | Projects are containers for grouping related applications,
-    | databases, and services together.
-    |
-    */
-
-    'project_uuid' => env('COOLIFY_PROJECT_UUID'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Environment Name
-    |--------------------------------------------------------------------------
-    |
-    | The environment name within your Coolify project. Common values are
-    | 'production', 'staging', or 'development'. This determines which
-    | environment's resources are managed.
-    |
-    */
-
-    'environment' => env('COOLIFY_ENVIRONMENT', 'production'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Deploy Key UUID
-    |--------------------------------------------------------------------------
-    |
-    | The UUID of the SSH key to use for cloning private repositories.
-    | Deploy keys are preferred over GitHub Apps because they don't hit
-    | GitHub API rate limits - they use SSH directly. Find available keys
-    | in Coolify under Security -> Private Keys.
-    |
-    | After provisioning, you'll need to add the public key to your
-    | GitHub repository as a deploy key (Settings -> Deploy Keys).
-    |
-    */
-
-    'deploy_key_uuid' => env('COOLIFY_DEPLOY_KEY_UUID'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | GitHub App UUID (Legacy/Optional)
+    | GitHub App UUID (Optional)
     |--------------------------------------------------------------------------
     |
     | The UUID of a GitHub App for listing repositories during provisioning.
@@ -165,22 +96,6 @@ return [
     */
 
     'middleware' => ['web'],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Resource UUIDs
-    |--------------------------------------------------------------------------
-    |
-    | UUIDs for associated Coolify resources like databases and services.
-    | These enable direct management and monitoring of your app's
-    | infrastructure dependencies from within Laravel.
-    |
-    */
-
-    'resources' => [
-        'database' => env('COOLIFY_DATABASE_UUID'),
-        'redis' => env('COOLIFY_REDIS_UUID'),
-    ],
 
     /*
     |--------------------------------------------------------------------------

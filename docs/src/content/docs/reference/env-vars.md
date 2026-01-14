@@ -10,20 +10,6 @@ description: All supported environment variables
 | `COOLIFY_URL` | Coolify instance URL |
 | `COOLIFY_TOKEN` | API authentication token |
 
-## Resource UUIDs
-
-Set automatically by `coolify:provision`:
-
-| Variable | Description |
-|----------|-------------|
-| `COOLIFY_APPLICATION_UUID` | Application identifier |
-| `COOLIFY_SERVER_UUID` | Target server |
-| `COOLIFY_PROJECT_UUID` | Project container |
-| `COOLIFY_ENVIRONMENT` | Environment name |
-| `COOLIFY_DATABASE_UUID` | PostgreSQL instance |
-| `COOLIFY_REDIS_UUID` | Dragonfly/Redis instance |
-| `COOLIFY_DEPLOY_KEY_UUID` | SSH key for git |
-
 ## Optional
 
 | Variable | Default | Description |
@@ -49,3 +35,9 @@ Set automatically by `coolify:provision`:
 | `COOLIFY_POST_MAX_SIZE` | `35M` | PHP POST limit |
 | `COOLIFY_PHP_MEMORY_LIMIT` | `256M` | PHP memory limit |
 | `COOLIFY_PHP_MAX_EXECUTION_TIME` | `60` | PHP timeout |
+
+## Resource Configuration
+
+Resource UUIDs (application, database, server, etc.) are stored in the database, not environment variables. Run `coolify:provision` to create resources and store their UUIDs automatically.
+
+See [Configuration Reference](/laravel-coolify/reference/config/#database-schema) for the database schema.

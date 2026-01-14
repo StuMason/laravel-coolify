@@ -20,14 +20,33 @@ describe('Coolify Dashboard', function () {
     it('returns stats from API endpoint', function () {
         Http::fake([
             '*/version' => Http::response(['version' => '4.0'], 200),
+            '*/security/keys/test-deploy-key-uuid' => Http::response([
+                'uuid' => 'test-deploy-key-uuid',
+                'name' => 'test-key',
+                'public_key' => 'ssh-ed25519 AAAA...',
+            ], 200),
             '*/applications/test-app-uuid' => Http::response([
                 'uuid' => 'test-app-uuid',
                 'name' => 'My App',
                 'status' => 'running',
                 'fqdn' => 'https://myapp.com',
+                'project' => ['uuid' => 'test-project-uuid'],
+                'environment' => ['uuid' => 'test-env-uuid', 'name' => 'production'],
             ], 200),
             '*/applications/test-app-uuid/deployments' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],
+            ], 200),
+            '*/databases/test-db-uuid' => Http::response([
+                'uuid' => 'test-db-uuid',
+                'name' => 'test-db',
+                'database_type' => 'postgresql',
+                'status' => 'running',
+            ], 200),
+            '*/databases/test-redis-uuid' => Http::response([
+                'uuid' => 'test-redis-uuid',
+                'name' => 'test-redis',
+                'database_type' => 'dragonfly',
+                'status' => 'running',
             ], 200),
         ]);
 
