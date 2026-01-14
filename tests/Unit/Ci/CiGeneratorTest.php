@@ -29,10 +29,10 @@ describe('CiGenerator', function () {
         expect($content)->toContain('name: Deploy to Coolify');
         expect($content)->toContain('branches: [main]');
         expect($content)->toContain('workflow_dispatch:');
-        expect($content)->toContain('curl -X POST');
+        expect($content)->toContain('-X POST');
         expect($content)->toContain('COOLIFY_URL');
         expect($content)->toContain('COOLIFY_TOKEN');
-        expect($content)->toContain('COOLIFY_APPLICATION_UUID');
+        expect($content)->toContain('COOLIFY_APP_UUID');
     });
 
     it('uses custom branch', function () {

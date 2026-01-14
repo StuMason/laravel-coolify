@@ -1060,8 +1060,7 @@ class ProvisionCommand extends Command
             'private_key_uuid' => $deployKeyUuid,
             'git_repository' => "git@github.com:{$gitRepository}.git",
             'git_branch' => $branch,
-            'build_pack' => 'dockerfile',
-            'ports_exposes' => '80',
+            'ports_exposes' => '8080',
             'name' => $appName,
             'domains' => "https://{$domain}",
             'instant_deploy' => false,
@@ -1086,6 +1085,14 @@ class ProvisionCommand extends Command
 
             $this->createdResources['Application'] = $uuid;
             $this->line("    <fg=green>Application created:</> {$uuid}");
+
+            // Update to use Dockerfile build pack (the create endpoint defaults to nixpacks)
+            $this->line('    Setting build pack to dockerfile...');
+            spin(
+                callback: fn () => $applications->update($uuid, ['build_pack' => 'dockerfile']),
+                message: '    Updating build settings...'
+            );
+            $this->line('    <fg=green>Build pack set to dockerfile</>');
 
             return $uuid;
 

@@ -6,8 +6,16 @@ namespace Stumason\Coolify\Ci;
 
 use Illuminate\Support\Facades\File;
 
+/**
+ * Generates GitHub Actions workflow files for automatic deployments to Coolify.
+ *
+ * This class creates a workflow that triggers on push to a specified branch
+ * and calls the Coolify API to deploy the application.
+ */
 class CiGenerator
 {
+    protected const WORKFLOW_FILENAME = 'coolify-deploy.yml';
+
     protected string $branch = 'main';
 
     protected bool $manualTrigger = true;
@@ -56,11 +64,28 @@ jobs:
 
     steps:
       - name: Deploy to Coolify
+        env:
+          COOLIFY_URL: \${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: \${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_APP_UUID: \${{ secrets.COOLIFY_APPLICATION_UUID }}
         run: |
-          curl -X POST "\${{ secrets.COOLIFY_URL }}/api/v1/deploy" \\
-            -H "Authorization: Bearer \${{ secrets.COOLIFY_TOKEN }}" \\
+          response=\$(curl -s -w "\\n%{http_code}" \\
+            -X POST "\${COOLIFY_URL}/api/v1/deploy" \\
+            -H "Authorization: Bearer \${COOLIFY_TOKEN}" \\
             -H "Content-Type: application/json" \\
-            -d '{"uuid": "\${{ secrets.COOLIFY_APPLICATION_UUID }}"}'
+            -d "{\\"uuid\\": \\"\${COOLIFY_APP_UUID}\\"}")
+
+          http_code=\$(echo "\$response" | tail -n1)
+          body=\$(echo "\$response" | sed '\$d')
+
+          if [ "\$http_code" -ne 200 ] && [ "\$http_code" -ne 201 ]; then
+            echo "Deployment failed with HTTP \$http_code"
+            echo "\$body"
+            exit 1
+          fi
+
+          echo "Deployment triggered successfully"
+          echo "\$body"
 YAML;
     }
 
@@ -76,7 +101,7 @@ YAML;
             File::makeDirectory($workflowDir, 0755, true);
         }
 
-        $filePath = $workflowDir.'/coolify-deploy.yml';
+        $filePath = $workflowDir.'/'.self::WORKFLOW_FILENAME;
         File::put($filePath, $this->generate());
 
         return $filePath;
@@ -89,6 +114,6 @@ YAML;
     {
         $basePath = $basePath ?? base_path();
 
-        return File::exists($basePath.'/.github/workflows/coolify-deploy.yml');
+        return File::exists($basePath.'/.github/workflows/'.self::WORKFLOW_FILENAME);
     }
 }
