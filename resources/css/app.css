@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[v-cloak] {
+    display: none !important;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Log viewer styles */
+.log-line {
+    @apply font-mono text-xs leading-relaxed;
+}
+
+.log-timestamp {
+    @apply text-gray-500 mr-2;
+}
+
+.log-error {
+    @apply text-red-400;
+}
+
+.log-warning {
+    @apply text-yellow-400;
+}
+
+.log-success {
+    @apply text-green-400;
+}
+
+.log-info {
+    @apply text-gray-300;
+}
+
+/* Status pulse animation */
+@keyframes status-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.status-pulse {
+    animation: status-pulse 2s ease-in-out infinite;
+}
