@@ -442,10 +442,7 @@ class ProvisionCommand extends Command
             $this->newLine();
 
             if (! $this->option('no-interaction')) {
-                $skipWebhook = ! confirm('Have you set up the webhook? (or skip for now)', default: false);
-                if ($skipWebhook) {
-                    $this->line('  <fg=gray>Skipped webhook setup - you can add it later for auto-deploys</>');
-                }
+                pause('Press ENTER once you have set up the webhook (or to skip for now)...');
             }
 
             // ─────────────────────────────────────────────────────────────────
@@ -1068,6 +1065,11 @@ class ProvisionCommand extends Command
             'name' => $appName,
             'domains' => "https://{$domain}",
             'instant_deploy' => false,
+            // Health check config - Laravel 11+ has /up by default
+            'health_check_enabled' => true,
+            'health_check_path' => '/up',
+            'health_check_method' => 'GET',
+            'health_check_return_code' => 200,
         ];
 
         try {
@@ -1115,6 +1117,13 @@ class ProvisionCommand extends Command
         $envVars[] = ['key' => 'APP_KEY', 'value' => 'base64:'.base64_encode(random_bytes(32))];
         $envVars[] = ['key' => 'APP_URL', 'value' => "https://{$domain}"];
         $envVars[] = ['key' => 'ASSET_URL', 'value' => "https://{$domain}"];
+
+        // Trusted proxies for Coolify's reverse proxy (fixes mixed content errors)
+        $envVars[] = ['key' => 'TRUSTED_PROXIES', 'value' => '*'];
+
+        // Log management best practices (prevents runaway log files)
+        $envVars[] = ['key' => 'LOG_STACK', 'value' => 'daily'];
+        $envVars[] = ['key' => 'LOG_DAILY_MAX_FILES', 'value' => '7'];
 
         // Set Coolify connection (so deployed app can use this package's dashboard/API)
         $envVars[] = ['key' => 'COOLIFY_URL', 'value' => config('coolify.url')];
@@ -1183,7 +1192,32 @@ class ProvisionCommand extends Command
 
         // Copy REVERB_* vars from local .env (credentials)
         $reverbVars = $this->getLocalEnvVars(['REVERB_']);
+
+        // If Reverb credentials don't exist locally, generate them for production
+        if (empty($reverbVars) || ! isset($reverbVars['REVERB_APP_ID'])) {
+            $reverbVars = [
+                'REVERB_APP_ID' => (string) random_int(100000, 999999),
+                'REVERB_APP_KEY' => Str::random(20),
+                'REVERB_APP_SECRET' => Str::random(20),
+            ];
+            $this->line('    Generated Reverb credentials for production');
+        }
+
+        // Always set broadcasting config for Laravel Reverb
+        $envVars[] = ['key' => 'BROADCAST_CONNECTION', 'value' => 'reverb'];
+        $envVars[] = ['key' => 'REVERB_APP_ID', 'value' => $reverbVars['REVERB_APP_ID']];
+        $envVars[] = ['key' => 'REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
+        $envVars[] = ['key' => 'REVERB_APP_SECRET', 'value' => $reverbVars['REVERB_APP_SECRET']];
+        $envVars[] = ['key' => 'REVERB_HOST', 'value' => $domain];
+        $envVars[] = ['key' => 'REVERB_PORT', 'value' => '443'];
+        $envVars[] = ['key' => 'REVERB_SCHEME', 'value' => 'https'];
+
+        // Copy other REVERB_* vars from local .env (if any)
         foreach ($reverbVars as $key => $value) {
+            // Skip the ones we've already set
+            if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET'])) {
+                continue;
+            }
             $envVars[] = ['key' => $key, 'value' => $value];
         }
 
@@ -1194,15 +1228,15 @@ class ProvisionCommand extends Command
         }
 
         // Override VITE_REVERB_* with production values (browser needs to connect to prod domain)
+        $envVars[] = ['key' => 'VITE_REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
         $envVars[] = ['key' => 'VITE_REVERB_HOST', 'value' => $domain];
         $envVars[] = ['key' => 'VITE_REVERB_PORT', 'value' => '443'];
         $envVars[] = ['key' => 'VITE_REVERB_SCHEME', 'value' => 'https'];
 
-        $copiedCount = count($reverbVars) + count($viteVars);
-        if ($copiedCount > 0) {
-            $this->line("    Copying <fg=white>{$copiedCount}</> REVERB/VITE vars from local .env");
-            $this->line('    Overriding VITE_REVERB_HOST/PORT/SCHEME for production');
+        if (count($viteVars) > 0) {
+            $this->line('    Copying <fg=white>'.count($viteVars).'</> VITE vars from local .env');
         }
+        $this->line('    Setting Reverb/VITE vars for production');
 
         $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
