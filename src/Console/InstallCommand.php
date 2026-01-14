@@ -215,8 +215,9 @@ class InstallCommand extends Command
         }
 
         // Find the withMiddleware callback and add trustProxies
-        // Pattern: ->withMiddleware(function (Middleware $middleware) {
-        $pattern = '/(->withMiddleware\s*\(\s*function\s*\(\s*Middleware\s+\$middleware\s*\)\s*\{)/';
+        // Pattern: ->withMiddleware(function (Middleware $middleware): void {
+        // Also handles without return type for older templates
+        $pattern = '/(->withMiddleware\s*\(\s*function\s*\(\s*Middleware\s+\$middleware\s*\)(?:\s*:\s*void)?\s*\{)/';
 
         if (preg_match($pattern, $content)) {
             $replacement = '$1'.PHP_EOL.'        $middleware->trustProxies(at: \'*\');';
