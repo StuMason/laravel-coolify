@@ -7,6 +7,7 @@ Deploy Laravel to [Coolify](https://coolify.io) with one command. Dashboard, CLI
 ```bash
 composer require stumason/laravel-coolify
 php artisan coolify:install
+php artisan vendor:publish --tag=coolify-migrations
 php artisan migrate
 ```
 
