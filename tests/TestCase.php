@@ -2,15 +2,13 @@
 
 namespace Stumason\Coolify\Tests;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use Stumason\Coolify\CoolifyServiceProvider;
 use Stumason\Coolify\Models\CoolifyResource;
 
 abstract class TestCase extends BaseTestCase
 {
-    use RefreshDatabase;
-
     /**
      * Get package providers.
      *
@@ -67,6 +65,26 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Create table if not exists
+        if (! Schema::hasTable('coolify_resources')) {
+            Schema::create('coolify_resources', function ($table) {
+                $table->id();
+                $table->string('name')->unique();
+                $table->string('server_uuid');
+                $table->string('project_uuid');
+                $table->string('environment')->default('production');
+                $table->string('deploy_key_uuid')->nullable();
+                $table->string('repository')->nullable();
+                $table->string('branch')->nullable();
+                $table->string('application_uuid')->nullable();
+                $table->string('database_uuid')->nullable();
+                $table->string('redis_uuid')->nullable();
+                $table->boolean('is_default')->default(false)->index();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // Create default test resource
         $this->createDefaultResource();
