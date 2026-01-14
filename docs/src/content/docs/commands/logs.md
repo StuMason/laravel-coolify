@@ -12,7 +12,7 @@ php artisan coolify:logs
 ## Options
 
 ```bash
---uuid=         # Application UUID (defaults to COOLIFY_APPLICATION_UUID)
+--uuid=         # Application UUID (defaults to provisioned app)
 --deployment=   # Show logs for specific deployment
 --lines=100     # Number of lines to retrieve
 --follow        # Continuously poll for new logs

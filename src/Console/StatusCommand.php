@@ -7,6 +7,7 @@ use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'coolify:status')]
@@ -43,9 +44,11 @@ class StatusCommand extends Command
         }
 
         // Test connection first
-        $this->components->task('Connecting to Coolify', function () use ($client) {
-            return $client->testConnection();
-        });
+        if (! $client->testConnection()) {
+            $this->components->error('Failed to connect to Coolify.');
+
+            return self::FAILURE;
+        }
 
         if ($this->option('all')) {
             return $this->showAllResources($applications, $databases);
@@ -115,10 +118,10 @@ class StatusCommand extends Command
      */
     protected function showApplicationStatus(ApplicationRepository $applications): int
     {
-        $uuid = $this->option('uuid') ?? config('coolify.application_uuid');
+        $uuid = $this->option('uuid') ?? CoolifyResource::getDefault()?->application_uuid;
 
         if (! $uuid) {
-            $this->components->error('No application UUID configured. Set COOLIFY_APPLICATION_UUID in your .env file or use --uuid option.');
+            $this->components->error('No application configured. Run coolify:provision first or use --uuid option.');
 
             return self::FAILURE;
         }

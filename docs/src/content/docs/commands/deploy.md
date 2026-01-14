@@ -12,7 +12,7 @@ php artisan coolify:deploy
 ## Options
 
 ```bash
---uuid=     # Application UUID (defaults to COOLIFY_APPLICATION_UUID)
+--uuid=     # Application UUID (defaults to provisioned app)
 --tag=      # Deploy specific git tag
 --force     # Skip confirmation
 --wait      # Wait for deployment and stream logs

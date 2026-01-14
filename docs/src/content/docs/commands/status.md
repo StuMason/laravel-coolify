@@ -12,8 +12,8 @@ php artisan coolify:status
 ## Options
 
 ```bash
---uuid=   # Application UUID (defaults to COOLIFY_APPLICATION_UUID)
---all     # Show status of all resources (app, database, redis)
+--uuid=   # Application UUID (defaults to provisioned app)
+--all     # Show all applications and databases
 ```
 
 ## Output

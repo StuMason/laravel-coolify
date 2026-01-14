@@ -9,6 +9,7 @@ use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
+use Stumason\Coolify\Models\CoolifyResource;
 
 class Coolify
 {
@@ -100,7 +101,7 @@ class Coolify
      */
     public static function deploy(?string $uuid = null): array
     {
-        $uuid = $uuid ?? config('coolify.application_uuid');
+        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
 
         return static::applications()->deploy($uuid);
     }
@@ -110,7 +111,7 @@ class Coolify
      */
     public static function status(?string $uuid = null): array
     {
-        $uuid = $uuid ?? config('coolify.application_uuid');
+        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
 
         return static::applications()->get($uuid);
     }
@@ -120,7 +121,7 @@ class Coolify
      */
     public static function logs(?string $uuid = null): array
     {
-        $uuid = $uuid ?? config('coolify.application_uuid');
+        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
 
         return static::applications()->logs($uuid);
     }

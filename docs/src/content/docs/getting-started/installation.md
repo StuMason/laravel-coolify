@@ -15,7 +15,11 @@ composer require stumason/laravel-coolify
 php artisan coolify:install
 ```
 
-Publishes `config/coolify.php` and updates `.env.example`.
+This will:
+- Publish `config/coolify.php`
+- Publish and run migrations (creates `coolify_resources` table)
+- Generate Dockerfile and docker configs
+- Configure TrustProxies middleware
 
 ## Get API Token
 
@@ -44,5 +48,5 @@ COOLIFY_CACHE_TTL=30 # Cache duration seconds
 ## Verify
 
 ```bash
-php artisan coolify:status
+php artisan coolify:status --all
 ```
