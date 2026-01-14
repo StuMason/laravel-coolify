@@ -15,16 +15,11 @@ composer require stumason/laravel-coolify
 php artisan coolify:install
 ```
 
-Publishes `config/coolify.php` and generates Dockerfile.
-
-## Run Migration
-
-```bash
-php artisan vendor:publish --tag=coolify-migrations
-php artisan migrate
-```
-
-Creates the `coolify_resources` table for storing provisioned resource configuration.
+This will:
+- Publish `config/coolify.php`
+- Publish and run migrations (creates `coolify_resources` table)
+- Generate Dockerfile and docker configs
+- Configure TrustProxies middleware
 
 ## Get API Token
 

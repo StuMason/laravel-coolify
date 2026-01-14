@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Stumason\Coolify\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Stumason\Coolify\Docker\DockerGenerator;
@@ -41,7 +42,7 @@ class InstallCommand extends Command
         info('Installing Laravel Coolify...');
         $this->newLine();
 
-        // Publish config and service provider
+        // Publish config, service provider, and migrations
         collect([
             'Service Provider' => fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'coolify-provider',
@@ -51,10 +52,24 @@ class InstallCommand extends Command
                 '--tag' => 'coolify-config',
                 '--force' => $this->option('force'),
             ]) == 0,
+            'Migrations' => fn () => $this->callSilent('vendor:publish', [
+                '--tag' => 'coolify-migrations',
+                '--force' => $this->option('force'),
+            ]) == 0,
         ])->each(fn ($task, $description) => $this->components->task($description, $task));
 
         $this->registerCoolifyServiceProvider();
         $this->configureTrustedProxies();
+
+        // Run migrations (gracefully handles if already migrated)
+        $this->components->task('Run Migrations', function () {
+            // Check if table exists to avoid re-running
+            if (! Schema::hasTable('coolify_resources')) {
+                return $this->callSilent('migrate') == 0;
+            }
+
+            return true;
+        });
 
         // Generate Docker deployment config
         if (! $this->option('no-docker')) {

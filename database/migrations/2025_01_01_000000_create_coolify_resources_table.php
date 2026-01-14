@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('coolify_resources')) {
+            return;
+        }
+
         Schema::create('coolify_resources', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();

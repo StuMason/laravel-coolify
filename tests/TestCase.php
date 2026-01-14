@@ -62,14 +62,6 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Define database migrations.
-     */
-    protected function defineDatabaseMigrations(): void
-    {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-    }
-
-    /**
      * Set up the test case.
      */
     protected function setUp(): void

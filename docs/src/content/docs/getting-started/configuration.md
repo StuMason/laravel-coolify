@@ -31,16 +31,9 @@ COOLIFY_NGINX_MAX_BODY_SIZE=35M
 COOLIFY_PHP_MEMORY_LIMIT=256M
 ```
 
-## Database Migration
+## Database Storage
 
-Resource configuration is stored in the database. Run the migration after installing:
-
-```bash
-php artisan vendor:publish --tag=coolify-migrations
-php artisan migrate
-```
-
-This creates the `coolify_resources` table that stores application, database, and server UUIDs after provisioning.
+Resource configuration (UUIDs for applications, databases, etc.) is stored in the `coolify_resources` database table. This is created automatically when you run `php artisan coolify:install`.
 
 ## Dashboard Authentication
 

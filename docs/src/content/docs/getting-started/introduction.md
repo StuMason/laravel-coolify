@@ -42,8 +42,6 @@ coolify:rollback   # Rollback deployment
 ```bash
 composer require stumason/laravel-coolify
 php artisan coolify:install
-php artisan vendor:publish --tag=coolify-migrations
-php artisan migrate
 ```
 
 Add to `.env`:
