@@ -47,7 +47,7 @@ Implementations in `src/Repositories/` wrap the `CoolifyClient`.
 ### Artisan Commands
 
 Located in `src/Console/`:
-- `InstallCommand` - Publish config and service provider
+- `InstallCommand` - Publish config, service provider, and generate Docker files
 - `StatusCommand` - Show application/resource status
 - `DeployCommand` - Trigger deployments
 - `LogsCommand` - View application logs
@@ -73,6 +73,14 @@ Uses Orchestra Testbench for Laravel package testing with Pest.
 - `tests/Feature/Http/` - Dashboard and API endpoint tests
 
 All HTTP calls are mocked using `Http::fake()`.
+
+### Docker Generation
+
+- `src/Docker/DockerGenerator.php` - Multi-stage Dockerfile generator
+- `src/Detectors/` - Package detectors (Horizon, Reverb, Scheduler)
+- Auto-detects Laravel packages and configures supervisor workers
+- Generates production-ready Dockerfile, nginx.conf, supervisord.conf, php.ini
+- Configurable via `config/coolify.php` under the `docker` key
 
 ## Key Patterns
 
