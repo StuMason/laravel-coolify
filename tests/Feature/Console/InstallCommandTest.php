@@ -8,18 +8,38 @@ beforeEach(function () {
     // Set as unconfigured so coolify:status is not called
     config(['coolify.token' => null]);
 
-    // Clean up nixpacks.toml
-    $nixpacksPath = base_path('nixpacks.toml');
-    if (File::exists($nixpacksPath)) {
-        File::delete($nixpacksPath);
+    // Clean up generated files
+    $files = [
+        base_path('Dockerfile'),
+        base_path('docker/supervisord.conf'),
+        base_path('docker/nginx.conf'),
+        base_path('docker/php.ini'),
+    ];
+    foreach ($files as $file) {
+        if (File::exists($file)) {
+            File::delete($file);
+        }
+    }
+    if (File::isDirectory(base_path('docker'))) {
+        File::deleteDirectory(base_path('docker'));
     }
 });
 
 afterEach(function () {
-    // Clean up nixpacks.toml
-    $nixpacksPath = base_path('nixpacks.toml');
-    if (File::exists($nixpacksPath)) {
-        File::delete($nixpacksPath);
+    // Clean up generated files
+    $files = [
+        base_path('Dockerfile'),
+        base_path('docker/supervisord.conf'),
+        base_path('docker/nginx.conf'),
+        base_path('docker/php.ini'),
+    ];
+    foreach ($files as $file) {
+        if (File::exists($file)) {
+            File::delete($file);
+        }
+    }
+    if (File::isDirectory(base_path('docker'))) {
+        File::deleteDirectory(base_path('docker'));
     }
 });
 
@@ -32,38 +52,38 @@ describe('InstallCommand', function () {
             File::delete($configPath);
         }
 
-        $this->artisan('coolify:install', ['--no-nixpacks' => true])
+        $this->artisan('coolify:install', ['--no-docker' => true])
             ->assertSuccessful();
     });
 
     it('displays installation success message', function () {
-        $this->artisan('coolify:install', ['--no-nixpacks' => true])
+        $this->artisan('coolify:install', ['--no-docker' => true])
             ->expectsOutputToContain('Laravel Coolify installed successfully')
             ->assertSuccessful();
     });
 
     it('shows helpful next steps', function () {
-        $this->artisan('coolify:install', ['--no-nixpacks' => true])
+        $this->artisan('coolify:install', ['--no-docker' => true])
             ->expectsOutputToContain('COOLIFY_TOKEN')
             ->assertSuccessful();
     });
 
-    it('generates nixpacks.toml', function () {
-        $nixpacksPath = base_path('nixpacks.toml');
-
+    it('generates Dockerfile by default', function () {
         $this->artisan('coolify:install', ['--force' => true])
             ->assertSuccessful();
 
-        expect(File::exists($nixpacksPath))->toBeTrue();
-        expect(File::get($nixpacksPath))->toContain('[phases.build]');
+        expect(File::exists(base_path('Dockerfile')))->toBeTrue();
+        expect(File::exists(base_path('docker/supervisord.conf')))->toBeTrue();
+        expect(File::exists(base_path('docker/nginx.conf')))->toBeTrue();
+        expect(File::exists(base_path('docker/php.ini')))->toBeTrue();
+
+        expect(File::get(base_path('Dockerfile')))->toContain('FROM php:8.4-fpm-bookworm');
     });
 
-    it('skips nixpacks generation with --no-nixpacks flag', function () {
-        $nixpacksPath = base_path('nixpacks.toml');
-
-        $this->artisan('coolify:install', ['--no-nixpacks' => true])
+    it('skips Docker generation with --no-docker flag', function () {
+        $this->artisan('coolify:install', ['--no-docker' => true])
             ->assertSuccessful();
 
-        expect(File::exists($nixpacksPath))->toBeFalse();
+        expect(File::exists(base_path('Dockerfile')))->toBeFalse();
     });
 });

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Stumason\Coolify\Nixpacks\Detectors;
+namespace Stumason\Coolify\Detectors;
 
 use Illuminate\Support\Facades\File;
 
