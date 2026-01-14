@@ -1236,9 +1236,9 @@ class ProvisionCommand extends Command
             $envVars[] = ['key' => 'REVERB_PORT', 'value' => '443'];
             $envVars[] = ['key' => 'REVERB_SCHEME', 'value' => 'https'];
 
-            // Copy other REVERB_* vars from local .env
+            // Copy other REVERB_* vars from local .env (skip ones we already set above)
             foreach ($reverbVars as $key => $value) {
-                if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET'])) {
+                if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET', 'REVERB_HOST', 'REVERB_PORT', 'REVERB_SCHEME'])) {
                     continue;
                 }
                 $envVars[] = ['key' => $key, 'value' => $value];
@@ -1267,6 +1267,13 @@ class ProvisionCommand extends Command
             $this->line('    Copying <fg=white>'.count($viteVars).'</> VITE vars from local .env');
         }
 
+        // Deduplicate env vars by key (later values override earlier ones)
+        $uniqueEnvVars = [];
+        foreach ($envVars as $env) {
+            $uniqueEnvVars[$env['key']] = $env;
+        }
+        $envVars = array_values($uniqueEnvVars);
+
         $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
         // Get existing env vars to determine if we need to create or update
@@ -1287,7 +1294,7 @@ class ProvisionCommand extends Command
         $updated = 0;
 
         spin(
-            callback: function () use ($applications, $appUuid, $envVars, $existingKeys, &$created, &$updated): void {
+            callback: function () use ($applications, $appUuid, $envVars, &$existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
                     if (isset($existingKeys[$env['key']]) && $existingKeys[$env['key']]) {
                         // Env var exists - update it (include the env var UUID)
@@ -1297,7 +1304,14 @@ class ProvisionCommand extends Command
                         $updated++;
                     } else {
                         // Env var doesn't exist - create it
-                        $applications->createEnv($appUuid, $env);
+                        $result = $applications->createEnv($appUuid, $env);
+                        // Track the created var to avoid duplicate create attempts
+                        if (isset($result['uuid'])) {
+                            $existingKeys[$env['key']] = $result['uuid'];
+                        } else {
+                            // Mark as created even without UUID to prevent duplicate creates
+                            $existingKeys[$env['key']] = true;
+                        }
                         $created++;
                     }
                 }
