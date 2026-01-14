@@ -459,7 +459,7 @@ class ProvisionCommand extends Command
             $this->line('  <fg=white>Option B: Via CLI</>');
             $this->line('  <fg=gray>─────────────────</>');
             $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/hooks --method POST \\</>");
-            $this->line("    <fg=cyan>-f name=\"web\" \\</>");
+            $this->line('    <fg=cyan>-f name="web" \\</>');
             $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\" \\</>");
             $this->line('    <fg=cyan>-f "config[content_type]=json" \\</>');
             $this->line('    <fg=cyan>-f "events[]=push" \\</>');
