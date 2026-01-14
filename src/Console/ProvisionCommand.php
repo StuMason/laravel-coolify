@@ -1060,8 +1060,8 @@ class ProvisionCommand extends Command
             'private_key_uuid' => $deployKeyUuid,
             'git_repository' => "git@github.com:{$gitRepository}.git",
             'git_branch' => $branch,
-            'build_pack' => 'nixpacks',
-            'ports_exposes' => '8080',
+            'build_pack' => 'dockerfile',
+            'ports_exposes' => '80',
             'name' => $appName,
             'domains' => "https://{$domain}",
             'instant_deploy' => false,
@@ -1389,9 +1389,9 @@ class ProvisionCommand extends Command
             $allPassed = false;
         }
 
-        // Check 2: nixpacks.toml exists
-        $nixpacksCheck = $this->checkNixpacksToml();
-        if ($nixpacksCheck === false) {
+        // Check 2: Dockerfile exists
+        $dockerfileCheck = $this->checkDockerfile();
+        if ($dockerfileCheck === false) {
             $allPassed = false;
         }
 
@@ -1468,43 +1468,43 @@ class ProvisionCommand extends Command
     }
 
     /**
-     * Check if nixpacks.toml exists.
+     * Check if Dockerfile exists.
      */
-    protected function checkNixpacksToml(): bool
+    protected function checkDockerfile(): bool
     {
-        $nixpacksPath = base_path('nixpacks.toml');
+        $dockerfilePath = base_path('Dockerfile');
 
-        if (! File::exists($nixpacksPath)) {
-            $this->line('    <fg=yellow>[!]</> nixpacks.toml not found');
+        if (! File::exists($dockerfilePath)) {
+            $this->line('    <fg=yellow>[!]</> Dockerfile not found');
             $this->newLine();
             $this->line('        <fg=gray>Run:</> php artisan coolify:install');
-            $this->line('        <fg=gray>This will generate an optimized nixpacks.toml for your Laravel app.</>');
+            $this->line('        <fg=gray>This will generate an optimized Dockerfile for your Laravel app.</>');
             $this->newLine();
 
             if (! $this->option('force') && ! $this->option('no-interaction')) {
-                if (confirm('Would you like to generate nixpacks.toml now?', true)) {
+                if (confirm('Would you like to generate Dockerfile now?', true)) {
                     $exitCode = $this->call('coolify:install', ['--force' => true]);
                     $this->newLine();
 
-                    if ($exitCode === self::SUCCESS && File::exists($nixpacksPath)) {
-                        $this->line('    <fg=green>[✓]</> nixpacks.toml generated');
+                    if ($exitCode === self::SUCCESS && File::exists($dockerfilePath)) {
+                        $this->line('    <fg=green>[✓]</> Dockerfile generated');
 
                         return true;
                     }
 
                     if ($exitCode !== self::SUCCESS) {
-                        $this->line('    <fg=red>[✗]</> Failed to generate nixpacks.toml');
+                        $this->line('    <fg=red>[✗]</> Failed to generate Dockerfile');
 
                         return true; // Don't fail provisioning, just warn
                     }
                 }
             }
 
-            // Warn but don't fail - Coolify can build without nixpacks.toml
+            // Warn but don't fail - Coolify can build without Dockerfile
             return true;
         }
 
-        $this->line('    <fg=green>[✓]</> nixpacks.toml found');
+        $this->line('    <fg=green>[✓]</> Dockerfile found');
 
         return true;
     }
