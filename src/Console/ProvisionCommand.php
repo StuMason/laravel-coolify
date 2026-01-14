@@ -1187,53 +1187,60 @@ class ProvisionCommand extends Command
             }
         }
 
-        // Copy REVERB_* vars from local .env (credentials)
+        // Copy REVERB_* vars from local .env (only if app uses Reverb)
         $reverbVars = $this->getLocalEnvVars(['REVERB_']);
 
-        // If Reverb credentials don't exist locally, generate them for production
-        if (empty($reverbVars) || ! isset($reverbVars['REVERB_APP_ID'])) {
-            $reverbVars = [
-                'REVERB_APP_ID' => (string) random_int(100000, 999999),
-                'REVERB_APP_KEY' => Str::random(20),
-                'REVERB_APP_SECRET' => Str::random(20),
-            ];
-            $this->line('    Generated Reverb credentials for production');
-        }
-
-        // Always set broadcasting config for Laravel Reverb
-        $envVars[] = ['key' => 'BROADCAST_CONNECTION', 'value' => 'reverb'];
-        $envVars[] = ['key' => 'REVERB_APP_ID', 'value' => $reverbVars['REVERB_APP_ID']];
-        $envVars[] = ['key' => 'REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
-        $envVars[] = ['key' => 'REVERB_APP_SECRET', 'value' => $reverbVars['REVERB_APP_SECRET']];
-        $envVars[] = ['key' => 'REVERB_HOST', 'value' => $domain];
-        $envVars[] = ['key' => 'REVERB_PORT', 'value' => '443'];
-        $envVars[] = ['key' => 'REVERB_SCHEME', 'value' => 'https'];
-
-        // Copy other REVERB_* vars from local .env (if any)
-        foreach ($reverbVars as $key => $value) {
-            // Skip the ones we've already set
-            if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET'])) {
-                continue;
+        if (! empty($reverbVars)) {
+            // Generate missing credentials if needed
+            if (! isset($reverbVars['REVERB_APP_ID'])) {
+                $reverbVars['REVERB_APP_ID'] = (string) random_int(100000, 999999);
             }
-            $envVars[] = ['key' => $key, 'value' => $value];
+            if (! isset($reverbVars['REVERB_APP_KEY'])) {
+                $reverbVars['REVERB_APP_KEY'] = Str::random(20);
+            }
+            if (! isset($reverbVars['REVERB_APP_SECRET'])) {
+                $reverbVars['REVERB_APP_SECRET'] = Str::random(20);
+            }
+
+            // Set broadcasting config for Laravel Reverb
+            $envVars[] = ['key' => 'BROADCAST_CONNECTION', 'value' => 'reverb'];
+            $envVars[] = ['key' => 'REVERB_APP_ID', 'value' => $reverbVars['REVERB_APP_ID']];
+            $envVars[] = ['key' => 'REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
+            $envVars[] = ['key' => 'REVERB_APP_SECRET', 'value' => $reverbVars['REVERB_APP_SECRET']];
+            $envVars[] = ['key' => 'REVERB_HOST', 'value' => $domain];
+            $envVars[] = ['key' => 'REVERB_PORT', 'value' => '443'];
+            $envVars[] = ['key' => 'REVERB_SCHEME', 'value' => 'https'];
+
+            // Copy other REVERB_* vars from local .env
+            foreach ($reverbVars as $key => $value) {
+                if (in_array($key, ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET'])) {
+                    continue;
+                }
+                $envVars[] = ['key' => $key, 'value' => $value];
+            }
+
+            // Set VITE_REVERB_* with production values (browser needs to connect to prod domain)
+            $envVars[] = ['key' => 'VITE_REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
+            $envVars[] = ['key' => 'VITE_REVERB_HOST', 'value' => $domain];
+            $envVars[] = ['key' => 'VITE_REVERB_PORT', 'value' => '443'];
+            $envVars[] = ['key' => 'VITE_REVERB_SCHEME', 'value' => 'https'];
+
+            $this->line('    Configured Reverb for production');
         }
 
         // Copy VITE_* vars from local .env (with variable interpolation)
         $viteVars = $this->getLocalEnvVars(['VITE_']);
         foreach ($viteVars as $key => $value) {
+            // Skip VITE_REVERB_* if we already set them above
+            if (! empty($reverbVars) && Str::startsWith($key, 'VITE_REVERB_')) {
+                continue;
+            }
             $envVars[] = ['key' => $key, 'value' => $value];
         }
-
-        // Override VITE_REVERB_* with production values (browser needs to connect to prod domain)
-        $envVars[] = ['key' => 'VITE_REVERB_APP_KEY', 'value' => $reverbVars['REVERB_APP_KEY']];
-        $envVars[] = ['key' => 'VITE_REVERB_HOST', 'value' => $domain];
-        $envVars[] = ['key' => 'VITE_REVERB_PORT', 'value' => '443'];
-        $envVars[] = ['key' => 'VITE_REVERB_SCHEME', 'value' => 'https'];
 
         if (count($viteVars) > 0) {
             $this->line('    Copying <fg=white>'.count($viteVars).'</> VITE vars from local .env');
         }
-        $this->line('    Setting Reverb/VITE vars for production');
 
         $this->line('    Setting <fg=white>'.count($envVars).'</> environment variables...');
 
