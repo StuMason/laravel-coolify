@@ -7,7 +7,7 @@ namespace Stumason\Coolify\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Stumason\Coolify\Nixpacks\NixpacksGenerator;
+use Stumason\Coolify\Docker\DockerGenerator;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
@@ -24,14 +24,14 @@ class InstallCommand extends Command
      */
     protected $signature = 'coolify:install
                             {--force : Overwrite existing files}
-                            {--no-nixpacks : Skip nixpacks.toml generation}';
+                            {--no-docker : Skip Dockerfile generation}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Install Laravel Coolify: publish config and generate nixpacks.toml';
+    protected $description = 'Install Laravel Coolify: publish config and generate Dockerfile';
 
     /**
      * Execute the console command.
@@ -56,10 +56,10 @@ class InstallCommand extends Command
         $this->registerCoolifyServiceProvider();
         $this->configureTrustedProxies();
 
-        // Generate nixpacks.toml
-        if (! $this->option('no-nixpacks')) {
+        // Generate Docker deployment config
+        if (! $this->option('no-docker')) {
             $this->newLine();
-            $this->generateNixpacks();
+            $this->generateDocker();
         }
 
         // Summary
@@ -91,28 +91,28 @@ class InstallCommand extends Command
     }
 
     /**
-     * Generate nixpacks.toml based on detected packages.
+     * Generate Docker files based on detected packages.
      */
-    protected function generateNixpacks(): void
+    protected function generateDocker(): void
     {
-        $generator = new NixpacksGenerator;
+        $generator = new DockerGenerator;
 
         // Handle existing file - early returns reduce nesting
         if ($generator->exists() && ! $this->option('force')) {
             if ($this->option('no-interaction')) {
-                warning('nixpacks.toml already exists. Use --force to overwrite.');
+                warning('Dockerfile already exists. Use --force to overwrite.');
 
                 return;
             }
 
-            if (! confirm(label: 'nixpacks.toml already exists. Overwrite?', default: false)) {
-                warning('Skipping nixpacks.toml generation.');
+            if (! confirm(label: 'Dockerfile already exists. Overwrite?', default: false)) {
+                warning('Skipping Docker generation.');
 
                 return;
             }
         }
 
-        $this->line('  <fg=cyan>Generating nixpacks.toml...</>');
+        $this->line('  <fg=cyan>Generating Docker configuration...</>');
         $this->newLine();
 
         // Run detection
@@ -130,26 +130,33 @@ class InstallCommand extends Command
         $this->newLine();
 
         // Generate and write
-        $path = $generator->write();
+        $files = $generator->write();
         $summary = $generator->getSummary();
 
-        $this->line('  <fg=green>Generated nixpacks.toml with:</>');
+        $this->line('  <fg=green>Generated Docker configuration:</>');
 
         $this->line('  <fg=cyan>Supervisor workers:</>');
         foreach ($summary['workers'] as $worker) {
             $this->line("    <fg=white>•</> {$worker}");
         }
 
-        if (! empty($summary['php_extensions'])) {
-            $this->newLine();
-            $this->line('  <fg=cyan>PHP extensions:</>');
-            foreach ($summary['php_extensions'] as $extension) {
-                $this->line("    <fg=white>•</> {$extension}");
-            }
+        $this->newLine();
+        $this->line('  <fg=cyan>PHP extensions:</>');
+        foreach ($summary['php_extensions'] as $extension) {
+            $this->line("    <fg=white>•</> {$extension}");
         }
 
         $this->newLine();
-        $this->components->task('nixpacks.toml', fn () => true);
+        $this->line("  <fg=cyan>Database:</> {$summary['database']}");
+
+        if ($summary['has_browsershot']) {
+            $this->line('  <fg=cyan>Browsershot:</> Chromium dependencies included');
+        }
+
+        $this->newLine();
+        foreach (array_keys($files) as $file) {
+            $this->components->task($file, fn () => true);
+        }
     }
 
     /**
