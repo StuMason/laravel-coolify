@@ -182,6 +182,18 @@ return [
         // Health check endpoint path
         'health_check_path' => env('COOLIFY_HEALTH_CHECK_PATH', '/up'),
 
+        // Use pre-built base images for faster deployments (~12 min -> ~2-3 min)
+        // Set to false to build from scratch (needed for custom PHP extensions)
+        'use_base_image' => env('COOLIFY_USE_BASE_IMAGE', true),
+
+        // Automatically run migrations on container startup
+        // Set to false if you want to manage migrations manually
+        'auto_migrate' => env('COOLIFY_AUTO_MIGRATE', true),
+
+        // Seconds to wait for database connection before running migrations
+        // Increase if your database container starts slowly
+        'db_wait_timeout' => env('COOLIFY_DB_WAIT_TIMEOUT', 30),
+
         // Nginx configuration
         'nginx' => [
             'client_max_body_size' => env('COOLIFY_NGINX_MAX_BODY_SIZE', '35M'),

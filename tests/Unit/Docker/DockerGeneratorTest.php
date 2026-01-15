@@ -43,8 +43,84 @@ afterEach(function () {
     }
 });
 
-describe('DockerGenerator', function () {
-    it('generates Dockerfile with configurable PHP version', function () {
+describe('DockerGenerator with base images (default)', function () {
+    it('uses base image by default', function () {
+        config(['coolify.docker.use_base_image' => true]);
+        config(['coolify.docker.php_version' => '8.4']);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4 AS production');
+        expect($content)->toContain('Using pre-built base image');
+    });
+
+    it('uses correct PHP version in base image tag', function () {
+        config(['coolify.docker.use_base_image' => true]);
+        config(['coolify.docker.php_version' => '8.3']);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.3 AS production');
+    });
+
+    it('uses node variant when package.json exists', function () {
+        config(['coolify.docker.use_base_image' => true]);
+        config(['coolify.docker.php_version' => '8.4']);
+        File::put(base_path('package.json'), '{}');
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4-node AS production');
+        expect($content)->toContain('FROM node:20-alpine AS frontend-build');
+    });
+
+    it('does not install PHP extensions when using base image', function () {
+        config(['coolify.docker.use_base_image' => true]);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->not->toContain('docker-php-ext-install');
+        expect($content)->not->toContain('pecl install');
+        expect($content)->not->toContain('apt-get install');
+    });
+
+    it('includes entrypoint configuration env vars', function () {
+        config(['coolify.docker.use_base_image' => true]);
+        config(['coolify.docker.auto_migrate' => true]);
+        config(['coolify.docker.db_wait_timeout' => 60]);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('ENV AUTO_MIGRATE=true');
+        expect($content)->toContain('DB_WAIT_TIMEOUT=60');
+    });
+});
+
+describe('DockerGenerator from scratch', function () {
+    it('builds from scratch when use_base_image is false', function () {
+        config(['coolify.docker.use_base_image' => false]);
+        config(['coolify.docker.php_version' => '8.4']);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('FROM php:8.4-fpm-bookworm AS production');
+        expect($content)->toContain('Building from scratch');
+    });
+
+    it('uses configurable PHP version when building from scratch', function () {
+        config(['coolify.docker.use_base_image' => false]);
         config(['coolify.docker.php_version' => '8.3']);
 
         $generator = new DockerGenerator;
@@ -54,16 +130,31 @@ describe('DockerGenerator', function () {
         expect($content)->toContain('FROM php:8.3-fpm-bookworm AS production');
     });
 
-    it('defaults to PHP 8.4 when not configured', function () {
-        config(['coolify.docker.php_version' => null]);
+    it('includes PHP extension installation when building from scratch', function () {
+        config(['coolify.docker.use_base_image' => false]);
 
         $generator = new DockerGenerator;
         $generator->detect();
         $content = $generator->generateDockerfile();
 
-        expect($content)->toContain('FROM php:8.4-fpm-bookworm AS production');
+        expect($content)->toContain('docker-php-ext-install');
+        expect($content)->toContain('pecl install redis');
+        expect($content)->toContain('docker-php-ext-enable redis');
     });
 
+    it('includes system dependencies when building from scratch', function () {
+        config(['coolify.docker.use_base_image' => false]);
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('apt-get install');
+        expect($content)->toContain('nginx supervisor curl');
+    });
+});
+
+describe('DockerGenerator common features', function () {
     it('includes frontend build stage when package.json exists', function () {
         File::put(base_path('package.json'), '{}');
 
@@ -136,19 +227,6 @@ describe('DockerGenerator', function () {
         expect($files)->toHaveKey('docker/entrypoint.sh');
     });
 
-    it('generates entrypoint.sh with migrations and optimize', function () {
-        $generator = new DockerGenerator;
-        $generator->detect();
-        $content = $generator->generateEntrypoint();
-
-        expect($content)->toContain('#!/bin/bash');
-        expect($content)->toContain('set -e');
-        expect($content)->toContain('php artisan migrate --force');
-        expect($content)->toContain('php artisan optimize');
-        expect($content)->toContain('php artisan storage:link');
-        expect($content)->toContain('exec /usr/bin/supervisord');
-    });
-
     it('generates Dockerfile with entrypoint', function () {
         $generator = new DockerGenerator;
         $generator->detect();
@@ -171,15 +249,6 @@ describe('DockerGenerator', function () {
         $generator = new DockerGenerator;
 
         expect($generator->exists())->toBeFalse();
-    });
-
-    it('includes redis PECL extension by default', function () {
-        $generator = new DockerGenerator;
-        $generator->detect();
-        $content = $generator->generateDockerfile();
-
-        expect($content)->toContain('pecl install redis');
-        expect($content)->toContain('docker-php-ext-enable redis');
     });
 
     it('returns correct summary', function () {
@@ -208,8 +277,43 @@ describe('DockerGenerator', function () {
     });
 });
 
+describe('DockerGenerator entrypoint', function () {
+    it('generates entrypoint.sh with migrations and optimize', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect($content)->toContain('#!/bin/bash');
+        expect($content)->toContain('set -e');
+        expect($content)->toContain('php artisan migrate --force');
+        expect($content)->toContain('php artisan optimize');
+        expect($content)->toContain('php artisan storage:link');
+        expect($content)->toContain('exec /usr/bin/supervisord');
+    });
+
+    it('includes database connection wait with retry', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect($content)->toContain('php artisan db:show');
+        expect($content)->toContain('DB_WAIT_TIMEOUT');
+        expect($content)->toContain('Waiting for database');
+    });
+
+    it('respects AUTO_MIGRATE environment variable', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect($content)->toContain('AUTO_MIGRATE="${AUTO_MIGRATE:-true}"');
+        expect($content)->toContain('if [ "$AUTO_MIGRATE" = "true" ]');
+        expect($content)->toContain('Skipping migrations (AUTO_MIGRATE=false)');
+    });
+});
+
 describe('DockerGenerator database detection', function () {
-    it('detects PostgreSQL from .env', function () {
+    it('detects PostgreSQL from .env for summary', function () {
         $envPath = base_path('.env');
         $originalContent = File::exists($envPath) ? File::get($envPath) : null;
 
@@ -217,9 +321,9 @@ describe('DockerGenerator database detection', function () {
 
         $generator = new DockerGenerator;
         $generator->detect();
-        $content = $generator->generateDockerfile();
+        $summary = $generator->getSummary();
 
-        expect($content)->toContain('pdo_pgsql pgsql');
+        expect($summary['database'])->toBe('pgsql');
 
         if ($originalContent !== null) {
             File::put($envPath, $originalContent);
@@ -236,10 +340,30 @@ describe('DockerGenerator database detection', function () {
 
         $generator = new DockerGenerator;
         $generator->detect();
+        $summary = $generator->getSummary();
+
+        expect($summary['database'])->toBe('mysql');
+
+        if ($originalContent !== null) {
+            File::put($envPath, $originalContent);
+        } else {
+            File::delete($envPath);
+        }
+    });
+
+    it('installs correct DB extension when building from scratch', function () {
+        config(['coolify.docker.use_base_image' => false]);
+        $envPath = base_path('.env');
+        $originalContent = File::exists($envPath) ? File::get($envPath) : null;
+
+        File::put($envPath, "DB_CONNECTION=pgsql\n");
+
+        $generator = new DockerGenerator;
+        $generator->detect();
         $content = $generator->generateDockerfile();
 
-        expect($content)->toContain('pdo_mysql');
-        expect($content)->not->toContain('pdo_pgsql');
+        expect($content)->toContain('pdo_pgsql');
+        expect($content)->toContain('pgsql');
 
         if ($originalContent !== null) {
             File::put($envPath, $originalContent);
