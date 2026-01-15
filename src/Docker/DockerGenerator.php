@@ -677,7 +677,7 @@ CONF;
 ; Laravel Scheduler
 ; ===================
 [program:scheduler]
-command=/bin/sh -c "while true; do /usr/local/bin/php /var/www/html/artisan schedule:run --verbose --no-interaction >> /dev/stdout 2>&1; sleep 60; done"
+command=/bin/sh -c "while true; do /usr/local/bin/php /var/www/html/artisan schedule:run --verbose --no-interaction; sleep 60; done"
 user=www-data
 autostart=true
 autorestart=true
