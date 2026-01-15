@@ -76,8 +76,10 @@ describe('InstallCommand', function () {
         expect(File::exists(base_path('docker/supervisord.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/nginx.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/php.ini')))->toBeTrue();
+        expect(File::exists(base_path('docker/entrypoint.sh')))->toBeTrue();
 
-        expect(File::get(base_path('Dockerfile')))->toContain('FROM php:8.4-fpm-bookworm');
+        // Default uses base image
+        expect(File::get(base_path('Dockerfile')))->toContain('ghcr.io/stumason/laravel-coolify-base');
     });
 
     it('skips Docker generation with --no-docker flag', function () {

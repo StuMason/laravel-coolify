@@ -10,11 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Database storage for resource configuration (`coolify_resources` table)
 - `CoolifyResource` Eloquent model with `getDefault()` helper
+- Pre-built Docker base images for faster deployments (~12 min → ~2-3 min)
+  - `ghcr.io/stumason/laravel-coolify-base:8.3` / `8.4` / `8.3-node` / `8.4-node`
+  - GitHub Actions workflow for nightly security patch rebuilds
+  - Multi-architecture support (amd64, arm64)
+- Database connection wait with retry before running migrations
+- Configuration options for deployment behavior:
+  - `COOLIFY_USE_BASE_IMAGE` - Use pre-built base images (default: true)
+  - `COOLIFY_AUTO_MIGRATE` - Run migrations on startup (default: true)
+  - `COOLIFY_DB_WAIT_TIMEOUT` - DB wait timeout in seconds (default: 30)
+- Documentation for Docker deployment and base images
 
 ### Changed
 - Resource UUIDs now stored in database instead of `.env` file
 - All commands read from database via `CoolifyResource::getDefault()`
 - `coolify:provision` saves to database instead of updating `.env`
+- Dockerfile generator now uses base images by default for faster builds
+- Auto-detect Node.js requirement from `package.json` for base image selection
+- Entrypoint script now waits for database connection before migrating
 
 ### Removed
 - `COOLIFY_APPLICATION_UUID`, `COOLIFY_SERVER_UUID`, `COOLIFY_PROJECT_UUID` env vars

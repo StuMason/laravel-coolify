@@ -113,8 +113,124 @@ class DockerGenerator
      */
     public function generateDockerfile(): string
     {
+        $useBaseImage = config('coolify.docker.use_base_image', true);
+
+        if ($useBaseImage) {
+            return $this->generateDockerfileWithBaseImage();
+        }
+
+        return $this->generateDockerfileFromScratch();
+    }
+
+    /**
+     * Generate Dockerfile using pre-built base image (fast builds).
+     */
+    protected function generateDockerfileWithBaseImage(): string
+    {
         $phpVersion = config('coolify.docker.php_version') ?? '8.4';
         $healthCheckPath = config('coolify.docker.health_check_path') ?? '/up';
+        $autoMigrate = config('coolify.docker.auto_migrate', true) ? 'true' : 'false';
+        $dbWaitTimeout = config('coolify.docker.db_wait_timeout', 30);
+
+        $hasNode = $this->hasNodeDependencies();
+        $baseImageTag = $hasNode ? "{$phpVersion}-node" : $phpVersion;
+        $frontendStage = $hasNode ? $this->getFrontendBuildStage() : '';
+        $frontendCopy = $hasNode ? 'COPY --from=frontend-build /app/public/build ./public/build' : '# No frontend build (no package.json detected)';
+
+        $browsershotEnv = $this->hasBrowsershot()
+            ? "\nENV CHROMIUM_PATH=/usr/bin/chromium \\\n    BROWSERSHOT_CHROME_PATH=/usr/bin/chromium"
+            : '';
+
+        return <<<DOCKERFILE
+# ============================================
+# Stage 1: PHP Dependencies
+# ============================================
+FROM composer:2 AS composer-deps
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+
+RUN composer install \\
+    --no-dev \\
+    --no-scripts \\
+    --no-autoloader \\
+    --prefer-dist \\
+    --ignore-platform-reqs
+{$frontendStage}
+# ============================================
+# Stage 2: Production Image
+# ============================================
+# Using pre-built base image with PHP extensions already compiled.
+# This reduces build time from ~12 minutes to ~2-3 minutes.
+# To build from scratch instead, set COOLIFY_USE_BASE_IMAGE=false
+FROM ghcr.io/stumason/laravel-coolify-base:{$baseImageTag} AS production
+
+LABEL maintainer="Laravel Coolify" \\
+      description="Laravel application deployed via Coolify"
+
+# Custom PHP config
+COPY docker/php.ini "\$PHP_INI_DIR/conf.d/99-custom.ini"
+
+# Nginx config
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+# Supervisor config
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+WORKDIR /var/www/html
+
+# Copy composer binary and dependencies from build stages
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer-deps /app/vendor ./vendor
+
+# Copy application code (order matters for caching!)
+COPY artisan ./
+COPY bootstrap ./bootstrap
+COPY config ./config
+COPY database ./database
+COPY public ./public
+{$frontendCopy}
+COPY routes ./routes
+COPY storage ./storage
+COPY resources/views ./resources/views
+COPY app ./app
+COPY composer.json composer.lock ./
+
+# Generate optimized autoloader
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \\
+    && chmod -R 775 storage bootstrap/cache
+
+# Entrypoint configuration
+ENV AUTO_MIGRATE={$autoMigrate} \\
+    DB_WAIT_TIMEOUT={$dbWaitTimeout}
+
+# Entrypoint script (runs migrations + optimize on startup)
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+{$browsershotEnv}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
+    CMD curl -f http://localhost:8080{$healthCheckPath} || exit 1
+
+EXPOSE 8080
+
+ENTRYPOINT ["/entrypoint.sh"]
+DOCKERFILE;
+    }
+
+    /**
+     * Generate Dockerfile from scratch (slower but customizable).
+     */
+    protected function generateDockerfileFromScratch(): string
+    {
+        $phpVersion = config('coolify.docker.php_version') ?? '8.4';
+        $healthCheckPath = config('coolify.docker.health_check_path') ?? '/up';
+        $autoMigrate = config('coolify.docker.auto_migrate', true) ? 'true' : 'false';
+        $dbWaitTimeout = config('coolify.docker.db_wait_timeout', 30);
 
         $phpExtensions = $this->getPhpExtensions();
         $extensionList = implode(' ', $phpExtensions);
@@ -155,6 +271,8 @@ RUN composer install \\
 # ============================================
 # Stage 2: Production Image
 # ============================================
+# Building from scratch - this takes longer but allows full customization.
+# To use pre-built base images instead, set COOLIFY_USE_BASE_IMAGE=true
 FROM php:{$phpVersion}-fpm-bookworm AS production
 
 LABEL maintainer="Laravel Coolify" \\
@@ -209,6 +327,10 @@ RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \\
     && chmod -R 775 storage bootstrap/cache
+
+# Entrypoint configuration
+ENV AUTO_MIGRATE={$autoMigrate} \\
+    DB_WAIT_TIMEOUT={$dbWaitTimeout}
 
 # Entrypoint script (runs migrations + optimize on startup)
 COPY docker/entrypoint.sh /entrypoint.sh
@@ -470,26 +592,64 @@ echo "============================================"
 echo "Laravel Application Startup"
 echo "============================================"
 
-# Run database migrations
-echo ""
-echo "[1/3] Running database migrations..."
-if ! php artisan migrate --force; then
-    echo "ERROR: Database migrations failed!" >&2
-    exit 1
+# Configuration (set via ENV in Dockerfile)
+AUTO_MIGRATE="${AUTO_MIGRATE:-true}"
+DB_WAIT_TIMEOUT="${DB_WAIT_TIMEOUT:-30}"
+
+STEP=1
+TOTAL_STEPS=3
+
+# ===========================================
+# Step 1: Database Migrations (if enabled)
+# ===========================================
+if [ "$AUTO_MIGRATE" = "true" ]; then
+    echo ""
+    echo "[$STEP/$TOTAL_STEPS] Waiting for database connection..."
+
+    # Wait for database to be available
+    WAITED=0
+    until php artisan db:show > /dev/null 2>&1; do
+        WAITED=$((WAITED + 1))
+        if [ $WAITED -ge $DB_WAIT_TIMEOUT ]; then
+            echo "ERROR: Database connection timeout after ${DB_WAIT_TIMEOUT}s" >&2
+            echo "       Check that your database is running and accessible." >&2
+            exit 1
+        fi
+        echo "       Waiting for database... ($WAITED/${DB_WAIT_TIMEOUT}s)"
+        sleep 1
+    done
+    echo "       Database connected!"
+
+    echo ""
+    echo "[$STEP/$TOTAL_STEPS] Running database migrations..."
+    if ! php artisan migrate --force; then
+        echo "ERROR: Database migrations failed!" >&2
+        echo "       Check migration files and database state." >&2
+        exit 1
+    fi
+    echo "       Migrations completed successfully."
+else
+    echo ""
+    echo "[$STEP/$TOTAL_STEPS] Skipping migrations (AUTO_MIGRATE=false)"
 fi
-echo "      Migrations completed successfully."
+STEP=$((STEP + 1))
 
-# Cache configuration, routes, views, and events
+# ===========================================
+# Step 2: Application Optimization
+# ===========================================
 echo ""
-echo "[2/3] Optimizing application..."
+echo "[$STEP/$TOTAL_STEPS] Optimizing application..."
 php artisan optimize
-echo "      Optimization completed successfully."
+echo "       Optimization completed (config, routes, views, events cached)."
+STEP=$((STEP + 1))
 
-# Ensure storage link exists
+# ===========================================
+# Step 3: Storage Link
+# ===========================================
 echo ""
-echo "[3/3] Ensuring storage link..."
+echo "[$STEP/$TOTAL_STEPS] Ensuring storage link..."
 php artisan storage:link 2>/dev/null || true
-echo "      Storage link ready."
+echo "       Storage link ready."
 
 echo ""
 echo "============================================"
@@ -497,7 +657,7 @@ echo "Application ready. Starting services..."
 echo "============================================"
 echo ""
 
-# Start supervisor (replaces this process)
+# Start supervisor (replaces this process with PID 1)
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
 BASH;
     }

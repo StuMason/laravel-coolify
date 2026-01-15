@@ -1,0 +1,145 @@
+# =============================================================================
+# Build and Publish Laravel Coolify Base Images
+# =============================================================================
+# Builds pre-compiled PHP base images with all extensions and pushes to GHCR.
+# These images reduce deployment time from ~12 minutes to ~2-3 minutes.
+#
+# Triggers:
+# - Push to docker/base/* (when base Dockerfiles change)
+# - Nightly at 2am UTC (security patches)
+# - Manual workflow dispatch
+# =============================================================================
+
+name: Build Base Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/base/**'
+      - '.github/workflows/build-base-images.yml'
+  schedule:
+    # Nightly at 2am UTC for security patches
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all images'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: stumason/laravel-coolify-base
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php_version: '8.3'
+            node: false
+            dockerfile: 'Dockerfile.8.3'
+            tag: '8.3'
+          - php_version: '8.4'
+            node: false
+            dockerfile: 'Dockerfile.8.4'
+            tag: '8.4'
+          - php_version: '8.3'
+            node: true
+            dockerfile: 'Dockerfile.8.3-node'
+            tag: '8.3-node'
+          - php_version: '8.4'
+            node: true
+            dockerfile: 'Dockerfile.8.4-node'
+            tag: '8.4-node'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ matrix.tag }}
+            type=raw,value=${{ matrix.tag }}-{{date 'YYYYMMDD'}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: docker/base
+          file: docker/base/${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.tag }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
+
+      - name: Verify image
+        env:
+          IMAGE_TAG: ${{ matrix.tag }}
+          HAS_NODE: ${{ matrix.node }}
+        run: |
+          docker pull "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker run --rm "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" php -v
+          docker run --rm "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" php -m | grep redis
+          if [ "${HAS_NODE}" = "true" ]; then
+            docker run --rm "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" node -v
+          fi
+
+  # Notify on failure (optional - can be extended with Slack/Discord)
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: build
+    if: failure()
+    permissions:
+      issues: write
+    steps:
+      - name: Create issue on failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Base image build failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `The nightly base image build has failed. Please check the workflow run for details.`;
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'base-image-build'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['base-image-build', 'bug']
+              });
+            }

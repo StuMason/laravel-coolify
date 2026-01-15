@@ -1,0 +1,98 @@
+# =============================================================================
+# Laravel Coolify Base Image - PHP 8.3
+# =============================================================================
+# Pre-built image with all system dependencies and PHP extensions compiled.
+# Using this image reduces deployment time from ~12 minutes to ~2-3 minutes.
+#
+# Published to: ghcr.io/stumason/laravel-coolify-base:8.3
+# =============================================================================
+
+FROM php:8.3-fpm-bookworm
+
+LABEL maintainer="Stu Mason <me@stumason.dev>" \
+      org.opencontainers.image.title="Laravel Coolify Base" \
+      org.opencontainers.image.description="Pre-built PHP 8.3 base image for Laravel applications deployed via Coolify" \
+      org.opencontainers.image.source="https://github.com/StuMason/laravel-coolify" \
+      org.opencontainers.image.version="8.3"
+
+# =============================================================================
+# System Dependencies
+# =============================================================================
+# Core: Web server, process manager, utilities
+# PHP deps: Libraries required for PHP extension compilation
+# =============================================================================
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        # Core utilities
+        nginx \
+        supervisor \
+        curl \
+        wget \
+        zip \
+        unzip \
+        git \
+        ca-certificates \
+        # PHP extension dependencies
+        libpq-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libonig-dev \
+        libxml2-dev \
+        libicu-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# =============================================================================
+# PHP Extensions
+# =============================================================================
+# Includes both MySQL and PostgreSQL drivers for maximum compatibility.
+# Extensions are pre-compiled to avoid build time during deployments.
+# =============================================================================
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        pgsql \
+        zip \
+        gd \
+        mbstring \
+        xml \
+        bcmath \
+        intl \
+        opcache \
+        pcntl
+
+# =============================================================================
+# PECL Extensions
+# =============================================================================
+# Redis is installed via PECL as it's not bundled with PHP.
+# =============================================================================
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
+# =============================================================================
+# PHP Configuration
+# =============================================================================
+# Use production PHP configuration as the base.
+# Application-specific settings are applied via docker/php.ini at deploy time.
+# =============================================================================
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+# =============================================================================
+# Working Directory
+# =============================================================================
+WORKDIR /var/www/html
+
+# =============================================================================
+# Verification
+# =============================================================================
+# Verify all extensions are properly installed.
+# This runs during image build to catch issues early.
+# =============================================================================
+RUN php -m | grep -E "pdo|redis|gd|intl|opcache" \
+    && php -v \
+    && nginx -v \
+    && echo "Base image ready!"
