@@ -81,7 +81,7 @@ describe('DeploymentRepository', function () {
 
     it('triggers a deployment', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'new-deploy-uuid',
                     'message' => 'Deployment started',
@@ -97,7 +97,7 @@ describe('DeploymentRepository', function () {
 
     it('deploys by tag', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployment_uuid' => 'tag-deploy-uuid',
             ], 200),
         ]);

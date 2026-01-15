@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Inter font */
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgb(63 63 70);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgb(82 82 91);
+}
+
+/* Vue cloak */
+[v-cloak] {
+    display: none !important;
+}
+
+/* Log viewer styles */
+.log-line {
+    @apply font-mono text-sm leading-relaxed;
+}
+
+.log-error {
+    @apply text-red-400;
+}
+
+.log-warning {
+    @apply text-amber-400;
+}
+
+.log-success {
+    @apply text-emerald-400;
+}
+
+.log-info {
+    @apply text-sky-400;
+}
+
+.log-muted {
+    @apply text-zinc-500;
+}
+
+/* Status pulse animation */
+@keyframes pulse-status {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse-status {
+    animation: pulse-status 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth transitions */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+    transform: translateY(-4px);
+    opacity: 0;
+}

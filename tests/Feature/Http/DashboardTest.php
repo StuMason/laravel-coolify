@@ -14,7 +14,7 @@ describe('Coolify Dashboard', function () {
     it('loads the dashboard', function () {
         $this->get(config('coolify.path'))
             ->assertOk()
-            ->assertViewIs('coolify::dashboard');
+            ->assertViewIs('coolify::spa');
     });
 
     it('returns stats from API endpoint', function () {
@@ -25,13 +25,18 @@ describe('Coolify Dashboard', function () {
                 'name' => 'test-key',
                 'public_key' => 'ssh-ed25519 AAAA...',
             ], 200),
+            '*/projects/test-project-uuid' => Http::response([
+                'uuid' => 'test-project-uuid',
+                'name' => 'Test Project',
+                'environments' => [
+                    ['uuid' => 'test-env-uuid', 'name' => 'production'],
+                ],
+            ], 200),
             '*/applications/test-app-uuid' => Http::response([
                 'uuid' => 'test-app-uuid',
                 'name' => 'My App',
                 'status' => 'running',
                 'fqdn' => 'https://myapp.com',
-                'project' => ['uuid' => 'test-project-uuid'],
-                'environment' => ['uuid' => 'test-env-uuid', 'name' => 'production'],
             ], 200),
             '*/applications/test-app-uuid/deployments' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],

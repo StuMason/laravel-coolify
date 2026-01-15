@@ -27,7 +27,7 @@ describe('coolify:deploy command', function () {
 
     it('triggers deployment successfully', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'new-deployment-123',
                     'message' => 'Deployment started',
@@ -44,7 +44,7 @@ describe('coolify:deploy command', function () {
 
     it('deploys specific tag', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'tag-deployment-123',
                     'message' => 'Deployment started',
@@ -64,7 +64,7 @@ describe('coolify:deploy command', function () {
 
     it('can use custom UUID', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'deploy-123',
                     'message' => 'Deployment started',

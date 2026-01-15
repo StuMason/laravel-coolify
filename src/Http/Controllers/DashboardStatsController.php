@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
+use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
@@ -21,7 +22,8 @@ class DashboardStatsController extends Controller
         ApplicationRepository $applications,
         DatabaseRepository $databases,
         DeploymentRepository $deployments,
-        SecurityKeyRepository $securityKeys
+        SecurityKeyRepository $securityKeys,
+        ProjectRepository $projects
     ): JsonResponse {
         $stats = [
             'connected' => false,
@@ -29,6 +31,10 @@ class DashboardStatsController extends Controller
             'databases' => [],
             'recentDeployments' => [],
             'deployKey' => null,
+            'project' => null,
+            'environment' => null,
+            'server' => null,
+            'coolify_url' => rtrim(config('coolify.url'), '/'),
         ];
 
         try {
@@ -56,6 +62,31 @@ class DashboardStatsController extends Controller
                 }
             }
 
+            // Fetch project and environment info from resource config
+            $projectUuid = $resource?->project_uuid;
+            $environmentName = $resource?->environment;
+            $environmentUuid = null;
+
+            if ($projectUuid) {
+                try {
+                    $project = $projects->get($projectUuid);
+                    $stats['project'] = $project;
+
+                    // Find environment UUID by name
+                    if ($environmentName && ! empty($project['environments'])) {
+                        foreach ($project['environments'] as $env) {
+                            if (($env['name'] ?? null) === $environmentName) {
+                                $environmentUuid = $env['uuid'] ?? null;
+                                $stats['environment'] = $env;
+                                break;
+                            }
+                        }
+                    }
+                } catch (CoolifyApiException) {
+                    // Project not found
+                }
+            }
+
             // Get application status
             if ($uuid = $resource?->application_uuid) {
                 try {
@@ -67,34 +98,25 @@ class DashboardStatsController extends Controller
 
                     // Build webhook URL if using deploy key
                     $webhookUrl = null;
+                    $coolifyUrl = rtrim(config('coolify.url'), '/');
                     if ($usesDeployKey && $webhookSecret) {
-                        $coolifyUrl = rtrim(config('coolify.url'), '/');
                         $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$uuid}&webhook_secret={$webhookSecret}";
                     }
 
                     // Build proper Coolify dashboard URL
                     // Format: /project/{project_uuid}/environment/{environment_uuid}/application/{app_uuid}
-                    $coolifyUrl = rtrim(config('coolify.url'), '/');
-                    $projectUuid = $app['project']['uuid'] ?? $resource->project_uuid;
-                    $environmentUuid = $app['environment']['uuid'] ?? null;
                     $coolifyDashboardUrl = null;
                     if ($projectUuid && $environmentUuid) {
                         $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/environment/{$environmentUuid}/application/{$uuid}";
                     }
 
-                    $stats['application'] = [
-                        'uuid' => $app['uuid'] ?? null,
-                        'name' => $app['name'] ?? 'Unknown',
-                        'description' => $app['description'] ?? null,
-                        'status' => $app['status'] ?? 'unknown',
-                        'fqdn' => $app['fqdn'] ?? null,
+                    // Return ALL application data from Coolify, plus computed fields
+                    $stats['application'] = array_merge($app, [
+                        // Computed convenience fields
                         'repository' => $app['git_repository'] ?? null,
                         'branch' => $app['git_branch'] ?? null,
                         'commit' => isset($app['git_commit_sha']) ? substr($app['git_commit_sha'], 0, 7) : null,
                         'full_commit' => $app['git_commit_sha'] ?? null,
-                        'build_pack' => $app['build_pack'] ?? null,
-                        'created_at' => $app['created_at'] ?? null,
-                        'updated_at' => $app['updated_at'] ?? null,
                         'uses_deploy_key' => $usesDeployKey,
                         'webhook_secret' => $webhookSecret,
                         'webhook_url' => $webhookUrl,
@@ -102,24 +124,41 @@ class DashboardStatsController extends Controller
                         'coolify_url' => $coolifyDashboardUrl,
                         'project_uuid' => $projectUuid,
                         'environment_uuid' => $environmentUuid,
-                        'environment_name' => $app['environment']['name'] ?? null,
-                        'project_name' => $app['project']['name'] ?? null,
-                    ];
+                        'environment_name' => $environmentName,
+                        'project_name' => $stats['project']['name'] ?? null,
+                    ]);
+
+                    // Add server info from app destination
+                    if (isset($app['destination']['server'])) {
+                        $stats['server'] = $app['destination']['server'];
+                    }
 
                     // Get recent deployments
                     try {
                         $recentDeployments = $deployments->forApplication($uuid);
                         $stats['recentDeployments'] = collect($recentDeployments)
                             ->take(10)
-                            ->map(fn ($d) => [
-                                'uuid' => $d['deployment_uuid'] ?? $d['uuid'] ?? null,
-                                'status' => $d['status'] ?? 'unknown',
-                                'commit' => isset($d['commit']) ? substr($d['commit'], 0, 7) : null,
-                                'full_commit' => $d['commit'] ?? null,
-                                'commit_message' => $d['commit_message'] ?? null,
-                                'created_at' => $d['created_at'] ?? null,
-                                'finished_at' => $d['finished_at'] ?? null,
-                            ])
+                            ->map(function ($d) {
+                                // Calculate duration if both timestamps exist
+                                $duration = null;
+                                if (! empty($d['created_at']) && ! empty($d['finished_at'])) {
+                                    $start = strtotime($d['created_at']);
+                                    $end = strtotime($d['finished_at']);
+                                    if ($start && $end) {
+                                        $duration = $end - $start;
+                                    }
+                                }
+
+                                return [
+                                    'uuid' => $d['deployment_uuid'] ?? $d['uuid'] ?? null,
+                                    'status' => $d['status'] ?? 'unknown',
+                                    'commit' => $d['commit'] ?? null,
+                                    'commit_message' => $d['commit_message'] ?? null,
+                                    'created_at' => $d['created_at'] ?? null,
+                                    'finished_at' => $d['finished_at'] ?? null,
+                                    'duration' => $duration,
+                                ];
+                            })
                             ->values()
                             ->toArray();
                     } catch (CoolifyApiException) {
@@ -162,7 +201,7 @@ class DashboardStatsController extends Controller
      */
     protected function formatDatabaseInfo(array $db, string $category): array
     {
-        // Determine type from database_type field
+        // Determine display type from database_type field
         $dbType = $db['database_type'] ?? 'unknown';
         $displayType = match (true) {
             str_contains($dbType, 'postgresql') => 'PostgreSQL',
@@ -175,32 +214,10 @@ class DashboardStatsController extends Controller
             default => $dbType,
         };
 
-        return [
-            'uuid' => $db['uuid'] ?? null,
-            'name' => $db['name'] ?? 'Unknown',
+        // Return ALL database data from Coolify, plus computed fields
+        return array_merge($db, [
             'type' => $displayType,
-            'database_type' => $dbType,
-            'status' => $db['status'] ?? 'unknown',
-            'image' => $db['image'] ?? null,
             'category' => $category,
-            // Connection info (redact passwords)
-            'internal_db_url' => $db['internal_db_url'] ?? null,
-            'external_db_url' => $db['external_db_url'] ?? null,
-            'is_public' => $db['is_public'] ?? false,
-            'public_port' => $db['public_port'] ?? null,
-            // Resource limits
-            'limits_memory' => $db['limits_memory'] ?? '0',
-            'limits_cpus' => $db['limits_cpus'] ?? '0',
-            // Timestamps
-            'started_at' => $db['started_at'] ?? null,
-            'last_online_at' => $db['last_online_at'] ?? null,
-            'created_at' => $db['created_at'] ?? null,
-            // Specific fields for postgres
-            'postgres_db' => $db['postgres_db'] ?? null,
-            'postgres_user' => $db['postgres_user'] ?? null,
-            // Specific fields for redis/dragonfly
-            'dragonfly_password' => isset($db['dragonfly_password']) ? '••••••••' : null,
-            'redis_password' => isset($db['redis_password']) ? '••••••••' : null,
-        ];
+        ]);
     }
 }

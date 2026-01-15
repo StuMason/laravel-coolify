@@ -122,16 +122,59 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     /**
      * {@inheritDoc}
      */
-    public function backup(string $uuid): array
+    public function backups(string $uuid): array
     {
-        return $this->client->post("databases/{$uuid}/backup");
+        // Get backup schedules for the database
+        $schedules = $this->client->get("databases/{$uuid}/backups");
+
+        // For each schedule, get recent executions (handle individual failures gracefully)
+        $result = [];
+        foreach ($schedules as $schedule) {
+            $executions = [];
+            try {
+                $response = $this->client->get("databases/{$uuid}/backups/{$schedule['uuid']}/executions");
+                // API returns { "executions": [...] } - extract the array
+                $executions = $response['executions'] ?? $response;
+                if (! is_array($executions)) {
+                    $executions = [];
+                }
+            } catch (\Exception $e) {
+                // Execution fetch failed, but we still want to show the schedule
+                $executions = [];
+            }
+
+            $result[] = [
+                'schedule' => $schedule,
+                'executions' => $executions,
+            ];
+        }
+
+        return $result;
     }
 
     /**
      * {@inheritDoc}
      */
-    public function backups(string $uuid): array
+    public function createBackup(string $uuid, array $data): array
     {
-        return $this->client->get("databases/{$uuid}/backups");
+        return $this->client->post("databases/{$uuid}/backups", $data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function updateBackup(string $uuid, string $backupUuid, array $data): array
+    {
+        return $this->client->patch("databases/{$uuid}/backups/{$backupUuid}", $data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteBackup(string $uuid, string $backupUuid): bool
+    {
+        $this->client->delete("databases/{$uuid}/backups/{$backupUuid}");
+
+        return true;
     }
 }

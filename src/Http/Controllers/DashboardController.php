@@ -22,6 +22,6 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-        return view('coolify::dashboard');
+        return view('coolify::spa');
     }
 }

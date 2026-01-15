@@ -224,6 +224,8 @@ DOCKERFILE;
 
     /**
      * Get the frontend build stage for the Dockerfile.
+     * Uses node-only with DOCKER_BUILD=true to skip wayfinder generation.
+     * Wayfinder types should be pre-committed or vite.config should skip in CI/Docker.
      */
     protected function getFrontendBuildStage(): string
     {
@@ -236,13 +238,18 @@ FROM node:20-alpine AS frontend-build
 
 WORKDIR /app
 
+# Install npm dependencies
 COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
+# Copy frontend assets
 COPY vite.config.* tsconfig.json* ./
 COPY resources ./resources
 COPY public ./public
 
+# Skip wayfinder generation in Docker (types should be pre-committed)
+# Add to vite.config: const isCI = process.env.DOCKER_BUILD === 'true'; !isCI && wayfinder()
+ENV DOCKER_BUILD=true
 RUN npm run build
 
 DOCKERFILE;

@@ -1,0 +1,173 @@
+<?php
+
+use Illuminate\Support\Facades\Http;
+use Stumason\Coolify\Coolify;
+
+beforeEach(function () {
+    Http::preventStrayRequests();
+    Coolify::auth(fn () => true);
+});
+
+describe('DatabaseController', function () {
+    it('lists all databases', function () {
+        Http::fake([
+            '*/databases' => Http::response([
+                ['uuid' => 'db-1', 'name' => 'postgres-main', 'status' => 'running'],
+                ['uuid' => 'db-2', 'name' => 'redis-cache', 'status' => 'running'],
+            ], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.databases.index'));
+
+        $response->assertOk()
+            ->assertJsonCount(2)
+            ->assertJsonFragment(['name' => 'postgres-main']);
+    });
+
+    it('fetches database details', function () {
+        Http::fake([
+            '*/databases/db-123' => Http::response([
+                'uuid' => 'db-123',
+                'name' => 'my-database',
+                'database_type' => 'postgresql',
+                'status' => 'running',
+                'internal_db_url' => 'postgres://user:pass@host:5432/db',
+            ], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.databases.show', 'db-123'));
+
+        $response->assertOk()
+            ->assertJson([
+                'uuid' => 'db-123',
+                'name' => 'my-database',
+            ]);
+    });
+
+    it('starts a database', function () {
+        Http::fake([
+            '*/databases/db-123/start' => Http::response(['success' => true], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.databases.start', 'db-123'));
+
+        $response->assertOk();
+    });
+
+    it('stops a database', function () {
+        Http::fake([
+            '*/databases/db-123/stop' => Http::response(['success' => true], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.databases.stop', 'db-123'));
+
+        $response->assertOk();
+    });
+
+    it('restarts a database', function () {
+        Http::fake([
+            '*/databases/db-123/restart' => Http::response(['success' => true], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.databases.restart', 'db-123'));
+
+        $response->assertOk();
+    });
+});
+
+describe('Database Backups', function () {
+    it('lists backup schedules with executions', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([
+                ['uuid' => 'schedule-1', 'frequency' => '0 0 * * *', 'enabled' => true, 'save_s3' => false],
+            ], 200),
+            '*/databases/db-123/backups/schedule-1/executions' => Http::response([
+                ['uuid' => 'exec-1', 'status' => 'success', 'created_at' => '2024-01-15T10:00:00Z', 'size' => 1024000],
+                ['uuid' => 'exec-2', 'status' => 'success', 'created_at' => '2024-01-14T10:00:00Z', 'size' => 1020000],
+            ], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.databases.backups', 'db-123'));
+
+        $response->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.schedule.uuid', 'schedule-1')
+            ->assertJsonPath('0.executions.0.status', 'success');
+    });
+
+    it('returns empty array when no backup schedules configured', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.databases.backups', 'db-123'));
+
+        $response->assertOk()
+            ->assertJsonCount(0);
+    });
+
+    it('creates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([
+                'uuid' => 'schedule-new',
+                'frequency' => '0 0 * * *',
+                'enabled' => true,
+                'save_s3' => false,
+            ], 201),
+        ]);
+
+        $response = $this->postJson(route('coolify.databases.backups.create', 'db-123'), [
+            'frequency' => '0 0 * * *',
+            'enabled' => true,
+            'save_s3' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['uuid' => 'schedule-new']);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups')
+                && $request->method() === 'POST'
+                && $request['frequency'] === '0 0 * * *';
+        });
+    });
+
+    it('updates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response([
+                'uuid' => 'schedule-1',
+                'frequency' => '0 */6 * * *',
+                'enabled' => true,
+            ], 200),
+        ]);
+
+        $response = $this->patchJson(route('coolify.databases.backups.update', ['uuid' => 'db-123', 'backupUuid' => 'schedule-1']), [
+            'frequency' => '0 */6 * * *',
+            'enabled' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['frequency' => '0 */6 * * *']);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'PATCH';
+        });
+    });
+
+    it('deletes a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response(null, 204),
+        ]);
+
+        $response = $this->deleteJson(route('coolify.databases.backups.delete', ['uuid' => 'db-123', 'backupUuid' => 'schedule-1']));
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'DELETE';
+        });
+    });
+});

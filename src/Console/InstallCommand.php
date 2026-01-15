@@ -84,9 +84,7 @@ class InstallCommand extends Command
 
         // Check if .env is configured
         if ($this->isConfigured()) {
-            $this->call('coolify:status', ['--all' => true]);
-            $this->newLine();
-            info('Run `php artisan coolify:provision` to set up your infrastructure.');
+            $this->testConnection();
         } else {
             warning('Coolify is not configured yet.');
             $this->newLine();
@@ -248,5 +246,25 @@ class InstallCommand extends Command
 
             $this->components->task('Configure TrustProxies', fn () => true);
         }
+    }
+
+    /**
+     * Quick connection test to Coolify API.
+     */
+    protected function testConnection(): void
+    {
+        $this->components->task('Test Coolify connection', function () {
+            try {
+                $client = app(\Stumason\Coolify\CoolifyClient::class);
+                $client->get('/version');
+
+                return true;
+            } catch (\Exception $e) {
+                return false;
+            }
+        });
+
+        $this->newLine();
+        info('Run `php artisan coolify:provision` to set up your infrastructure.');
     }
 }
