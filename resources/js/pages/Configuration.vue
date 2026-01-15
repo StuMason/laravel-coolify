@@ -295,15 +295,9 @@ onMounted(() => {
                         />
                     </div>
                 </div>
-                <div class="mt-4 flex items-center justify-between">
-                    <label class="flex items-center gap-2 text-sm text-zinc-400">
-                        <input v-model="newEnv.is_build_time" type="checkbox" class="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-violet-600" />
-                        Build-time variable
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <button @click="showAddForm = false" class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700">Cancel</button>
-                        <button @click="addEnv" :disabled="!newEnv.key || saving" class="rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">Add</button>
-                    </div>
+                <div class="mt-4 flex items-center justify-end gap-2">
+                    <button @click="showAddForm = false" class="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700">Cancel</button>
+                    <button @click="addEnv" :disabled="!newEnv.key || saving" class="rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">Add</button>
                 </div>
             </div>
 
@@ -320,15 +314,9 @@ onMounted(() => {
                                 <input v-model="editingEnv.key" type="text" class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white" />
                                 <input v-model="editingEnv.value" type="text" class="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white font-mono" />
                             </div>
-                            <div class="flex items-center justify-between">
-                                <label class="flex items-center gap-2 text-sm text-zinc-400">
-                                    <input v-model="editingEnv.is_build_time" type="checkbox" class="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-violet-600" />
-                                    Build-time
-                                </label>
-                                <div class="flex items-center gap-2">
-                                    <button @click="editingEnv = null" class="text-sm text-zinc-400 hover:text-white">Cancel</button>
-                                    <button @click="updateEnv(editingEnv)" :disabled="saving" class="rounded-lg bg-violet-600 px-3 py-1 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">Save</button>
-                                </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <button @click="editingEnv = null" class="text-sm text-zinc-400 hover:text-white">Cancel</button>
+                                <button @click="updateEnv(editingEnv)" :disabled="saving" class="rounded-lg bg-violet-600 px-3 py-1 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50">Save</button>
                             </div>
                         </div>
                         <!-- Display mode -->
@@ -346,7 +334,6 @@ onMounted(() => {
                                 <code class="text-sm text-zinc-400 truncate font-mono">
                                     {{ revealedEnvs.has(env.uuid) ? (env.value || '(empty)') : maskValue(env.value, env.key) }}
                                 </code>
-                                <span v-if="env.is_build_time" class="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400 shrink-0">Build</span>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <!-- Reveal toggle for sensitive values -->
