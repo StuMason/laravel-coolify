@@ -10,20 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Database storage for resource configuration (`coolify_resources` table)
 - `CoolifyResource` Eloquent model with `getDefault()` helper
+
+### Changed
+- Resource UUIDs now stored in database instead of `.env` file
+- All commands read from database via `CoolifyResource::getDefault()`
+- `coolify:provision` saves to database instead of updating `.env`
+
+### Removed
+- `COOLIFY_APPLICATION_UUID`, `COOLIFY_SERVER_UUID`, `COOLIFY_PROJECT_UUID` env vars
+- `COOLIFY_DEPLOY_KEY_UUID`, `COOLIFY_DATABASE_UUID`, `COOLIFY_REDIS_UUID` env vars
+
+## [2.8.0] - 2026-01-15
+
+### Added
 - Docker entrypoint script for production deployments
   - Runs `migrate --force` on container startup (fails deployment if migrations fail)
   - Runs `php artisan optimize` (config, routes, views, events cache)
   - Ensures storage link exists
 
 ### Changed
-- Resource UUIDs now stored in database instead of `.env` file
-- All commands read from database via `CoolifyResource::getDefault()`
-- `coolify:provision` saves to database instead of updating `.env`
 - Dockerfile now uses `ENTRYPOINT` instead of `CMD` for proper startup sequence
-
-### Removed
-- `COOLIFY_APPLICATION_UUID`, `COOLIFY_SERVER_UUID`, `COOLIFY_PROJECT_UUID` env vars
-- `COOLIFY_DEPLOY_KEY_UUID`, `COOLIFY_DATABASE_UUID`, `COOLIFY_REDIS_UUID` env vars
 
 ## [2.7.0] - 2026-01-14
 
