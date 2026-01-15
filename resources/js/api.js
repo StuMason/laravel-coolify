@@ -56,9 +56,8 @@ export const api = {
     stopDatabase: (uuid) => request('POST', `/databases/${uuid}/stop`),
     restartDatabase: (uuid) => request('POST', `/databases/${uuid}/restart`),
 
-    // Backups
+    // Backups (returns schedules with their executions)
     getDatabaseBackups: (uuid) => request('GET', `/databases/${uuid}/backups`),
-    triggerDatabaseBackup: (uuid) => request('POST', `/databases/${uuid}/backup`),
 
     // Servers
     getServers: () => request('GET', '/servers'),

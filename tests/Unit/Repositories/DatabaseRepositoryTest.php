@@ -103,28 +103,34 @@ describe('DatabaseRepository', function () {
         expect($result['success'])->toBeTrue();
     });
 
-    it('creates a backup', function () {
-        Http::fake([
-            '*/databases/db-123/backup' => Http::response([
-                'backup_uuid' => 'backup-456',
-            ], 200),
-        ]);
-
-        $result = app(DatabaseRepository::class)->backup('db-123');
-
-        expect($result['backup_uuid'])->toBe('backup-456');
-    });
-
-    it('lists backups', function () {
+    it('lists backup schedules with executions', function () {
         Http::fake([
             '*/databases/db-123/backups' => Http::response([
-                ['uuid' => 'backup-1', 'created_at' => '2024-01-01'],
-                ['uuid' => 'backup-2', 'created_at' => '2024-01-02'],
+                ['uuid' => 'schedule-1', 'frequency' => '0 0 * * *', 'enabled' => true],
+                ['uuid' => 'schedule-2', 'frequency' => '0 12 * * *', 'enabled' => false],
             ], 200),
+            '*/databases/db-123/backups/schedule-1/executions' => Http::response([
+                ['uuid' => 'exec-1', 'status' => 'success'],
+            ], 200),
+            '*/databases/db-123/backups/schedule-2/executions' => Http::response([], 200),
         ]);
 
         $backups = app(DatabaseRepository::class)->backups('db-123');
 
-        expect($backups)->toHaveCount(2);
+        expect($backups)->toHaveCount(2)
+            ->and($backups[0]['schedule']['uuid'])->toBe('schedule-1')
+            ->and($backups[0]['executions'])->toHaveCount(1)
+            ->and($backups[1]['schedule']['uuid'])->toBe('schedule-2')
+            ->and($backups[1]['executions'])->toHaveCount(0);
+    });
+
+    it('returns empty array when no backup schedules', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([], 200),
+        ]);
+
+        $backups = app(DatabaseRepository::class)->backups('db-123');
+
+        expect($backups)->toBeEmpty();
     });
 });

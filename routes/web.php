@@ -33,7 +33,6 @@ Route::middleware(Authenticate::class)->group(function () {
         Route::post('/databases/{uuid}/start', 'DatabaseController@start')->name('coolify.databases.start');
         Route::post('/databases/{uuid}/stop', 'DatabaseController@stop')->name('coolify.databases.stop');
         Route::post('/databases/{uuid}/restart', 'DatabaseController@restart')->name('coolify.databases.restart');
-        Route::post('/databases/{uuid}/backup', 'DatabaseController@backup')->name('coolify.databases.backup');
         Route::get('/databases/{uuid}/backups', 'DatabaseController@backups')->name('coolify.databases.backups');
 
         // Server routes

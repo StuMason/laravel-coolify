@@ -75,19 +75,7 @@ class DatabaseController extends Controller
     }
 
     /**
-     * Create a backup.
-     */
-    public function backup(string $uuid): JsonResponse
-    {
-        try {
-            return response()->json($this->databases->backup($uuid));
-        } catch (CoolifyApiException $e) {
-            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
-        }
-    }
-
-    /**
-     * Get backup history.
+     * Get backup schedules and executions.
      */
     public function backups(string $uuid): JsonResponse
     {

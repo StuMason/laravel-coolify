@@ -122,16 +122,21 @@ class CoolifyDatabaseRepository implements DatabaseRepository
     /**
      * {@inheritDoc}
      */
-    public function backup(string $uuid): array
-    {
-        return $this->client->post("databases/{$uuid}/backup");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function backups(string $uuid): array
     {
-        return $this->client->get("databases/{$uuid}/backups");
+        // Get backup schedules for the database
+        $schedules = $this->client->get("databases/{$uuid}/backups");
+
+        // For each schedule, get recent executions
+        $result = [];
+        foreach ($schedules as $schedule) {
+            $executions = $this->client->get("databases/{$uuid}/backups/{$schedule['uuid']}/executions");
+            $result[] = [
+                'schedule' => $schedule,
+                'executions' => $executions,
+            ];
+        }
+
+        return $result;
     }
 }

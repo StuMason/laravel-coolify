@@ -101,16 +101,9 @@ interface DatabaseRepository
     public function restart(string $uuid): array;
 
     /**
-     * Create a backup of the database.
+     * Get backup schedules and their executions for the database.
      *
-     * @return array<string, mixed>
-     */
-    public function backup(string $uuid): array;
-
-    /**
-     * Get backup history for the database.
-     *
-     * @return array<string, mixed>
+     * @return array<int, array<string, mixed>>
      */
     public function backups(string $uuid): array;
 }

@@ -14,7 +14,7 @@ const saving = ref(false);
 // Environment variables
 const envs = ref([]);
 const showAddForm = ref(false);
-const newEnv = ref({ key: '', value: '', is_build_time: false });
+const newEnv = ref({ key: '', value: '' });
 const editingEnv = ref(null);
 const revealedEnvs = ref(new Set());
 const searchQuery = ref('');
@@ -58,7 +58,6 @@ const filteredEnvs = computed(() => {
 
 // Backups
 const backups = ref([]);
-const triggering = ref(false);
 
 const app = computed(() => stats.value?.application || {});
 const database = computed(() => stats.value?.databases?.primary);
@@ -92,7 +91,7 @@ async function addEnv() {
     try {
         await api.createEnv(app.value.uuid, newEnv.value);
         toast.value?.success('Variable Added', `${newEnv.value.key} has been created`);
-        newEnv.value = { key: '', value: '', is_build_time: false };
+        newEnv.value = { key: '', value: '' };
         showAddForm.value = false;
         await fetchEnvs();
     } catch (e) {
@@ -108,7 +107,6 @@ async function updateEnv(env) {
         await api.updateEnv(app.value.uuid, env.uuid, {
             key: env.key,
             value: env.value,
-            is_build_time: env.is_build_time,
         });
         toast.value?.success('Variable Updated', `${env.key} has been updated`);
         editingEnv.value = null;
@@ -137,26 +135,29 @@ async function fetchBackups() {
     loading.value = true;
     try {
         const result = await api.getDatabaseBackups(database.value.uuid);
-        backups.value = result.backups || result || [];
+        backups.value = result || [];
     } catch (e) {
         console.error('Failed to fetch backups:', e);
+        backups.value = [];
     } finally {
         loading.value = false;
     }
 }
 
-async function triggerBackup() {
-    if (!database.value?.uuid || triggering.value) return;
-    triggering.value = true;
-    try {
-        await api.triggerDatabaseBackup(database.value.uuid);
-        toast.value?.success('Backup Started', 'Database backup has been initiated');
-        await fetchBackups();
-    } catch (e) {
-        toast.value?.error('Backup Failed', e.message);
-    } finally {
-        triggering.value = false;
+// Get all executions from all schedules, flattened and sorted by date
+function getAllExecutions() {
+    const allExecutions = [];
+    for (const item of backups.value) {
+        if (item.executions && Array.isArray(item.executions)) {
+            for (const exec of item.executions) {
+                allExecutions.push({
+                    ...exec,
+                    schedule: item.schedule,
+                });
+            }
+        }
     }
+    return allExecutions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
 function formatDate(date) {
@@ -388,49 +389,73 @@ onMounted(() => {
 
         <!-- Backups Tab -->
         <div v-if="activeTab === 'backups'" class="space-y-4">
-            <div class="flex justify-end" v-if="database">
-                <button
-                    @click="triggerBackup"
-                    :disabled="triggering"
-                    class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
-                >
-                    <span v-if="triggering" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
-                    <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-                    </svg>
-                    Backup Now
-                </button>
-            </div>
-
             <div v-if="!database" class="rounded-xl border border-zinc-800 bg-zinc-900 p-12 text-center">
                 <p class="text-sm text-zinc-400">No database configured for backups</p>
             </div>
 
-            <div v-else class="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
-                <div v-if="loading" class="flex items-center justify-center py-12">
-                    <div class="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-violet-500"></div>
+            <div v-else class="space-y-4">
+                <!-- Backup Schedules -->
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900">
+                    <div class="border-b border-zinc-800 px-5 py-4">
+                        <h2 class="text-lg font-medium text-white">Backup Schedules</h2>
+                        <p class="text-sm text-zinc-400 mt-1">Configure backup schedules in Coolify to see them here</p>
+                    </div>
+                    <div v-if="loading" class="flex items-center justify-center py-12">
+                        <div class="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-violet-500"></div>
+                    </div>
+                    <div v-else-if="backups.length" class="divide-y divide-zinc-800">
+                        <div v-for="item in backups" :key="item.schedule?.uuid" class="px-5 py-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span :class="[item.schedule?.enabled ? 'bg-emerald-500' : 'bg-zinc-500', 'h-2 w-2 rounded-full']"></span>
+                                        <span class="text-sm font-medium text-white">{{ item.schedule?.frequency || 'Manual' }}</span>
+                                    </div>
+                                    <div class="text-xs text-zinc-400 mt-1">
+                                        {{ item.schedule?.save_s3 ? 'S3 Storage' : 'Local Storage' }}
+                                        <span v-if="item.executions?.length"> · {{ item.executions.length }} backup{{ item.executions.length !== 1 ? 's' : '' }}</span>
+                                    </div>
+                                </div>
+                                <span :class="[item.schedule?.enabled ? 'text-emerald-400' : 'text-zinc-500', 'text-xs font-medium']">
+                                    {{ item.schedule?.enabled ? 'Active' : 'Disabled' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="px-5 py-8 text-center text-sm text-zinc-500">
+                        No backup schedules configured. Set up backups in Coolify.
+                    </div>
                 </div>
-                <table v-else-if="backups.length" class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-left text-sm text-zinc-400">
-                            <th class="px-5 py-3 font-medium">Status</th>
-                            <th class="px-5 py-3 font-medium">Created</th>
-                            <th class="px-5 py-3 font-medium">Size</th>
-                            <th class="px-5 py-3 font-medium">Filename</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800">
-                        <tr v-for="backup in backups" :key="backup.id" class="hover:bg-zinc-800/50">
-                            <td class="px-5 py-4">
-                                <span :class="[statusClass(backup.status), 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize']">{{ backup.status }}</span>
-                            </td>
-                            <td class="px-5 py-4 text-sm text-zinc-300">{{ formatDate(backup.created_at) }}</td>
-                            <td class="px-5 py-4 text-sm text-zinc-400">{{ formatSize(backup.size) }}</td>
-                            <td class="px-5 py-4 text-sm text-zinc-400 font-mono">{{ backup.filename || '-' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div v-else class="px-5 py-12 text-center text-sm text-zinc-500">No backups yet</div>
+
+                <!-- Backup History -->
+                <div class="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+                    <div class="border-b border-zinc-800 px-5 py-4">
+                        <h2 class="text-lg font-medium text-white">Backup History</h2>
+                    </div>
+                    <table v-if="getAllExecutions().length" class="w-full">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-left text-sm text-zinc-400">
+                                <th class="px-5 py-3 font-medium">Status</th>
+                                <th class="px-5 py-3 font-medium">Created</th>
+                                <th class="px-5 py-3 font-medium">Size</th>
+                                <th class="px-5 py-3 font-medium">Filename</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-800">
+                            <tr v-for="exec in getAllExecutions()" :key="exec.uuid" class="hover:bg-zinc-800/50">
+                                <td class="px-5 py-4">
+                                    <span :class="[statusClass(exec.status), 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize']">{{ exec.status }}</span>
+                                </td>
+                                <td class="px-5 py-4 text-sm text-zinc-300">{{ formatDate(exec.created_at) }}</td>
+                                <td class="px-5 py-4 text-sm text-zinc-400">{{ formatSize(exec.size) }}</td>
+                                <td class="px-5 py-4 text-sm text-zinc-400 font-mono truncate max-w-xs">{{ exec.filename || '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-else class="px-5 py-8 text-center text-sm text-zinc-500">
+                        No backup executions yet
+                    </div>
+                </div>
             </div>
         </div>
 

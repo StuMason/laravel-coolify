@@ -76,42 +76,33 @@ describe('DatabaseController', function () {
 });
 
 describe('Database Backups', function () {
-    it('lists backup history', function () {
+    it('lists backup schedules with executions', function () {
         Http::fake([
             '*/databases/db-123/backups' => Http::response([
-                'backups' => [
-                    ['id' => 1, 'status' => 'success', 'created_at' => '2024-01-15T10:00:00Z', 'size' => 1024000],
-                    ['id' => 2, 'status' => 'success', 'created_at' => '2024-01-14T10:00:00Z', 'size' => 1020000],
-                ],
+                ['uuid' => 'schedule-1', 'frequency' => '0 0 * * *', 'enabled' => true, 'save_s3' => false],
+            ], 200),
+            '*/databases/db-123/backups/schedule-1/executions' => Http::response([
+                ['uuid' => 'exec-1', 'status' => 'success', 'created_at' => '2024-01-15T10:00:00Z', 'size' => 1024000],
+                ['uuid' => 'exec-2', 'status' => 'success', 'created_at' => '2024-01-14T10:00:00Z', 'size' => 1020000],
             ], 200),
         ]);
 
         $response = $this->getJson(route('coolify.databases.backups', 'db-123'));
 
         $response->assertOk()
-            ->assertJsonPath('backups.0.status', 'success');
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.schedule.uuid', 'schedule-1')
+            ->assertJsonPath('0.executions.0.status', 'success');
     });
 
-    it('triggers a backup', function () {
+    it('returns empty array when no backup schedules configured', function () {
         Http::fake([
-            '*/databases/db-123/backup' => Http::response([
-                'message' => 'Backup started',
-            ], 200),
+            '*/databases/db-123/backups' => Http::response([], 200),
         ]);
 
-        $response = $this->postJson(route('coolify.databases.backup', 'db-123'));
+        $response = $this->getJson(route('coolify.databases.backups', 'db-123'));
 
         $response->assertOk()
-            ->assertJson(['message' => 'Backup started']);
-    });
-
-    it('handles backup errors gracefully', function () {
-        Http::fake([
-            '*/databases/db-123/backup' => Http::response(['message' => 'No backup schedule configured'], 400),
-        ]);
-
-        $response = $this->postJson(route('coolify.databases.backup', 'db-123'));
-
-        $response->assertStatus(400);
+            ->assertJsonCount(0);
     });
 });
