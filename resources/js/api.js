@@ -32,7 +32,8 @@ export const api = {
 
     // Applications
     getApplication: (uuid) => request('GET', `/applications/${uuid}`),
-    deployApplication: (uuid) => request('POST', `/applications/${uuid}/deploy`),
+    updateApplication: (uuid, data) => request('PATCH', `/applications/${uuid}`, data),
+    deployApplication: (uuid, options = {}) => request('POST', `/applications/${uuid}/deploy`, options),
     restartApplication: (uuid) => request('POST', `/applications/${uuid}/restart`),
     startApplication: (uuid) => request('POST', `/applications/${uuid}/start`),
     stopApplication: (uuid) => request('POST', `/applications/${uuid}/stop`),
@@ -52,12 +53,16 @@ export const api = {
     // Databases
     getDatabases: () => request('GET', '/databases'),
     getDatabase: (uuid) => request('GET', `/databases/${uuid}`),
+    updateDatabase: (uuid, data) => request('PATCH', `/databases/${uuid}`, data),
     startDatabase: (uuid) => request('POST', `/databases/${uuid}/start`),
     stopDatabase: (uuid) => request('POST', `/databases/${uuid}/stop`),
     restartDatabase: (uuid) => request('POST', `/databases/${uuid}/restart`),
 
-    // Backups (returns schedules with their executions)
+    // Backups (schedules and executions)
     getDatabaseBackups: (uuid) => request('GET', `/databases/${uuid}/backups`),
+    createBackupSchedule: (uuid, data) => request('POST', `/databases/${uuid}/backups`, data),
+    updateBackupSchedule: (uuid, backupUuid, data) => request('PATCH', `/databases/${uuid}/backups/${backupUuid}`, data),
+    deleteBackupSchedule: (uuid, backupUuid) => request('DELETE', `/databases/${uuid}/backups/${backupUuid}`),
 
     // Servers
     getServers: () => request('GET', '/servers'),
@@ -66,6 +71,9 @@ export const api = {
     // Services
     getServices: () => request('GET', '/services'),
     getService: (uuid) => request('GET', `/services/${uuid}`),
+    startService: (uuid) => request('POST', `/services/${uuid}/start`),
+    stopService: (uuid) => request('POST', `/services/${uuid}/stop`),
+    restartService: (uuid) => request('POST', `/services/${uuid}/restart`),
 
     // Projects
     getProjects: () => request('GET', '/projects'),

@@ -42,6 +42,7 @@ const appCoolifyUrl = computed(() => {
 const navigation = [
     { name: 'Dashboard', path: '/dashboard', icon: 'home' },
     { name: 'Deployments', path: '/deployments', icon: 'rocket' },
+    { name: 'Resources', path: '/resources', icon: 'database' },
     { name: 'Configuration', path: '/configuration', icon: 'cog' },
     { name: 'Logs', path: '/logs', icon: 'terminal' },
 ];

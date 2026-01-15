@@ -6,7 +6,7 @@ const route = useRoute();
 const api = inject('api');
 
 const deployment = ref(null);
-const logs = ref('');
+const logs = ref([]);
 const loading = ref(true);
 const logsLoading = ref(true);
 
@@ -25,7 +25,8 @@ async function fetchDeployment() {
 async function fetchLogs() {
     try {
         const result = await api.getDeploymentLogs(route.params.uuid);
-        logs.value = result.logs || '';
+        // Logs come as array of {output, type} objects
+        logs.value = Array.isArray(result.logs) ? result.logs : [];
     } catch (e) {
         console.error('Failed to fetch logs:', e);
     } finally {
@@ -50,6 +51,13 @@ function statusClass(status) {
     if (status === 'failed') return 'bg-red-500/10 text-red-400';
     if (status === 'in_progress') return 'bg-amber-500/10 text-amber-400';
     return 'bg-zinc-500/10 text-zinc-400';
+}
+
+// Format log output - strip ANSI codes
+function formatLogLine(line) {
+    if (!line) return '';
+    const output = line.output || line.toString();
+    return output.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
 onMounted(async () => {
@@ -107,17 +115,44 @@ onUnmounted(() => {
         <!-- Log viewer -->
         <div class="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
             <div class="border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-white">Build Output</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-white">Build Output</span>
+                    <span v-if="logs.length" class="text-xs text-zinc-500">{{ logs.length }} lines</span>
+                </div>
                 <div v-if="deployment?.status === 'in_progress'" class="flex items-center gap-2 text-sm text-amber-400">
                     <div class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></div>
                     Building...
                 </div>
             </div>
-            <div class="p-4 max-h-[600px] overflow-auto">
+            <div class="max-h-[600px] overflow-auto">
                 <div v-if="logsLoading" class="flex items-center justify-center py-12">
                     <div class="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-violet-500"></div>
                 </div>
-                <pre v-else class="font-mono text-sm text-zinc-300 whitespace-pre-wrap">{{ logs || 'No logs available' }}</pre>
+                <div v-else-if="logs.length" class="font-mono text-xs">
+                    <div
+                        v-for="(line, index) in logs"
+                        :key="index"
+                        class="px-4 py-0.5 hover:bg-zinc-800 border-l-2 flex"
+                        :class="{
+                            'border-transparent': line.type === 'stdout',
+                            'border-red-500 bg-red-500/5': line.type === 'stderr',
+                            'border-amber-500 bg-amber-500/5': line.type === 'warning'
+                        }"
+                    >
+                        <span class="text-zinc-600 select-none w-12 flex-shrink-0 text-right pr-4">{{ index + 1 }}</span>
+                        <span
+                            class="flex-1 whitespace-pre-wrap break-all"
+                            :class="{
+                                'text-zinc-300': line.type === 'stdout',
+                                'text-red-400': line.type === 'stderr',
+                                'text-amber-400': line.type === 'warning'
+                            }"
+                        >{{ formatLogLine(line) }}</span>
+                    </div>
+                </div>
+                <div v-else class="px-4 py-12 text-center text-zinc-500">
+                    No logs available for this deployment
+                </div>
             </div>
         </div>
     </div>

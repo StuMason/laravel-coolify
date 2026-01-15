@@ -24,7 +24,7 @@ describe('Coolify facade', function () {
 
     it('deploys using configured UUID', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'deploy-123',
                     'message' => 'Deployment started',
@@ -40,7 +40,7 @@ describe('Coolify facade', function () {
 
     it('deploys using custom UUID', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'deploy-456',
                     'message' => 'Deployment started',

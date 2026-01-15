@@ -58,8 +58,11 @@ const routes = [
         name: 'logs',
         component: () => import('./pages/Logs.vue'),
     },
-    // Redirects for old routes
-    { path: '/resources', redirect: '/dashboard' },
+    {
+        path: '/resources',
+        name: 'resources',
+        component: () => import('./pages/Resources.vue'),
+    },
     { path: '/environment', redirect: '/configuration?tab=environment' },
     { path: '/backups', redirect: '/configuration?tab=backups' },
     { path: '/settings', redirect: '/configuration?tab=settings' },

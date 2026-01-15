@@ -133,4 +133,65 @@ describe('DatabaseRepository', function () {
 
         expect($backups)->toBeEmpty();
     });
+
+    it('creates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([
+                'uuid' => 'schedule-new',
+                'frequency' => '0 0 * * *',
+                'enabled' => true,
+            ], 201),
+        ]);
+
+        $result = app(DatabaseRepository::class)->createBackup('db-123', [
+            'frequency' => '0 0 * * *',
+            'enabled' => true,
+        ]);
+
+        expect($result['uuid'])->toBe('schedule-new')
+            ->and($result['frequency'])->toBe('0 0 * * *');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups')
+                && $request->method() === 'POST';
+        });
+    });
+
+    it('updates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response([
+                'uuid' => 'schedule-1',
+                'frequency' => '0 */6 * * *',
+                'enabled' => false,
+            ], 200),
+        ]);
+
+        $result = app(DatabaseRepository::class)->updateBackup('db-123', 'schedule-1', [
+            'frequency' => '0 */6 * * *',
+            'enabled' => false,
+        ]);
+
+        expect($result['uuid'])->toBe('schedule-1')
+            ->and($result['enabled'])->toBeFalse();
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'PATCH';
+        });
+    });
+
+    it('deletes a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response([], 200),
+        ]);
+
+        $result = app(DatabaseRepository::class)->deleteBackup('db-123', 'schedule-1');
+
+        expect($result)->toBeTrue();
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'DELETE';
+        });
+    });
 });

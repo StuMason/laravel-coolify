@@ -44,7 +44,9 @@ class DeploymentController extends Controller
     public function logs(string $uuid): JsonResponse
     {
         try {
-            return response()->json($this->deployments->logs($uuid));
+            $logs = $this->deployments->logs($uuid);
+
+            return response()->json(['logs' => $logs]);
         } catch (CoolifyApiException $e) {
             return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
         }

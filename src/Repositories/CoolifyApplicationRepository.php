@@ -99,12 +99,20 @@ class CoolifyApplicationRepository implements ApplicationRepository
     /**
      * {@inheritDoc}
      */
-    public function deploy(string $uuid): array
+    public function deploy(string $uuid, bool $force = false, ?string $commit = null): array
     {
-        // Coolify API uses POST /deploy with uuid in body
-        $response = $this->client->post('deploy', [
-            'uuid' => $uuid,
-        ]);
+        // If deploying a specific commit, update the app's git_commit_sha first
+        if ($commit !== null) {
+            $this->update($uuid, ['git_commit_sha' => $commit]);
+        }
+
+        // Coolify API uses GET /deploy with query params
+        $params = ['uuid' => $uuid];
+        if ($force) {
+            $params['force'] = 'true';
+        }
+
+        $response = $this->client->get('deploy', $params);
 
         // API returns {deployments: [{message, resource_uuid, deployment_uuid}]}
         $deployment = $response['deployments'][0] ?? $response;
@@ -113,6 +121,8 @@ class CoolifyApplicationRepository implements ApplicationRepository
             'deployment_uuid' => $deployment['deployment_uuid'] ?? null,
             'message' => $deployment['message'] ?? null,
             'resource_uuid' => $deployment['resource_uuid'] ?? $uuid,
+            'commit' => $commit,
+            'force' => $force,
         ];
     }
 
@@ -155,7 +165,8 @@ class CoolifyApplicationRepository implements ApplicationRepository
      */
     public function envs(string $uuid): array
     {
-        return $this->client->get("applications/{$uuid}/envs");
+        // Don't cache env vars - they need to be fresh after create/update/delete
+        return $this->client->get("applications/{$uuid}/envs", cached: false);
     }
 
     /**
@@ -169,9 +180,9 @@ class CoolifyApplicationRepository implements ApplicationRepository
     /**
      * {@inheritDoc}
      */
-    public function updateEnv(string $uuid, array $env): array
+    public function updateEnv(string $uuid, string $envUuid, array $env): array
     {
-        return $this->client->patch("applications/{$uuid}/envs", $env);
+        return $this->client->patch("applications/{$uuid}/envs/{$envUuid}", $env);
     }
 
     /**

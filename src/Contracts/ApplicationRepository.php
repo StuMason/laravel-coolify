@@ -82,9 +82,11 @@ interface ApplicationRepository
     /**
      * Deploy an application.
      *
+     * @param  bool  $force  Force rebuild without cache
+     * @param  string|null  $commit  Specific commit SHA to deploy (null = HEAD/latest)
      * @return array<string, mixed>
      */
-    public function deploy(string $uuid): array;
+    public function deploy(string $uuid, bool $force = false, ?string $commit = null): array;
 
     /**
      * Start an application.
@@ -135,7 +137,7 @@ interface ApplicationRepository
      * @param  array<string, mixed>  $env  Should contain 'key' and 'value'
      * @return array<string, mixed>
      */
-    public function updateEnv(string $uuid, array $env): array;
+    public function updateEnv(string $uuid, string $envUuid, array $env): array;
 
     /**
      * Delete an environment variable from an application.

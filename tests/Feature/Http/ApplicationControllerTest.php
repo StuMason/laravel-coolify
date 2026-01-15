@@ -27,9 +27,38 @@ describe('ApplicationController', function () {
             ]);
     });
 
+    it('updates application settings', function () {
+        Http::fake([
+            '*/applications/app-123' => Http::response([
+                'uuid' => 'app-123',
+                'name' => 'Updated App',
+                'fqdn' => 'https://app.example.com',
+                'health_check_enabled' => true,
+                'health_check_path' => '/health',
+            ], 200),
+        ]);
+
+        $response = $this->patchJson(route('coolify.applications.update', 'app-123'), [
+            'name' => 'Updated App',
+            'fqdn' => 'https://app.example.com',
+            'health_check_enabled' => true,
+            'health_check_path' => '/health',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['name' => 'Updated App'])
+            ->assertJsonFragment(['health_check_enabled' => true]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123')
+                && $request->method() === 'PATCH'
+                && $request['name'] === 'Updated App';
+        });
+    });
+
     it('triggers deployment', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'deploy-456',
                     'message' => 'Deployment started',
@@ -43,6 +72,51 @@ describe('ApplicationController', function () {
         $response->assertOk()
             ->assertJson([
                 'deployment_uuid' => 'deploy-456',
+            ]);
+    });
+
+    it('triggers deployment with force rebuild', function () {
+        Http::fake([
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-789',
+                    'message' => 'Force rebuild started',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.applications.deploy', 'app-123'), [
+            'force' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'deployment_uuid' => 'deploy-789',
+                'force' => true,
+            ]);
+    });
+
+    it('triggers deployment with specific commit', function () {
+        Http::fake([
+            '*/applications/app-123' => Http::response(['uuid' => 'app-123'], 200),
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-abc',
+                    'message' => 'Commit deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.applications.deploy', 'app-123'), [
+            'commit' => 'abc123def456',
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'deployment_uuid' => 'deploy-abc',
+                'commit' => 'abc123def456',
             ]);
     });
 
@@ -143,7 +217,7 @@ describe('Environment Variables', function () {
 
     it('updates environment variable', function () {
         Http::fake([
-            '*/applications/app-123/envs' => Http::response([
+            '*/applications/app-123/envs/env-1' => Http::response([
                 'uuid' => 'env-1',
                 'key' => 'APP_NAME',
                 'value' => 'UpdatedApp',
@@ -155,7 +229,13 @@ describe('Environment Variables', function () {
             'value' => 'UpdatedApp',
         ]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonFragment(['value' => 'UpdatedApp']);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123/envs/env-1')
+                && $request->method() === 'PATCH';
+        });
     });
 
     it('deletes environment variable', function () {

@@ -105,4 +105,69 @@ describe('Database Backups', function () {
         $response->assertOk()
             ->assertJsonCount(0);
     });
+
+    it('creates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups' => Http::response([
+                'uuid' => 'schedule-new',
+                'frequency' => '0 0 * * *',
+                'enabled' => true,
+                'save_s3' => false,
+            ], 201),
+        ]);
+
+        $response = $this->postJson(route('coolify.databases.backups.create', 'db-123'), [
+            'frequency' => '0 0 * * *',
+            'enabled' => true,
+            'save_s3' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['uuid' => 'schedule-new']);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups')
+                && $request->method() === 'POST'
+                && $request['frequency'] === '0 0 * * *';
+        });
+    });
+
+    it('updates a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response([
+                'uuid' => 'schedule-1',
+                'frequency' => '0 */6 * * *',
+                'enabled' => true,
+            ], 200),
+        ]);
+
+        $response = $this->patchJson(route('coolify.databases.backups.update', ['uuid' => 'db-123', 'backupUuid' => 'schedule-1']), [
+            'frequency' => '0 */6 * * *',
+            'enabled' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['frequency' => '0 */6 * * *']);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'PATCH';
+        });
+    });
+
+    it('deletes a backup schedule', function () {
+        Http::fake([
+            '*/databases/db-123/backups/schedule-1' => Http::response(null, 204),
+        ]);
+
+        $response = $this->deleteJson(route('coolify.databases.backups.delete', ['uuid' => 'db-123', 'backupUuid' => 'schedule-1']));
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'databases/db-123/backups/schedule-1')
+                && $request->method() === 'DELETE';
+        });
+    });
 });

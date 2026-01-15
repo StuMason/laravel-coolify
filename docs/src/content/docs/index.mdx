@@ -1,11 +1,54 @@
 ---
 title: Laravel Coolify
-description: Deploy Laravel apps to Coolify with zero-config provisioning
+description: Deploy Laravel apps to Coolify with zero-config provisioning and a beautiful dashboard
+template: splash
+hero:
+  tagline: Like Laravel Horizon, but for your entire infrastructure. Deploy, monitor, and manage from within your app.
+  image:
+    file: ../../assets/dashboard.png
+  actions:
+    - text: Get Started
+      link: /getting-started/installation
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/StuMason/laravel-coolify
+      icon: external
 ---
 
-Laravel Coolify provisions your entire production infrastructure on [Coolify](https://coolify.io) with a single command.
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Install
+## Why Laravel Coolify?
+
+Self-hosting with Coolify is powerful, but switching between your app and the Coolify UI gets tedious. This package brings infrastructure management **into your Laravel app**.
+
+<CardGrid>
+  <Card title="Beautiful Dashboard" icon="laptop">
+    Monitor deployments, view logs, manage env vars - all from `/coolify` in your app. Works like Horizon.
+  </Card>
+  <Card title="Artisan Commands" icon="terminal">
+    Deploy from CI/CD, scripts, or your terminal. Full control without touching a UI.
+  </Card>
+  <Card title="Auto Dockerfiles" icon="document">
+    Production-ready Docker config generated automatically. Horizon, Reverb, Scheduler detected and configured.
+  </Card>
+  <Card title="Full API Access" icon="rocket">
+    Build custom tooling, automations, or integrations with the complete Coolify API.
+  </Card>
+</CardGrid>
+
+## Dashboard Preview
+
+![Dashboard](/dashboard.png)
+
+The dashboard shows everything at a glance:
+- Application status with animated health indicators
+- Current branch, commit, and deployment info
+- Database and cache status with connection strings
+- Recent deployments with inline expandable build logs
+- One-click deploy, restart, and rollback
+
+## Quick Start
 
 ```bash
 composer require stumason/laravel-coolify
@@ -19,32 +62,43 @@ COOLIFY_URL=https://your-coolify.com
 COOLIFY_TOKEN=your-api-token
 ```
 
-## Provision
+Provision your infrastructure:
 
 ```bash
 php artisan coolify:provision
 ```
 
-Creates:
-- Laravel application container (PHP-FPM, Nginx, Horizon, Reverb)
-- PostgreSQL database
-- Dragonfly cache (Redis-compatible)
+Creates Laravel app + PostgreSQL + Dragonfly on Coolify. One command.
 
 ## Commands
 
-```bash
-coolify:install    # Install package config
-coolify:provision  # Create infrastructure
-coolify:status     # Show application status
-coolify:deploy     # Trigger deployment
-coolify:logs       # Stream logs
-coolify:restart    # Restart application
-coolify:rollback   # Rollback deployment
+| Command | Description |
+|---------|-------------|
+| `coolify:install` | Publish config, generate Dockerfile |
+| `coolify:provision` | Create infrastructure on Coolify |
+| `coolify:deploy` | Trigger deployment |
+| `coolify:status` | Show application status |
+| `coolify:logs` | View application logs |
+| `coolify:restart` | Restart application |
+| `coolify:rollback` | Rollback to previous deployment |
+
+## Programmatic API
+
+```php
+use Stumason\Coolify\Coolify;
+
+// Quick deploy
+Coolify::deploy();
+
+// Full repository access
+Coolify::applications()->deploy($uuid, force: true);
+Coolify::applications()->envs($uuid);
+Coolify::deployments()->forApplication($uuid);
+Coolify::databases()->start($uuid);
 ```
 
 ## Requirements
 
 - PHP 8.2+
-- Laravel 11/12
-- Coolify instance with API access
-- Server connected to Coolify
+- Laravel 11 or 12
+- Coolify 4.x instance with API access

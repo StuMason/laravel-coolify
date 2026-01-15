@@ -28,12 +28,33 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Update application settings.
+     */
+    public function update(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            $result = $this->applications->update($uuid, $request->all());
+
+            return response()->json($result);
+        } catch (CoolifyApiException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+    /**
      * Deploy the application.
+     *
+     * Accepts optional parameters:
+     * - force: boolean - Force rebuild without cache
+     * - commit: string - Specific commit SHA to deploy
      */
     public function deploy(Request $request, string $uuid): JsonResponse
     {
         try {
-            $result = $this->applications->deploy($uuid);
+            $force = $request->boolean('force', false);
+            $commit = $request->input('commit');
+
+            $result = $this->applications->deploy($uuid, $force, $commit);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
@@ -130,10 +151,7 @@ class ApplicationController extends Controller
     public function updateEnv(Request $request, string $uuid, string $envUuid): JsonResponse
     {
         try {
-            $result = $this->applications->updateEnv($uuid, array_merge(
-                $request->all(),
-                ['uuid' => $envUuid]
-            ));
+            $result = $this->applications->updateEnv($uuid, $envUuid, $request->all());
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {

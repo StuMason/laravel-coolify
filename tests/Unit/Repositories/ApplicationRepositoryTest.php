@@ -41,7 +41,7 @@ describe('ApplicationRepository', function () {
 
     it('deploys an application', function () {
         Http::fake([
-            '*/deploy' => Http::response([
+            '*/deploy*' => Http::response([
                 'deployments' => [[
                     'deployment_uuid' => 'deploy-456',
                     'message' => 'Deployment started',
@@ -56,7 +56,53 @@ describe('ApplicationRepository', function () {
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'deploy')
-                && $request->method() === 'POST';
+                && $request->method() === 'GET';
+        });
+    });
+
+    it('deploys with force rebuild', function () {
+        Http::fake([
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-force',
+                    'message' => 'Force rebuild started',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        $result = app(ApplicationRepository::class)->deploy('app-123', force: true);
+
+        expect($result['deployment_uuid'])->toBe('deploy-force')
+            ->and($result['force'])->toBeTrue();
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'deploy')
+                && str_contains($request->url(), 'force=true');
+        });
+    });
+
+    it('deploys a specific commit', function () {
+        Http::fake([
+            '*/applications/app-123' => Http::response(['uuid' => 'app-123'], 200),
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-commit',
+                    'message' => 'Commit deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        $result = app(ApplicationRepository::class)->deploy('app-123', commit: 'abc123');
+
+        expect($result['deployment_uuid'])->toBe('deploy-commit')
+            ->and($result['commit'])->toBe('abc123');
+
+        // Verify it first updates the app with the commit SHA
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123')
+                && $request->method() === 'PATCH';
         });
     });
 
@@ -157,5 +203,68 @@ describe('ApplicationRepository', function () {
         $result = app(ApplicationRepository::class)->delete('app-123');
 
         expect($result)->toBeTrue();
+    });
+
+    it('creates an environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs' => Http::response([
+                'uuid' => 'env-456',
+                'key' => 'NEW_VAR',
+                'value' => 'new_value',
+            ], 200),
+        ]);
+
+        $result = app(ApplicationRepository::class)->createEnv('app-123', [
+            'key' => 'NEW_VAR',
+            'value' => 'new_value',
+        ]);
+
+        expect($result['uuid'])->toBe('env-456')
+            ->and($result['key'])->toBe('NEW_VAR');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123/envs')
+                && $request->method() === 'POST'
+                && $request['key'] === 'NEW_VAR';
+        });
+    });
+
+    it('updates an environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs/env-456' => Http::response([
+                'uuid' => 'env-456',
+                'key' => 'UPDATED_VAR',
+                'value' => 'updated_value',
+            ], 200),
+        ]);
+
+        $result = app(ApplicationRepository::class)->updateEnv('app-123', 'env-456', [
+            'key' => 'UPDATED_VAR',
+            'value' => 'updated_value',
+        ]);
+
+        expect($result['uuid'])->toBe('env-456')
+            ->and($result['key'])->toBe('UPDATED_VAR');
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123/envs/env-456')
+                && $request->method() === 'PATCH'
+                && $request['key'] === 'UPDATED_VAR';
+        });
+    });
+
+    it('deletes an environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs/env-456' => Http::response([], 200),
+        ]);
+
+        $result = app(ApplicationRepository::class)->deleteEnv('app-123', 'env-456');
+
+        expect($result)->toBeTrue();
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'applications/app-123/envs/env-456')
+                && $request->method() === 'DELETE';
+        });
     });
 });
