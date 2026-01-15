@@ -1,6 +1,6 @@
 # Laravel Coolify
 
-[![CI](https://github.com/StuMason/laravel-coolify/actions/workflows/ci.yml/badge.svg)](https://github.com/StuMason/laravel-coolify/actions/workflows/ci.yml)
+[![Tests](https://github.com/StuMason/laravel-coolify/actions/workflows/tests.yml/badge.svg)](https://github.com/StuMason/laravel-coolify/actions/workflows/tests.yml)
 [![Latest Version](https://img.shields.io/packagist/v/stumason/laravel-coolify.svg)](https://packagist.org/packages/stumason/laravel-coolify)
 [![PHP Version](https://img.shields.io/packagist/php-v/stumason/laravel-coolify.svg)](https://packagist.org/packages/stumason/laravel-coolify)
 [![Laravel Version](https://img.shields.io/badge/laravel-11.x%20|%2012.x-red.svg)](https://laravel.com)

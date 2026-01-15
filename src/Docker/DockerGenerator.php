@@ -607,6 +607,9 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
     echo "[$STEP/$TOTAL_STEPS] Waiting for database connection..."
 
     # Wait for database to be available
+    # We use db:show instead of a simple connection check because it verifies
+    # both connectivity AND schema access. If db:show fails, migrations would
+    # fail anyway, so this gives us an early, clear error message.
     WAITED=0
     until php artisan db:show > /dev/null 2>&1; do
         WAITED=$((WAITED + 1))
