@@ -1,19 +1,69 @@
-import { createApp } from 'vue';
+import '../css/app.css';
+import { createApp, ref, provide, readonly } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
-import axios from 'axios';
-import routes from '@/routes.js';
-import base from '@/base.js';
+import Layout from './components/Layout.vue';
+import api from './api.js';
 
-// Configure axios
-const token = document.head.querySelector('meta[name="csrf-token"]');
-if (token) {
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
-}
-axios.defaults.headers.common['Accept'] = 'application/json';
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-
-// Get base path from the window (set by blade template)
+// Get config from window
 const basePath = window.Coolify?.path || '/coolify';
+const pollInterval = window.Coolify?.pollInterval || 5000;
+
+// Global state
+const stats = ref(null);
+const loading = ref(true);
+const error = ref(null);
+
+// Fetch stats
+async function fetchStats() {
+    try {
+        stats.value = await api.getStats();
+        error.value = null;
+    } catch (e) {
+        error.value = e.message;
+        console.error('Failed to fetch stats:', e);
+    } finally {
+        loading.value = false;
+    }
+}
+
+// Routes
+const routes = [
+    {
+        path: '/',
+        redirect: '/dashboard',
+    },
+    {
+        path: '/dashboard',
+        name: 'dashboard',
+        component: () => import('./pages/Dashboard.vue'),
+    },
+    {
+        path: '/deployments',
+        name: 'deployments',
+        component: () => import('./pages/Deployments.vue'),
+    },
+    {
+        path: '/deployments/:uuid',
+        name: 'deployment',
+        component: () => import('./pages/DeploymentDetail.vue'),
+        props: true,
+    },
+    {
+        path: '/configuration',
+        name: 'configuration',
+        component: () => import('./pages/Configuration.vue'),
+    },
+    {
+        path: '/logs',
+        name: 'logs',
+        component: () => import('./pages/Logs.vue'),
+    },
+    // Redirects for old routes
+    { path: '/resources', redirect: '/dashboard' },
+    { path: '/environment', redirect: '/configuration?tab=environment' },
+    { path: '/backups', redirect: '/configuration?tab=backups' },
+    { path: '/settings', redirect: '/configuration?tab=settings' },
+];
 
 // Create router
 const router = createRouter({
@@ -22,70 +72,26 @@ const router = createRouter({
 });
 
 // Create app
-const app = createApp({
-    data() {
-        return {
-            // Global app state
-            stats: null,
-            loading: true,
-            alertMessage: null,
-            alertType: 'info',
-            alertTimeout: null,
-        };
-    },
+const app = createApp(Layout);
 
-    mounted() {
-        this.fetchStats();
-        // Poll for updates
-        const pollInterval = window.Coolify?.pollInterval || 10000;
-        if (pollInterval > 0) {
-            setInterval(() => this.fetchStats(), pollInterval);
-        }
-    },
-
-    methods: {
-        async fetchStats() {
-            try {
-                const response = await axios.get(`${basePath}/api/stats`);
-                this.stats = response.data;
-                this.loading = false;
-            } catch (error) {
-                console.error('Failed to fetch stats:', error);
-                this.loading = false;
-            }
-        },
-
-        alert(message, type = 'info', duration = 3000) {
-            this.alertMessage = message;
-            this.alertType = type;
-            if (this.alertTimeout) {
-                clearTimeout(this.alertTimeout);
-            }
-            if (duration > 0) {
-                this.alertTimeout = setTimeout(() => {
-                    this.alertMessage = null;
-                }, duration);
-            }
-        },
-
-        clearAlert() {
-            this.alertMessage = null;
-            if (this.alertTimeout) {
-                clearTimeout(this.alertTimeout);
-            }
-        },
-    },
-});
-
-// Global properties
-app.config.globalProperties.$http = axios;
-app.config.globalProperties.$basePath = basePath;
-
-// Register base mixin
-app.mixin(base);
+// Provide global state
+app.provide('stats', readonly(stats));
+app.provide('loading', readonly(loading));
+app.provide('error', readonly(error));
+app.provide('refreshStats', fetchStats);
+app.provide('api', api);
+app.provide('basePath', basePath);
 
 // Use router
 app.use(router);
 
 // Mount
-app.mount('#coolify');
+app.mount('#app');
+
+// Initial fetch
+fetchStats();
+
+// Start polling
+if (pollInterval > 0) {
+    setInterval(fetchStats, pollInterval);
+}

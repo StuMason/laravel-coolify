@@ -104,3 +104,68 @@ describe('ApplicationController', function () {
             ]);
     });
 });
+
+describe('Environment Variables', function () {
+    it('lists environment variables', function () {
+        Http::fake([
+            '*/applications/app-123/envs' => Http::response([
+                ['uuid' => 'env-1', 'key' => 'APP_NAME', 'value' => 'MyApp', 'is_build_time' => false],
+                ['uuid' => 'env-2', 'key' => 'DB_PASSWORD', 'value' => 'secret123', 'is_build_time' => false],
+            ], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.applications.envs', 'app-123'));
+
+        $response->assertOk()
+            ->assertJsonCount(2)
+            ->assertJsonFragment(['key' => 'APP_NAME'])
+            ->assertJsonFragment(['key' => 'DB_PASSWORD']);
+    });
+
+    it('creates environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs' => Http::response([
+                'uuid' => 'env-new',
+                'key' => 'NEW_VAR',
+                'value' => 'new_value',
+            ], 201),
+        ]);
+
+        $response = $this->postJson(route('coolify.applications.envs.create', 'app-123'), [
+            'key' => 'NEW_VAR',
+            'value' => 'new_value',
+            'is_build_time' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonFragment(['key' => 'NEW_VAR']);
+    });
+
+    it('updates environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs' => Http::response([
+                'uuid' => 'env-1',
+                'key' => 'APP_NAME',
+                'value' => 'UpdatedApp',
+            ], 200),
+        ]);
+
+        $response = $this->patchJson(route('coolify.applications.envs.update', ['uuid' => 'app-123', 'envUuid' => 'env-1']), [
+            'key' => 'APP_NAME',
+            'value' => 'UpdatedApp',
+        ]);
+
+        $response->assertOk();
+    });
+
+    it('deletes environment variable', function () {
+        Http::fake([
+            '*/applications/app-123/envs/env-1' => Http::response(null, 204),
+        ]);
+
+        $response = $this->deleteJson(route('coolify.applications.envs.delete', ['uuid' => 'app-123', 'envUuid' => 'env-1']));
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+    });
+});

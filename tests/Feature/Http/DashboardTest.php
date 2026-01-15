@@ -14,7 +14,7 @@ describe('Coolify Dashboard', function () {
     it('loads the dashboard', function () {
         $this->get(config('coolify.path'))
             ->assertOk()
-            ->assertViewIs('coolify::dashboard');
+            ->assertViewIs('coolify::spa');
     });
 
     it('returns stats from API endpoint', function () {

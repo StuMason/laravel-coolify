@@ -6,18 +6,20 @@ export default {
     plugins: [vue()],
     build: {
         outDir: 'dist',
-        assetsDir: '',
+        emptyOutDir: true,
         rollupOptions: {
-            input: [
-                'resources/js/app.js',
-                'resources/css/app.css',
-            ],
+            input: {
+                app: resolve(__dirname, 'resources/js/app.js'),
+            },
             output: {
                 entryFileNames: '[name].js',
-                chunkFileNames: '[name].js',
+                chunkFileNames: 'chunks/[name]-[hash].js',
                 assetFileNames: '[name].[ext]',
             },
         },
+    },
+    css: {
+        postcss: resolve(__dirname, 'postcss.config.js'),
     },
     resolve: {
         alias: {

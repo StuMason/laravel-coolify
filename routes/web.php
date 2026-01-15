@@ -61,6 +61,8 @@ Route::middleware(Authenticate::class)->group(function () {
         Route::get('/teams/current/members', 'TeamController@members')->name('coolify.teams.members');
     });
 
-    // Dashboard (Blade views - no Inertia)
-    Route::get('/', 'DashboardController@index')->name('coolify.index');
+    // SPA catch-all - serves Vue app for all dashboard routes
+    Route::get('/{any?}', 'DashboardController@index')
+        ->where('any', '^(?!api).*$')
+        ->name('coolify.index');
 });

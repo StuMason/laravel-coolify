@@ -2,8 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-[v-cloak] {
-    display: none !important;
+/* Inter font */
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* Custom scrollbar for dark theme */
@@ -13,25 +14,26 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #1f2937;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4b5563;
+    background: rgb(63 63 70);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+    background: rgb(82 82 91);
+}
+
+/* Vue cloak */
+[v-cloak] {
+    display: none !important;
 }
 
 /* Log viewer styles */
 .log-line {
-    @apply font-mono text-xs leading-relaxed;
-}
-
-.log-timestamp {
-    @apply text-gray-500 mr-2;
+    @apply font-mono text-sm leading-relaxed;
 }
 
 .log-error {
@@ -39,19 +41,23 @@
 }
 
 .log-warning {
-    @apply text-yellow-400;
+    @apply text-amber-400;
 }
 
 .log-success {
-    @apply text-green-400;
+    @apply text-emerald-400;
 }
 
 .log-info {
-    @apply text-gray-300;
+    @apply text-sky-400;
+}
+
+.log-muted {
+    @apply text-zinc-500;
 }
 
 /* Status pulse animation */
-@keyframes status-pulse {
+@keyframes pulse-status {
     0%, 100% {
         opacity: 1;
     }
@@ -60,6 +66,28 @@
     }
 }
 
-.status-pulse {
-    animation: status-pulse 2s ease-in-out infinite;
+.animate-pulse-status {
+    animation: pulse-status 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth transitions */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+    transform: translateY(-4px);
+    opacity: 0;
 }

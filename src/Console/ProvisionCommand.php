@@ -402,10 +402,10 @@ class ProvisionCommand extends Command
                 $escapedKey = addslashes(trim($publicKey));
                 $this->line('  <fg=white>Option B: Via CLI (recommended)</>');
                 $this->line('  <fg=gray>──────────────────────────────────</>');
-                $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/keys --method POST \\</>");
-                $this->line("    <fg=cyan>-f title=\"{$appName}-deploy-key\" \\</>");
-                $this->line("    <fg=cyan>-f key=\"{$escapedKey}\" \\</>");
-                $this->line('    <fg=cyan>-f read_only=true</>');
+                $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/keys --method POST</> \\");
+                $this->line("    <fg=cyan>-f title=\"{$appName}-deploy-key\"</> \\");
+                $this->line("    <fg=cyan>-f key=\"{$escapedKey}\"</> \\");
+                $this->line('    <fg=cyan>-F read_only=true</>');
                 $this->newLine();
             } else {
                 $this->line("  <fg=white>Go to:</> https://github.com/{$repoInfo['full_name']}/settings/keys");
@@ -438,12 +438,12 @@ class ProvisionCommand extends Command
 
             $this->line('  <fg=white>Option B: Via CLI</>');
             $this->line('  <fg=gray>─────────────────</>');
-            $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/hooks --method POST \\</>");
-            $this->line('    <fg=cyan>-f name="web" \\</>');
-            $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\" \\</>");
-            $this->line('    <fg=cyan>-f "config[content_type]=json" \\</>');
-            $this->line('    <fg=cyan>-f "events[]=push" \\</>');
-            $this->line('    <fg=cyan>-f active=true</>');
+            $this->line("  <fg=cyan>gh api repos/{$repoInfo['full_name']}/hooks --method POST</> \\");
+            $this->line('    <fg=cyan>-f name="web"</> \\');
+            $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\"</> \\");
+            $this->line('    <fg=cyan>-f "config[content_type]=json"</> \\');
+            $this->line('    <fg=cyan>-f "events[]=push"</> \\');
+            $this->line('    <fg=cyan>-F active=true</>');
             $this->newLine();
 
             if (! $this->option('no-interaction')) {
@@ -473,12 +473,9 @@ class ProvisionCommand extends Command
                 }
             } else {
                 $this->newLine();
-                $this->line('  <fg=yellow;options=bold>NEXT STEPS:</>');
+                $this->line('  <fg=yellow;options=bold>NEXT STEP:</>');
                 $this->newLine();
-                $this->line('  <fg=white>1.</> Add the deploy key to GitHub (link above)');
-                $this->line('  <fg=white>2.</> Run <fg=cyan>composer run dev</> to start your local server');
-                $this->line('  <fg=white>3.</> Visit <fg=cyan>http://localhost:8000/coolify</> to copy the key and view webhook setup');
-                $this->line('  <fg=white>4.</> Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
+                $this->line('  Run <fg=cyan>php artisan coolify:deploy</> to trigger your first deployment');
                 $this->newLine();
                 $this->line('  <fg=gray>Or run with --deploy flag to deploy automatically</>');
             }
@@ -1476,7 +1473,9 @@ class ProvisionCommand extends Command
             $this->line('        <fg=yellow>This project needs a GitHub remote to deploy.</>');
             $this->newLine();
             $this->line('        <fg=white>To create one:</>');
-            $this->line('        <fg=gray>gh repo create --private --source=. --push</>');
+            $this->line('        <fg=gray>1.</> git add .');
+            $this->line('        <fg=gray>2.</> git commit -m "Initial commit"');
+            $this->line('        <fg=gray>3.</> gh repo create --private --source=. --push');
             $this->newLine();
 
             return false;

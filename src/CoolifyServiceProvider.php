@@ -158,6 +158,10 @@ class CoolifyServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'coolify-migrations');
+
+            $this->publishes([
+                __DIR__.'/../dist' => public_path('vendor/coolify'),
+            ], 'coolify-assets');
         }
     }
 }
