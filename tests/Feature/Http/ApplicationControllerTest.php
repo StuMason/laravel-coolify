@@ -248,4 +248,80 @@ describe('Environment Variables', function () {
         $response->assertOk()
             ->assertJson(['success' => true]);
     });
+
+    it('validates env var key format', function () {
+        $response = $this->postJson(route('coolify.applications.envs.create', 'app-123'), [
+            'key' => 'invalid-key', // lowercase and hyphens not allowed
+            'value' => 'some_value',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['key']);
+    });
+
+    it('validates env var key is required', function () {
+        $response = $this->postJson(route('coolify.applications.envs.create', 'app-123'), [
+            'value' => 'some_value',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['key']);
+    });
+
+    it('validates env var value is required', function () {
+        $response = $this->postJson(route('coolify.applications.envs.create', 'app-123'), [
+            'key' => 'VALID_KEY',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['value']);
+    });
+});
+
+describe('Input Validation', function () {
+    it('validates commit SHA format on deploy', function () {
+        $response = $this->postJson(route('coolify.applications.deploy', 'app-123'), [
+            'commit' => 'not-a-valid-sha!',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['commit']);
+    });
+
+    it('accepts valid commit SHA on deploy', function () {
+        Http::fake([
+            '*/applications/app-123' => Http::response(['uuid' => 'app-123'], 200),
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-abc',
+                    'message' => 'Deployment started',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        $response = $this->postJson(route('coolify.applications.deploy', 'app-123'), [
+            'commit' => 'abc123def',
+        ]);
+
+        $response->assertOk();
+    });
+
+    it('validates health check settings', function () {
+        $response = $this->patchJson(route('coolify.applications.update', 'app-123'), [
+            'health_check_port' => 99999, // invalid port
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['health_check_port']);
+    });
+
+    it('validates health check interval range', function () {
+        $response = $this->patchJson(route('coolify.applications.update', 'app-123'), [
+            'health_check_interval' => 1, // too low, min is 5
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['health_check_interval']);
+    });
 });

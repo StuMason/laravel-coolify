@@ -32,8 +32,26 @@ class ApplicationController extends Controller
      */
     public function update(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'sometimes|nullable|string|max:1000',
+            'fqdn' => 'sometimes|nullable|string|max:255',
+            'git_repository' => 'sometimes|string|max:500',
+            'git_branch' => 'sometimes|string|max:255',
+            'git_commit_sha' => 'sometimes|string|max:40',
+            'build_pack' => 'sometimes|string|in:nixpacks,dockerfile,dockercompose,static',
+            'ports_exposes' => 'sometimes|string|max:100',
+            'health_check_enabled' => 'sometimes|boolean',
+            'health_check_path' => 'sometimes|string|max:255',
+            'health_check_port' => 'sometimes|nullable|integer|min:1|max:65535',
+            'health_check_interval' => 'sometimes|integer|min:5|max:3600',
+            'health_check_timeout' => 'sometimes|integer|min:1|max:300',
+            'health_check_retries' => 'sometimes|integer|min:1|max:10',
+            'health_check_start_period' => 'sometimes|integer|min:0|max:300',
+        ]);
+
         try {
-            $result = $this->applications->update($uuid, $request->all());
+            $result = $this->applications->update($uuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
@@ -50,9 +68,14 @@ class ApplicationController extends Controller
      */
     public function deploy(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'force' => 'sometimes|boolean',
+            'commit' => 'sometimes|nullable|string|regex:/^[a-f0-9]{7,40}$/i',
+        ]);
+
         try {
-            $force = $request->boolean('force', false);
-            $commit = $request->input('commit');
+            $force = $validated['force'] ?? false;
+            $commit = $validated['commit'] ?? null;
 
             $result = $this->applications->deploy($uuid, $force, $commit);
 
@@ -136,8 +159,18 @@ class ApplicationController extends Controller
      */
     public function createEnv(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'key' => ['required', 'string', 'max:255', 'regex:/^[A-Z][A-Z0-9_]*$/'],
+            'value' => 'required|string|max:65535',
+            'is_preview' => 'sometimes|boolean',
+            'is_build_time' => 'sometimes|boolean',
+            'is_literal' => 'sometimes|boolean',
+            'is_multiline' => 'sometimes|boolean',
+            'is_shown_once' => 'sometimes|boolean',
+        ]);
+
         try {
-            $result = $this->applications->createEnv($uuid, $request->all());
+            $result = $this->applications->createEnv($uuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
@@ -150,8 +183,18 @@ class ApplicationController extends Controller
      */
     public function updateEnv(Request $request, string $uuid, string $envUuid): JsonResponse
     {
+        $validated = $request->validate([
+            'key' => ['sometimes', 'string', 'max:255', 'regex:/^[A-Z][A-Z0-9_]*$/'],
+            'value' => 'sometimes|string|max:65535',
+            'is_preview' => 'sometimes|boolean',
+            'is_build_time' => 'sometimes|boolean',
+            'is_literal' => 'sometimes|boolean',
+            'is_multiline' => 'sometimes|boolean',
+            'is_shown_once' => 'sometimes|boolean',
+        ]);
+
         try {
-            $result = $this->applications->updateEnv($uuid, $envUuid, $request->all());
+            $result = $this->applications->updateEnv($uuid, $envUuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {

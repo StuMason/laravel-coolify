@@ -44,8 +44,18 @@ class DatabaseController extends Controller
      */
     public function update(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'description' => 'sometimes|nullable|string|max:1000',
+            'image' => 'sometimes|string|max:255',
+            'is_public' => 'sometimes|boolean',
+            'public_port' => 'sometimes|nullable|integer|min:1|max:65535',
+            'limits_memory' => 'sometimes|string|max:20',
+            'limits_cpu' => 'sometimes|string|max:20',
+        ]);
+
         try {
-            $result = $this->databases->update($uuid, $request->all());
+            $result = $this->databases->update($uuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
@@ -106,8 +116,18 @@ class DatabaseController extends Controller
      */
     public function createBackup(Request $request, string $uuid): JsonResponse
     {
+        $validated = $request->validate([
+            'frequency' => ['required', 'string', 'max:100', 'regex:/^[\d\s\*\/\-\,]+$/'],
+            'enabled' => 'sometimes|boolean',
+            'save_s3' => 'sometimes|boolean',
+            's3_storage_uuid' => 'sometimes|nullable|string|max:100',
+            'databases_to_backup' => 'sometimes|nullable|string|max:1000',
+            'database_backup_retention_amount_locally' => 'sometimes|integer|min:1|max:1000',
+            'database_backup_retention_amount_s3' => 'sometimes|integer|min:1|max:1000',
+        ]);
+
         try {
-            $result = $this->databases->createBackup($uuid, $request->all());
+            $result = $this->databases->createBackup($uuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
@@ -120,8 +140,18 @@ class DatabaseController extends Controller
      */
     public function updateBackup(Request $request, string $uuid, string $backupUuid): JsonResponse
     {
+        $validated = $request->validate([
+            'frequency' => ['sometimes', 'string', 'max:100', 'regex:/^[\d\s\*\/\-\,]+$/'],
+            'enabled' => 'sometimes|boolean',
+            'save_s3' => 'sometimes|boolean',
+            's3_storage_uuid' => 'sometimes|nullable|string|max:100',
+            'databases_to_backup' => 'sometimes|nullable|string|max:1000',
+            'database_backup_retention_amount_locally' => 'sometimes|integer|min:1|max:1000',
+            'database_backup_retention_amount_s3' => 'sometimes|integer|min:1|max:1000',
+        ]);
+
         try {
-            $result = $this->databases->updateBackup($uuid, $backupUuid, $request->all());
+            $result = $this->databases->updateBackup($uuid, $backupUuid, $validated);
 
             return response()->json($result);
         } catch (CoolifyApiException $e) {
