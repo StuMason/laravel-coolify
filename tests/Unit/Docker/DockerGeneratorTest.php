@@ -10,6 +10,7 @@ beforeEach(function () {
         base_path('docker/supervisord.conf'),
         base_path('docker/nginx.conf'),
         base_path('docker/php.ini'),
+        base_path('docker/entrypoint.sh'),
         base_path('package.json'),
     ];
     foreach ($files as $file) {
@@ -29,6 +30,7 @@ afterEach(function () {
         base_path('docker/supervisord.conf'),
         base_path('docker/nginx.conf'),
         base_path('docker/php.ini'),
+        base_path('docker/entrypoint.sh'),
         base_path('package.json'),
     ];
     foreach ($files as $file) {
@@ -125,11 +127,36 @@ describe('DockerGenerator', function () {
         expect(File::exists(base_path('docker/supervisord.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/nginx.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/php.ini')))->toBeTrue();
+        expect(File::exists(base_path('docker/entrypoint.sh')))->toBeTrue();
 
         expect($files)->toHaveKey('Dockerfile');
         expect($files)->toHaveKey('docker/supervisord.conf');
         expect($files)->toHaveKey('docker/nginx.conf');
         expect($files)->toHaveKey('docker/php.ini');
+        expect($files)->toHaveKey('docker/entrypoint.sh');
+    });
+
+    it('generates entrypoint.sh with migrations and optimize', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect($content)->toContain('#!/bin/bash');
+        expect($content)->toContain('set -e');
+        expect($content)->toContain('php artisan migrate --force');
+        expect($content)->toContain('php artisan optimize');
+        expect($content)->toContain('php artisan storage:link');
+        expect($content)->toContain('exec /usr/bin/supervisord');
+    });
+
+    it('generates Dockerfile with entrypoint', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateDockerfile();
+
+        expect($content)->toContain('COPY docker/entrypoint.sh /entrypoint.sh');
+        expect($content)->toContain('RUN chmod +x /entrypoint.sh');
+        expect($content)->toContain('ENTRYPOINT ["/entrypoint.sh"]');
     });
 
     it('detects when Dockerfile exists', function () {

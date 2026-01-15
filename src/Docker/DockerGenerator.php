@@ -87,6 +87,7 @@ class DockerGenerator
             'docker/supervisord.conf' => $this->generateSupervisordConf(),
             'docker/nginx.conf' => $this->generateNginxConf(),
             'docker/php.ini' => $this->generatePhpIni(),
+            'docker/entrypoint.sh' => $this->generateEntrypoint(),
         ];
 
         $written = [];
@@ -209,8 +210,9 @@ RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \\
     && chmod -R 775 storage bootstrap/cache
 
-# Storage link
-RUN php artisan storage:link 2>/dev/null || true
+# Entrypoint script (runs migrations + optimize on startup)
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 {$browsershotEnv}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
@@ -218,7 +220,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \\
 
 EXPOSE 8080
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
 DOCKERFILE;
     }
 
@@ -452,6 +454,52 @@ session.use_strict_mode = On
 realpath_cache_size = 4096K
 realpath_cache_ttl = 600
 INI;
+    }
+
+    /**
+     * Generate entrypoint.sh content.
+     * Runs migrations and optimizations before starting supervisor.
+     */
+    public function generateEntrypoint(): string
+    {
+        return <<<'BASH'
+#!/bin/bash
+set -e
+
+echo "============================================"
+echo "Laravel Application Startup"
+echo "============================================"
+
+# Run database migrations
+echo ""
+echo "[1/3] Running database migrations..."
+if ! php artisan migrate --force; then
+    echo "ERROR: Database migrations failed!" >&2
+    exit 1
+fi
+echo "      Migrations completed successfully."
+
+# Cache configuration, routes, views, and events
+echo ""
+echo "[2/3] Optimizing application..."
+php artisan optimize
+echo "      Optimization completed successfully."
+
+# Ensure storage link exists
+echo ""
+echo "[3/3] Ensuring storage link..."
+php artisan storage:link 2>/dev/null || true
+echo "      Storage link ready."
+
+echo ""
+echo "============================================"
+echo "Application ready. Starting services..."
+echo "============================================"
+echo ""
+
+# Start supervisor (replaces this process)
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+BASH;
     }
 
     /**

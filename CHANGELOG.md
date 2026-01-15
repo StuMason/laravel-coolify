@@ -10,11 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Database storage for resource configuration (`coolify_resources` table)
 - `CoolifyResource` Eloquent model with `getDefault()` helper
+- Docker entrypoint script for production deployments
+  - Runs `migrate --force` on container startup (fails deployment if migrations fail)
+  - Runs `php artisan optimize` (config, routes, views, events cache)
+  - Ensures storage link exists
 
 ### Changed
 - Resource UUIDs now stored in database instead of `.env` file
 - All commands read from database via `CoolifyResource::getDefault()`
 - `coolify:provision` saves to database instead of updating `.env`
+- Dockerfile now uses `ENTRYPOINT` instead of `CMD` for proper startup sequence
 
 ### Removed
 - `COOLIFY_APPLICATION_UUID`, `COOLIFY_SERVER_UUID`, `COOLIFY_PROJECT_UUID` env vars
