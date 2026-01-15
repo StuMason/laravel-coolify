@@ -71,6 +71,10 @@ export const api = {
     // Projects
     getProjects: () => request('GET', '/projects'),
     getProject: (uuid) => request('GET', `/projects/${uuid}`),
+
+    // Environments (configured resources)
+    getEnvironments: () => request('GET', '/environments'),
+    switchEnvironment: (id) => request('POST', `/environments/${id}/switch`),
 };
 
 export default api;

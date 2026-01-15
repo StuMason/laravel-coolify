@@ -3,6 +3,7 @@ import { inject, computed, ref, provide } from 'vue';
 import { useRoute, RouterLink, RouterView } from 'vue-router';
 import CommandPalette from './CommandPalette.vue';
 import Toast from './Toast.vue';
+import EnvironmentSwitcher from './EnvironmentSwitcher.vue';
 
 const route = useRoute();
 const stats = inject('stats');
@@ -78,6 +79,11 @@ function isActive(path) {
                         <span class="text-xs text-zinc-400 capitalize">{{ appStatus }}</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Environment Switcher -->
+            <div class="border-b border-zinc-800 p-2">
+                <EnvironmentSwitcher />
             </div>
 
             <!-- Navigation -->

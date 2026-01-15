@@ -150,9 +150,10 @@ async function triggerBackup() {
     triggering.value = true;
     try {
         await api.triggerDatabaseBackup(database.value.uuid);
+        toast.value?.success('Backup Started', 'Database backup has been initiated');
         await fetchBackups();
     } catch (e) {
-        console.error('Failed to trigger backup:', e);
+        toast.value?.error('Backup Failed', e.message);
     } finally {
         triggering.value = false;
     }
