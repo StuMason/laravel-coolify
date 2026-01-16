@@ -10,7 +10,5 @@ composer.lock
 .idea
 .vscode
 
-# Keep dist folder but ignore contents
-/dist/*
-!/dist/.gitkeep
+# Dist folder is tracked (built assets included in package)
 .env
