@@ -57,6 +57,8 @@ class ProvisionCommand extends Command
 
     protected ?string $redisInternalUrl = null;
 
+    protected ?string $webhookSecret = null;
+
     public function handle(
         CoolifyClient $client,
         ServerRepository $servers,
@@ -368,6 +370,7 @@ class ProvisionCommand extends Command
                     'application_uuid' => $appUuid,
                     'database_uuid' => $dbUuid,
                     'redis_uuid' => $redisUuid,
+                    'webhook_secret' => $this->webhookSecret,
                 ]
             );
             $resource->setAsDefault();
@@ -425,15 +428,19 @@ class ProvisionCommand extends Command
             $this->line('  <fg=cyan;options=bold>OPTIONAL: GitHub Webhook (for automatic deploys)</>');
             $this->newLine();
             $coolifyUrl = rtrim(config('coolify.url'), '/');
-            $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events";
+            $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$appUuid}&webhook_secret={$this->webhookSecret}";
 
             $this->line('  <fg=white>Option A: Via GitHub UI</>');
             $this->line('  <fg=gray>────────────────────────</>');
             $this->line('  <fg=white>1.</> Go to: <fg=cyan;options=underscore>https://github.com/'.$repoInfo['full_name'].'/settings/hooks</>');
             $this->line('  <fg=white>2.</> Click "<fg=green>Add webhook</>"');
-            $this->line('  <fg=white>3.</> Payload URL: <fg=gray>'.$webhookUrl.'</>');
+            $this->line('  <fg=white>3.</> Payload URL:');
+            $this->newLine();
+            $this->line("      <fg=gray>{$webhookUrl}</>");
+            $this->newLine();
             $this->line('  <fg=white>4.</> Content type: <fg=gray>application/json</>');
-            $this->line('  <fg=white>5.</> Events: <fg=gray>Just the push event</>');
+            $this->line('  <fg=white>5.</> Secret: <fg=gray>'.$this->webhookSecret.'</>');
+            $this->line('  <fg=white>6.</> Events: <fg=gray>Just the push event</>');
             $this->newLine();
 
             $this->line('  <fg=white>Option B: Via CLI</>');
@@ -442,6 +449,7 @@ class ProvisionCommand extends Command
             $this->line('    <fg=cyan>-f name="web"</> \\');
             $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\"</> \\");
             $this->line('    <fg=cyan>-f "config[content_type]=json"</> \\');
+            $this->line("    <fg=cyan>-f \"config[secret]={$this->webhookSecret}\"</> \\");
             $this->line('    <fg=cyan>-f "events[]=push"</> \\');
             $this->line('    <fg=cyan>-F active=true</>');
             $this->newLine();
@@ -1088,6 +1096,16 @@ class ProvisionCommand extends Command
 
             $this->createdResources['Application'] = $uuid;
             $this->line("    <fg=green>Application created:</> {$uuid}");
+
+            // Generate and set webhook secret for GitHub manual webhooks
+            $this->webhookSecret = bin2hex(random_bytes(32));
+            spin(
+                callback: fn () => $applications->update($uuid, [
+                    'manual_webhook_secret_github' => $this->webhookSecret,
+                ]),
+                message: '    Configuring webhook secret...'
+            );
+            $this->line('    <fg=green>Webhook secret configured</>');
 
             return $uuid;
 
