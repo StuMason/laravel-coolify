@@ -42,7 +42,7 @@ class InstallCommand extends Command
         info('Installing Laravel Coolify...');
         $this->newLine();
 
-        // Publish config, service provider, and migrations
+        // Publish config, service provider, migrations, and assets
         collect([
             'Service Provider' => fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'coolify-provider',
@@ -54,6 +54,10 @@ class InstallCommand extends Command
             ]) == 0,
             'Migrations' => fn () => $this->callSilent('vendor:publish', [
                 '--tag' => 'coolify-migrations',
+                '--force' => $this->option('force'),
+            ]) == 0,
+            'Assets' => fn () => $this->callSilent('vendor:publish', [
+                '--tag' => 'coolify-assets',
                 '--force' => $this->option('force'),
             ]) == 0,
         ])->each(fn ($task, $description) => $this->components->task($description, $task));
