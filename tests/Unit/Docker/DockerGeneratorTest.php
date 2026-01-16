@@ -77,7 +77,7 @@ describe('DockerGenerator with base images (default)', function () {
         $content = $generator->generateDockerfile();
 
         expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4-node AS production');
-        expect($content)->toContain('FROM node:20-alpine AS frontend-build');
+        expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4-node AS frontend-build');
     });
 
     it('does not install PHP extensions when using base image', function () {
@@ -156,14 +156,17 @@ describe('DockerGenerator from scratch', function () {
 
 describe('DockerGenerator common features', function () {
     it('includes frontend build stage when package.json exists', function () {
+        config(['coolify.docker.php_version' => '8.4']);
         File::put(base_path('package.json'), '{}');
 
         $generator = new DockerGenerator;
         $generator->detect();
         $content = $generator->generateDockerfile();
 
-        expect($content)->toContain('FROM node:20-alpine AS frontend-build');
+        expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4-node AS frontend-build');
         expect($content)->toContain('COPY --from=frontend-build /app/public/build ./public/build');
+        // Verify PHP dependencies are installed for Vite plugins like Wayfinder
+        expect($content)->toContain('composer install --no-dev --no-scripts --no-autoloader --prefer-dist');
     });
 
     it('excludes frontend build stage when no package.json', function () {
@@ -171,7 +174,7 @@ describe('DockerGenerator common features', function () {
         $generator->detect();
         $content = $generator->generateDockerfile();
 
-        expect($content)->not->toContain('FROM node:20-alpine AS frontend-build');
+        expect($content)->not->toContain('AS frontend-build');
         expect($content)->toContain('# No frontend build (no package.json detected)');
     });
 
