@@ -365,6 +365,9 @@ FROM ghcr.io/stumason/laravel-coolify-base:{$phpVersion}-node AS frontend-build
 
 WORKDIR /app
 
+# Copy composer binary from composer image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 # PHP dependencies (enables artisan commands in Vite plugins)
 COPY composer.json composer.lock ./
 COPY database ./database

@@ -165,6 +165,8 @@ describe('DockerGenerator common features', function () {
 
         expect($content)->toContain('FROM ghcr.io/stumason/laravel-coolify-base:8.4-node AS frontend-build');
         expect($content)->toContain('COPY --from=frontend-build /app/public/build ./public/build');
+        // Verify composer binary is copied for Vite plugins like Wayfinder that need artisan
+        expect($content)->toContain('COPY --from=composer:2 /usr/bin/composer /usr/bin/composer');
         // Verify PHP dependencies are installed for Vite plugins like Wayfinder
         expect($content)->toContain('composer install --no-dev --no-scripts --no-autoloader --prefer-dist');
     });
