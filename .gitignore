@@ -10,5 +10,7 @@ composer.lock
 .idea
 .vscode
 
-# Dist folder is tracked (built assets included in package)
+# Built assets (dist/) are tracked in git, following Laravel's Horizon/Telescope pattern.
+# This ensures users get working assets on composer install without needing Node.js.
+# The compile-assets workflow auto-commits changes on every push to keep them in sync.
 .env
