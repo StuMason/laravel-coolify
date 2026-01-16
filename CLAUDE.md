@@ -22,6 +22,10 @@ composer lint
 
 # Start workbench server for manual testing
 composer serve
+
+# Frontend development
+npm run dev      # Development server with HMR
+npm run build    # Production build to dist/
 ```
 
 ## Architecture
@@ -62,7 +66,15 @@ Located in `src/Console/`:
 - Middleware: `src/Http/Middleware/Authenticate.php`
 - Views: `resources/views/`
 
-Dashboard is a Blade template with Alpine.js for interactivity.
+### Dashboard Frontend
+
+The dashboard is a Vue 3 SPA built with Vite and Tailwind CSS.
+
+- Entry: `resources/js/app.js` - Vue app with Vue Router
+- Pages: `resources/js/pages/` - Dashboard, Deployments, Resources, etc.
+- Components: `resources/js/components/` - Layout, CommandPalette, Toast
+- Styles: `resources/css/app.css` - Tailwind directives
+- Build output: `dist/` - Published to `public/vendor/coolify/`
 
 ### Testing
 

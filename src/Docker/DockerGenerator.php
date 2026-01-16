@@ -348,32 +348,35 @@ DOCKERFILE;
 
     /**
      * Get the frontend build stage for the Dockerfile.
-     * Uses node-only with DOCKER_BUILD=true to skip wayfinder generation.
-     * Wayfinder types should be pre-committed or vite.config should skip in CI/Docker.
+     * Uses PHP+Node base image so Laravel Vite plugins (like Wayfinder)
+     * can run artisan commands during the build.
      */
     protected function getFrontendBuildStage(): string
     {
-        return <<<'DOCKERFILE'
+        $phpVersion = config('coolify.docker.php_version') ?? '8.4';
+
+        return <<<DOCKERFILE
 
 # ============================================
 # Frontend Build Stage
 # ============================================
-FROM node:20-alpine AS frontend-build
+# Uses PHP+Node image so Laravel Vite plugins (e.g., Wayfinder) can run artisan commands
+FROM ghcr.io/stumason/laravel-coolify-base:{$phpVersion}-node AS frontend-build
 
 WORKDIR /app
 
-# Install npm dependencies
+# PHP dependencies (enables artisan commands in Vite plugins)
+COPY composer.json composer.lock ./
+COPY database ./database
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
+# Node dependencies
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-# Copy frontend assets
-COPY vite.config.* tsconfig.json* ./
-COPY resources ./resources
-COPY public ./public
-
-# Skip wayfinder generation in Docker (types should be pre-committed)
-# Add to vite.config: const isCI = process.env.DOCKER_BUILD === 'true'; !isCI && wayfinder()
-ENV DOCKER_BUILD=true
+# Copy source and build
+COPY . .
+RUN composer dump-autoload --optimize
 RUN npm run build
 
 DOCKERFILE;
