@@ -43,6 +43,87 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Project UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of your Coolify project. This is the primary identifier used
+    | to discover all resources (applications, databases, services) within
+    | your project. Set this to enable automatic resource discovery.
+    |
+    | To find your project UUID:
+    | 1. Go to your Coolify dashboard
+    | 2. Navigate to your project
+    | 3. The UUID is in the URL: /projects/{uuid}
+    |
+    */
+
+    'project_uuid' => env('COOLIFY_PROJECT_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Environment Name
+    |--------------------------------------------------------------------------
+    |
+    | The name of the environment within your Coolify project. This is used
+    | to filter resources when discovering applications and databases.
+    | Common values: 'production', 'staging', 'development'
+    |
+    */
+
+    'environment' => env('COOLIFY_ENVIRONMENT', 'production'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Server UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of the Coolify server. If not set, it will be auto-discovered
+    | from your project's applications. Setting this explicitly can speed
+    | up provisioning operations.
+    |
+    */
+
+    'server_uuid' => env('COOLIFY_SERVER_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of your primary application in Coolify. If not set, it will
+    | be auto-discovered as the first application in your environment.
+    | This is used by deploy, status, logs, and restart commands.
+    |
+    */
+
+    'application_uuid' => env('COOLIFY_APPLICATION_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of your primary database in Coolify. If not set, it will
+    | be auto-discovered from your environment (prefers PostgreSQL/MySQL).
+    |
+    */
+
+    'database_uuid' => env('COOLIFY_DATABASE_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redis UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of your Redis/Dragonfly instance in Coolify. If not set,
+    | it will be auto-discovered from your environment.
+    |
+    */
+
+    'redis_uuid' => env('COOLIFY_REDIS_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
     | GitHub App UUID (Optional)
     |--------------------------------------------------------------------------
     |

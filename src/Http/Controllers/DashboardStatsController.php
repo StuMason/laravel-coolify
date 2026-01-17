@@ -10,7 +10,7 @@ use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
+use Stumason\Coolify\Services\CoolifyProjectService;
 
 class DashboardStatsController extends Controller
 {
@@ -23,7 +23,8 @@ class DashboardStatsController extends Controller
         DatabaseRepository $databases,
         DeploymentRepository $deployments,
         SecurityKeyRepository $securityKeys,
-        ProjectRepository $projects
+        ProjectRepository $projects,
+        CoolifyProjectService $projectService
     ): JsonResponse {
         $stats = [
             'connected' => false,
@@ -45,11 +46,12 @@ class DashboardStatsController extends Controller
                 return response()->json($stats);
             }
 
-            // Get resource configuration from database
-            $resource = CoolifyResource::getDefault();
+            // Get resource configuration from config/env (via CoolifyProjectService)
+            $projectUuid = $projectService->getProjectUuid();
+            $environmentName = $projectService->getEnvironment();
 
             // Get deploy key info if configured
-            if ($deployKeyUuid = $resource?->deploy_key_uuid) {
+            if ($deployKeyUuid = config('coolify.deploy_key_uuid')) {
                 try {
                     $key = $securityKeys->get($deployKeyUuid);
                     $stats['deployKey'] = [
@@ -62,9 +64,7 @@ class DashboardStatsController extends Controller
                 }
             }
 
-            // Fetch project and environment info from resource config
-            $projectUuid = $resource?->project_uuid;
-            $environmentName = $resource?->environment;
+            // Fetch project and environment info
             $environmentUuid = null;
 
             if ($projectUuid) {
@@ -88,7 +88,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get application status
-            if ($uuid = $resource?->application_uuid) {
+            if ($uuid = $projectService->getApplicationUuid()) {
                 try {
                     $app = $applications->get($uuid);
 
@@ -170,7 +170,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get database status
-            if ($dbUuid = $resource?->database_uuid) {
+            if ($dbUuid = $projectService->getDatabaseUuid()) {
                 try {
                     $db = $databases->get($dbUuid);
                     $stats['databases']['primary'] = $this->formatDatabaseInfo($db, 'database');
@@ -180,7 +180,7 @@ class DashboardStatsController extends Controller
             }
 
             // Get redis status
-            if ($redisUuid = $resource?->redis_uuid) {
+            if ($redisUuid = $projectService->getRedisUuid()) {
                 try {
                     $redis = $databases->get($redisUuid);
                     $stats['databases']['redis'] = $this->formatDatabaseInfo($redis, 'redis');

@@ -5,9 +5,9 @@ namespace Stumason\Coolify\Console;
 use Illuminate\Console\Command;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
+use Stumason\Coolify\Coolify;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'coolify:status')]
@@ -118,10 +118,10 @@ class StatusCommand extends Command
      */
     protected function showApplicationStatus(ApplicationRepository $applications): int
     {
-        $uuid = $this->option('uuid') ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $this->option('uuid') ?? Coolify::applicationUuid();
 
         if (! $uuid) {
-            $this->components->error('No application configured. Run coolify:provision first or use --uuid option.');
+            $this->components->error('No application configured. Set COOLIFY_PROJECT_UUID or COOLIFY_APPLICATION_UUID in your .env file, or use --uuid option.');
 
             return self::FAILURE;
         }

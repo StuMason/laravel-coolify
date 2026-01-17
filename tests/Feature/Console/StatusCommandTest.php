@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Stumason\Coolify\Models\CoolifyResource;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -17,8 +16,11 @@ describe('coolify:status command', function () {
     });
 
     it('shows error when no application UUID', function () {
-        // Clear the default resource so no application UUID exists
-        CoolifyResource::query()->delete();
+        // Clear the application UUID config so no application UUID exists
+        config([
+            'coolify.application_uuid' => null,
+            'coolify.project_uuid' => null,
+        ]);
 
         Http::fake(['*' => Http::response(['version' => '4.0'], 200)]);
 

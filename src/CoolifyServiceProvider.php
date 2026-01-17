@@ -111,6 +111,7 @@ class CoolifyServiceProvider extends ServiceProvider
                 Console\RollbackCommand::class,
                 Console\SetupCiCommand::class,
                 Console\StatusCommand::class,
+                Console\SyncCommand::class,
             ]);
         }
     }

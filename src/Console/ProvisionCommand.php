@@ -16,7 +16,6 @@ use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
@@ -357,27 +356,15 @@ class ProvisionCommand extends Command
                 $this->components->twoColumnDetail('  '.$cacheType, $redisUuid);
             }
 
-            // Save resource configuration to database
-            $resource = CoolifyResource::updateOrCreate(
-                ['name' => $appName],
-                [
-                    'server_uuid' => $serverUuid,
-                    'project_uuid' => $projectUuid,
-                    'environment' => $environment,
-                    'deploy_key_uuid' => $deployKey['uuid'],
-                    'repository' => $repoInfo['full_name'],
-                    'branch' => $branch,
-                    'application_uuid' => $appUuid,
-                    'database_uuid' => $dbUuid,
-                    'redis_uuid' => $redisUuid,
-                    'webhook_secret' => $this->webhookSecret,
-                ]
-            );
-            $resource->setAsDefault();
-
+            // Show local .env configuration for the user
             $this->newLine();
-            $this->line('  <fg=gray>Resource configuration saved to database</>');
-            $this->line('  <fg=gray>Database credentials set on Coolify application</>');
+            $this->line('  <fg=cyan;options=bold>LOCAL DEVELOPMENT CONFIG</>');
+            $this->line('  <fg=gray>Add to your local .env file to enable coolify commands:</>');
+            $this->newLine();
+            $this->line("  <fg=white>COOLIFY_PROJECT_UUID=</><fg=gray>{$projectUuid}</>");
+            $this->line("  <fg=white>COOLIFY_ENVIRONMENT=</><fg=gray>{$environment}</>");
+            $this->newLine();
+            $this->line('  <fg=gray>Or run:</> <fg=cyan>php artisan coolify:sync</>');
 
             // ─────────────────────────────────────────────────────────────────
             // DEPLOY KEY SETUP (with confirmation)

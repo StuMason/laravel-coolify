@@ -3,51 +3,58 @@
 namespace Stumason\Coolify\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Stumason\Coolify\Models\CoolifyResource;
+use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Services\CoolifyProjectService;
 
 class EnvironmentController extends Controller
 {
     /**
-     * List all configured environments.
+     * List all environments from the configured Coolify project.
      */
-    public function index(): JsonResponse
+    public function index(CoolifyProjectService $projectService): JsonResponse
     {
-        $environments = CoolifyResource::query()
-            ->orderByDesc('is_default')
-            ->orderBy('name')
-            ->get()
-            ->map(fn ($env) => [
-                'id' => $env->id,
-                'name' => $env->name,
-                'environment' => $env->environment,
-                'is_default' => $env->is_default,
-                'application_uuid' => $env->application_uuid,
-                'database_uuid' => $env->database_uuid,
-                'redis_uuid' => $env->redis_uuid,
-                'repository' => $env->repository,
-                'branch' => $env->branch,
-            ]);
+        $environments = $projectService->getEnvironments();
+        $currentEnvironment = $projectService->getEnvironment();
 
-        return response()->json($environments);
+        $result = collect($environments)->map(fn ($env) => [
+            'id' => $env['id'] ?? null,
+            'name' => $env['name'] ?? 'unknown',
+            'environment' => $env['name'] ?? 'unknown',
+            'is_default' => ($env['name'] ?? '') === $currentEnvironment,
+            'description' => $env['description'] ?? null,
+        ]);
+
+        return response()->json($result);
     }
 
     /**
-     * Switch to a different environment.
+     * Get details about a specific environment.
+     *
+     * Note: Environment switching is now done via config/env vars, not database.
+     * This endpoint returns environment details for informational purposes.
      */
-    public function switch(int $id): JsonResponse
+    public function show(string $name, CoolifyProjectService $projectService): JsonResponse
     {
-        $resource = CoolifyResource::query()->findOrFail($id);
-        $resource->setAsDefault();
+        $projectUuid = $projectService->getProjectUuid();
 
-        return response()->json([
-            'success' => true,
-            'message' => "Switched to {$resource->name}",
-            'environment' => [
-                'id' => $resource->id,
-                'name' => $resource->name,
-                'environment' => $resource->environment,
-                'is_default' => true,
-            ],
-        ]);
+        if (! $projectUuid) {
+            return response()->json([
+                'error' => 'Project UUID not configured',
+            ], 400);
+        }
+
+        try {
+            $projects = app(\Stumason\Coolify\Contracts\ProjectRepository::class);
+            $environment = $projects->environment($projectUuid, $name);
+
+            return response()->json([
+                'success' => true,
+                'environment' => $environment,
+            ]);
+        } catch (CoolifyApiException $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 404);
+        }
     }
 }
