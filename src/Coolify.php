@@ -9,7 +9,7 @@ use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
-use Stumason\Coolify\Models\CoolifyResource;
+use Stumason\Coolify\Services\CoolifyProjectService;
 
 class Coolify
 {
@@ -46,6 +46,14 @@ class Coolify
         static::$authUsing = $callback;
 
         return new self;
+    }
+
+    /**
+     * Get the project service instance for resource discovery.
+     */
+    public static function project(): CoolifyProjectService
+    {
+        return app(CoolifyProjectService::class);
     }
 
     /**
@@ -97,11 +105,38 @@ class Coolify
     }
 
     /**
+     * Get the default application UUID.
+     *
+     * This uses the CoolifyProjectService to discover the application UUID
+     * from COOLIFY_PROJECT_UUID or COOLIFY_APPLICATION_UUID config.
+     */
+    public static function applicationUuid(): ?string
+    {
+        return static::project()->getApplicationUuid();
+    }
+
+    /**
+     * Get the default database UUID.
+     */
+    public static function databaseUuid(): ?string
+    {
+        return static::project()->getDatabaseUuid();
+    }
+
+    /**
+     * Get the default Redis UUID.
+     */
+    public static function redisUuid(): ?string
+    {
+        return static::project()->getRedisUuid();
+    }
+
+    /**
      * Deploy the current application.
      */
     public static function deploy(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::applicationUuid();
 
         return static::applications()->deploy($uuid);
     }
@@ -111,7 +146,7 @@ class Coolify
      */
     public static function status(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::applicationUuid();
 
         return static::applications()->get($uuid);
     }
@@ -121,7 +156,7 @@ class Coolify
      */
     public static function logs(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::applicationUuid();
 
         return static::applications()->logs($uuid);
     }

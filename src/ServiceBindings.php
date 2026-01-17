@@ -20,6 +20,7 @@ use Stumason\Coolify\Repositories\CoolifySecurityKeyRepository;
 use Stumason\Coolify\Repositories\CoolifyServerRepository;
 use Stumason\Coolify\Repositories\CoolifyServiceRepository;
 use Stumason\Coolify\Repositories\CoolifyTeamRepository;
+use Stumason\Coolify\Services\CoolifyProjectService;
 
 trait ServiceBindings
 {
@@ -39,5 +40,8 @@ trait ServiceBindings
         ServerRepository::class => CoolifyServerRepository::class,
         ServiceRepository::class => CoolifyServiceRepository::class,
         TeamRepository::class => CoolifyTeamRepository::class,
+
+        // Service bindings
+        CoolifyProjectService::class => CoolifyProjectService::class,
     ];
 }
