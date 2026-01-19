@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $application_uuid
  * @property string|null $database_uuid
  * @property string|null $redis_uuid
- * @property string|null $webhook_secret
  * @property bool $is_default
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -40,7 +39,6 @@ class CoolifyResource extends Model
         'application_uuid',
         'database_uuid',
         'redis_uuid',
-        'webhook_secret',
         'is_default',
         'metadata',
     ];

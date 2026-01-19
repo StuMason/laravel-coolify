@@ -370,7 +370,6 @@ class ProvisionCommand extends Command
                     'application_uuid' => $appUuid,
                     'database_uuid' => $dbUuid,
                     'redis_uuid' => $redisUuid,
-                    'webhook_secret' => $this->webhookSecret,
                 ]
             );
             $resource->setAsDefault();
