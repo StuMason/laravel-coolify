@@ -4,9 +4,9 @@ namespace Stumason\Coolify\Console;
 
 use Illuminate\Console\Command;
 use Stumason\Coolify\Contracts\DeploymentRepository;
+use Stumason\Coolify\Coolify;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
@@ -44,7 +44,7 @@ class RollbackCommand extends Command
             return self::FAILURE;
         }
 
-        $applicationUuid = $this->option('uuid') ?? CoolifyResource::getDefault()?->application_uuid;
+        $applicationUuid = $this->option('uuid') ?? Coolify::getApplicationUuid();
 
         if (! $applicationUuid) {
             $this->components->error('No application configured. Run coolify:provision first or use --uuid option.');

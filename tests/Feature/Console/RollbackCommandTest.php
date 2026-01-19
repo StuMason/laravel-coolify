@@ -29,7 +29,8 @@ describe('RollbackCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:rollback', ['--deployment' => 'deployment-2', '--force' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:rollback', ['--uuid' => 'test-app-uuid', '--deployment' => 'deployment-2', '--force' => true])
             ->assertSuccessful();
     });
 
@@ -58,7 +59,8 @@ describe('RollbackCommand', function () {
         ]);
 
         // In non-interactive mode without specifying a deployment, it defaults to the previous one
-        $this->artisan('coolify:rollback', ['--force' => true, '--no-interaction' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:rollback', ['--uuid' => 'test-app-uuid', '--force' => true, '--no-interaction' => true])
             ->assertSuccessful();
     });
 });

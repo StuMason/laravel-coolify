@@ -7,10 +7,9 @@ use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
-use Stumason\Coolify\Contracts\SecurityKeyRepository;
+use Stumason\Coolify\Coolify;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
 
 class DashboardStatsController extends Controller
 {
@@ -22,7 +21,6 @@ class DashboardStatsController extends Controller
         ApplicationRepository $applications,
         DatabaseRepository $databases,
         DeploymentRepository $deployments,
-        SecurityKeyRepository $securityKeys,
         ProjectRepository $projects
     ): JsonResponse {
         $stats = [
@@ -30,7 +28,6 @@ class DashboardStatsController extends Controller
             'application' => null,
             'databases' => [],
             'recentDeployments' => [],
-            'deployKey' => null,
             'project' => null,
             'environment' => null,
             'server' => null,
@@ -45,26 +42,9 @@ class DashboardStatsController extends Controller
                 return response()->json($stats);
             }
 
-            // Get resource configuration from database
-            $resource = CoolifyResource::getDefault();
-
-            // Get deploy key info if configured
-            if ($deployKeyUuid = $resource?->deploy_key_uuid) {
-                try {
-                    $key = $securityKeys->get($deployKeyUuid);
-                    $stats['deployKey'] = [
-                        'uuid' => $key['uuid'] ?? null,
-                        'name' => $key['name'] ?? 'Unknown',
-                        'public_key' => $key['public_key'] ?? null,
-                    ];
-                } catch (CoolifyApiException) {
-                    // Key not found
-                }
-            }
-
-            // Fetch project and environment info from resource config
-            $projectUuid = $resource?->project_uuid;
-            $environmentName = $resource?->environment;
+            // Get project from config
+            $projectUuid = config('coolify.project_uuid');
+            $environmentName = 'production'; // Default environment
             $environmentUuid = null;
 
             if ($projectUuid) {
@@ -73,7 +53,7 @@ class DashboardStatsController extends Controller
                     $stats['project'] = $project;
 
                     // Find environment UUID by name
-                    if ($environmentName && ! empty($project['environments'])) {
+                    if (! empty($project['environments'])) {
                         foreach ($project['environments'] as $env) {
                             if (($env['name'] ?? null) === $environmentName) {
                                 $environmentUuid = $env['uuid'] ?? null;
@@ -87,10 +67,12 @@ class DashboardStatsController extends Controller
                 }
             }
 
-            // Get application status
-            if ($uuid = $resource?->application_uuid) {
+            // Get application by matching git repository
+            $appUuid = Coolify::getApplicationUuid();
+
+            if ($appUuid) {
                 try {
-                    $app = $applications->get($uuid);
+                    $app = $applications->get($appUuid);
 
                     // Determine if using deploy key (no GitHub App)
                     $usesDeployKey = empty($app['source_id']) || $app['source_type'] === null;
@@ -100,19 +82,17 @@ class DashboardStatsController extends Controller
                     $webhookUrl = null;
                     $coolifyUrl = rtrim(config('coolify.url'), '/');
                     if ($usesDeployKey && $webhookSecret) {
-                        $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$uuid}&webhook_secret={$webhookSecret}";
+                        $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$appUuid}&webhook_secret={$webhookSecret}";
                     }
 
                     // Build proper Coolify dashboard URL
-                    // Format: /project/{project_uuid}/environment/{environment_uuid}/application/{app_uuid}
                     $coolifyDashboardUrl = null;
                     if ($projectUuid && $environmentUuid) {
-                        $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/environment/{$environmentUuid}/application/{$uuid}";
+                        $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/environment/{$environmentUuid}/application/{$appUuid}";
                     }
 
                     // Return ALL application data from Coolify, plus computed fields
                     $stats['application'] = array_merge($app, [
-                        // Computed convenience fields
                         'repository' => $app['git_repository'] ?? null,
                         'branch' => $app['git_branch'] ?? null,
                         'commit' => isset($app['git_commit_sha']) ? substr($app['git_commit_sha'], 0, 7) : null,
@@ -135,11 +115,10 @@ class DashboardStatsController extends Controller
 
                     // Get recent deployments
                     try {
-                        $recentDeployments = $deployments->forApplication($uuid);
+                        $recentDeployments = $deployments->forApplication($appUuid);
                         $stats['recentDeployments'] = collect($recentDeployments)
                             ->take(10)
                             ->map(function ($d) {
-                                // Calculate duration if both timestamps exist
                                 $duration = null;
                                 if (! empty($d['created_at']) && ! empty($d['finished_at'])) {
                                     $start = strtotime($d['created_at']);
@@ -165,28 +144,19 @@ class DashboardStatsController extends Controller
                         // Ignore deployment fetch errors
                     }
                 } catch (CoolifyApiException) {
-                    // Application not found or error
+                    // Application not found
                 }
             }
 
-            // Get database status
-            if ($dbUuid = $resource?->database_uuid) {
-                try {
-                    $db = $databases->get($dbUuid);
-                    $stats['databases']['primary'] = $this->formatDatabaseInfo($db, 'database');
-                } catch (CoolifyApiException) {
-                    // Database not found or error
+            // Fetch all databases and show them
+            try {
+                $allDatabases = $databases->all();
+                foreach ($allDatabases as $db) {
+                    $category = $this->getDatabaseCategory($db);
+                    $stats['databases'][$category] = $this->formatDatabaseInfo($db, $category);
                 }
-            }
-
-            // Get redis status
-            if ($redisUuid = $resource?->redis_uuid) {
-                try {
-                    $redis = $databases->get($redisUuid);
-                    $stats['databases']['redis'] = $this->formatDatabaseInfo($redis, 'redis');
-                } catch (CoolifyApiException) {
-                    // Redis not found or error
-                }
+            } catch (CoolifyApiException) {
+                // Ignore database fetch errors
             }
 
         } catch (CoolifyApiException) {
@@ -197,11 +167,24 @@ class DashboardStatsController extends Controller
     }
 
     /**
+     * Determine database category (primary, redis, etc).
+     */
+    protected function getDatabaseCategory(array $db): string
+    {
+        $dbType = $db['database_type'] ?? '';
+
+        if (str_contains($dbType, 'redis') || str_contains($dbType, 'dragonfly') || str_contains($dbType, 'keydb')) {
+            return 'redis';
+        }
+
+        return 'primary';
+    }
+
+    /**
      * Format database info for the dashboard.
      */
     protected function formatDatabaseInfo(array $db, string $category): array
     {
-        // Determine display type from database_type field
         $dbType = $db['database_type'] ?? 'unknown';
         $displayType = match (true) {
             str_contains($dbType, 'postgresql') => 'PostgreSQL',
@@ -214,7 +197,6 @@ class DashboardStatsController extends Controller
             default => $dbType,
         };
 
-        // Return ALL database data from Coolify, plus computed fields
         return array_merge($db, [
             'type' => $displayType,
             'category' => $category,

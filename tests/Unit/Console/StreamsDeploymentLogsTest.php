@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    Http::preventStrayRequests();
+
     config([
         'coolify.url' => 'https://coolify.example.com',
         'coolify.token' => 'test-token',
@@ -21,10 +23,8 @@ describe('DeployCommand signature', function () {
             ]),
         ]);
 
-        config(['coolify.application_uuid' => 'app-123']);
-
-        // Just check that the --wait flag is accepted (without actually waiting)
-        $this->artisan('coolify:deploy', ['--force' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:deploy', ['--uuid' => 'app-123', '--force' => true])
             ->expectsOutputToContain('Deployment triggered successfully')
             ->assertSuccessful();
     });
@@ -40,9 +40,8 @@ describe('DeployCommand signature', function () {
             ]),
         ]);
 
-        config(['coolify.application_uuid' => 'app-123']);
-
-        $this->artisan('coolify:deploy', ['--force' => true, '--debug' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:deploy', ['--uuid' => 'app-123', '--force' => true, '--debug' => true])
             ->expectsOutputToContain('Deployment triggered successfully')
             ->assertSuccessful();
     });

@@ -14,7 +14,8 @@ describe('RestartCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:restart', ['--force' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:restart', ['--uuid' => 'test-app-uuid', '--force' => true])
             ->assertSuccessful();
     });
 
@@ -25,7 +26,8 @@ describe('RestartCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:restart', ['--force' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:restart', ['--uuid' => 'test-app-uuid', '--force' => true])
             ->expectsOutputToContain('restart triggered successfully')
             ->assertSuccessful();
     });
@@ -38,7 +40,8 @@ describe('RestartCommand', function () {
             ),
         ]);
 
-        $this->artisan('coolify:restart', ['--force' => true])
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:restart', ['--uuid' => 'test-app-uuid', '--force' => true])
             ->assertFailed();
     });
 });

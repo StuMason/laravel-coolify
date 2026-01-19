@@ -20,6 +20,14 @@ describe('Coolify Dashboard', function () {
     it('returns stats from API endpoint', function () {
         Http::fake([
             '*/version' => Http::response(['version' => '4.0'], 200),
+            // Fake the applications list endpoint for git repository lookup
+            '*/applications' => Http::response([
+                [
+                    'uuid' => 'test-app-uuid',
+                    'name' => 'My App',
+                    'git_repository' => 'https://github.com/StuMason/laravel-coolify',
+                ],
+            ], 200),
             '*/security/keys/test-deploy-key-uuid' => Http::response([
                 'uuid' => 'test-deploy-key-uuid',
                 'name' => 'test-key',
@@ -38,20 +46,22 @@ describe('Coolify Dashboard', function () {
                 'status' => 'running',
                 'fqdn' => 'https://myapp.com',
             ], 200),
-            '*/applications/test-app-uuid/deployments' => Http::response([
+            '*/deployments/applications/test-app-uuid' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],
             ], 200),
-            '*/databases/test-db-uuid' => Http::response([
-                'uuid' => 'test-db-uuid',
-                'name' => 'test-db',
-                'database_type' => 'postgresql',
-                'status' => 'running',
-            ], 200),
-            '*/databases/test-redis-uuid' => Http::response([
-                'uuid' => 'test-redis-uuid',
-                'name' => 'test-redis',
-                'database_type' => 'dragonfly',
-                'status' => 'running',
+            '*/databases' => Http::response([
+                [
+                    'uuid' => 'test-db-uuid',
+                    'name' => 'test-db',
+                    'database_type' => 'postgresql',
+                    'status' => 'running',
+                ],
+                [
+                    'uuid' => 'test-redis-uuid',
+                    'name' => 'test-redis',
+                    'database_type' => 'dragonfly',
+                    'status' => 'running',
+                ],
             ], 200),
         ]);
 

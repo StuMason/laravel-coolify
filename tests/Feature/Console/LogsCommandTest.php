@@ -14,7 +14,8 @@ describe('LogsCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:logs')
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:logs', ['--uuid' => 'test-app-uuid'])
             ->assertSuccessful();
     });
 
@@ -25,7 +26,8 @@ describe('LogsCommand', function () {
             ]),
         ]);
 
-        $this->artisan('coolify:logs')
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:logs', ['--uuid' => 'test-app-uuid'])
             ->assertSuccessful();
     });
 

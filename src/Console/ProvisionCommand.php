@@ -16,7 +16,6 @@ use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
-use Stumason\Coolify\Models\CoolifyResource;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 use function Laravel\Prompts\confirm;
@@ -357,25 +356,11 @@ class ProvisionCommand extends Command
                 $this->components->twoColumnDetail('  '.$cacheType, $redisUuid);
             }
 
-            // Save resource configuration to database
-            $resource = CoolifyResource::updateOrCreate(
-                ['name' => $appName],
-                [
-                    'server_uuid' => $serverUuid,
-                    'project_uuid' => $projectUuid,
-                    'environment' => $environment,
-                    'deploy_key_uuid' => $deployKey['uuid'],
-                    'repository' => $repoInfo['full_name'],
-                    'branch' => $branch,
-                    'application_uuid' => $appUuid,
-                    'database_uuid' => $dbUuid,
-                    'redis_uuid' => $redisUuid,
-                ]
-            );
-            $resource->setAsDefault();
+            // Save project UUID to local .env
+            $this->updateEnvFile('COOLIFY_PROJECT_UUID', $projectUuid);
 
             $this->newLine();
-            $this->line('  <fg=gray>Resource configuration saved to database</>');
+            $this->line('  <fg=gray>COOLIFY_PROJECT_UUID saved to .env</>');
             $this->line('  <fg=gray>Database credentials set on Coolify application</>');
 
             // ─────────────────────────────────────────────────────────────────
@@ -1569,5 +1554,32 @@ class ProvisionCommand extends Command
         $this->line('    <fg=green>[✓]</> Dockerfile found');
 
         return true;
+    }
+
+    /**
+     * Update or add an environment variable in the .env file.
+     */
+    protected function updateEnvFile(string $key, string $value): void
+    {
+        $envPath = base_path('.env');
+
+        if (! File::exists($envPath)) {
+            File::put($envPath, "{$key}={$value}\n");
+
+            return;
+        }
+
+        $content = File::get($envPath);
+
+        // Check if the key already exists
+        if (preg_match("/^{$key}=.*/m", $content)) {
+            // Update existing key
+            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
+        } else {
+            // Add new key at the end
+            $content = rtrim($content, "\n")."\n{$key}={$value}\n";
+        }
+
+        File::put($envPath, $content);
     }
 }

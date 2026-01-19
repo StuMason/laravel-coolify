@@ -3,13 +3,14 @@
 namespace Stumason\Coolify;
 
 use Closure;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Process;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
 use Stumason\Coolify\Contracts\ServiceRepository;
-use Stumason\Coolify\Models\CoolifyResource;
 
 class Coolify
 {
@@ -97,11 +98,71 @@ class Coolify
     }
 
     /**
+     * Get the application UUID for this project by matching git repository.
+     * Fetches from Coolify and caches the result.
+     */
+    public static function getApplicationUuid(): ?string
+    {
+        $projectUuid = config('coolify.project_uuid');
+        if (! $projectUuid) {
+            return null;
+        }
+
+        $cacheKey = "coolify.app_uuid.{$projectUuid}";
+        $ttl = config('coolify.cache_ttl', 30);
+
+        return Cache::remember($cacheKey, $ttl, function () {
+            $gitRepo = static::getCurrentGitRepository();
+            if (! $gitRepo) {
+                return null;
+            }
+
+            // Fetch all applications and find the one matching our repository
+            $applications = static::applications()->all();
+
+            foreach ($applications as $app) {
+                $appRepo = $app['git_repository'] ?? '';
+                // Normalize: strip .git suffix and compare
+                $normalizedAppRepo = preg_replace('/\.git$/', '', $appRepo);
+                $normalizedAppRepo = preg_replace('#^git@github\.com:#', '', $normalizedAppRepo);
+                $normalizedAppRepo = preg_replace('#^https?://github\.com/#', '', $normalizedAppRepo);
+
+                if (strcasecmp($normalizedAppRepo, $gitRepo) === 0) {
+                    return $app['uuid'] ?? null;
+                }
+            }
+
+            return null;
+        });
+    }
+
+    /**
+     * Get the current git repository name (owner/repo format).
+     */
+    public static function getCurrentGitRepository(): ?string
+    {
+        $result = Process::run('git remote get-url origin 2>/dev/null');
+
+        if (! $result->successful() || empty(trim($result->output()))) {
+            return null;
+        }
+
+        $remoteUrl = trim($result->output());
+
+        // Extract owner/repo from various formats
+        if (preg_match('#github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$#', $remoteUrl, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
      * Deploy the current application.
      */
     public static function deploy(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::getApplicationUuid();
 
         return static::applications()->deploy($uuid);
     }
@@ -111,7 +172,7 @@ class Coolify
      */
     public static function status(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::getApplicationUuid();
 
         return static::applications()->get($uuid);
     }
@@ -121,7 +182,7 @@ class Coolify
      */
     public static function logs(?string $uuid = null): array
     {
-        $uuid = $uuid ?? CoolifyResource::getDefault()?->application_uuid;
+        $uuid = $uuid ?? static::getApplicationUuid();
 
         return static::applications()->logs($uuid);
     }

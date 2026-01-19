@@ -22,7 +22,7 @@ describe('Coolify facade', function () {
             ->and(Coolify::services())->toBeInstanceOf(ServiceRepository::class);
     });
 
-    it('deploys using configured UUID', function () {
+    it('deploys using explicit UUID', function () {
         Http::fake([
             '*/deploy*' => Http::response([
                 'deployments' => [[
@@ -33,7 +33,8 @@ describe('Coolify facade', function () {
             ], 200),
         ]);
 
-        $result = Coolify::deploy();
+        // Use explicit UUID to avoid git repository lookup
+        $result = Coolify::deploy('test-app-uuid');
 
         expect($result['deployment_uuid'])->toBe('deploy-123');
     });
@@ -54,7 +55,7 @@ describe('Coolify facade', function () {
         expect($result['deployment_uuid'])->toBe('deploy-456');
     });
 
-    it('gets status using configured UUID', function () {
+    it('gets status using explicit UUID', function () {
         Http::fake([
             '*/applications/test-app-uuid' => Http::response([
                 'uuid' => 'test-app-uuid',
@@ -62,19 +63,21 @@ describe('Coolify facade', function () {
             ], 200),
         ]);
 
-        $result = Coolify::status();
+        // Use explicit UUID to avoid git repository lookup
+        $result = Coolify::status('test-app-uuid');
 
         expect($result['status'])->toBe('running');
     });
 
-    it('gets logs using configured UUID', function () {
+    it('gets logs using explicit UUID', function () {
         Http::fake([
             '*/applications/test-app-uuid/logs*' => Http::response([
                 'logs' => 'App logs...',
             ], 200),
         ]);
 
-        $result = Coolify::logs();
+        // Use explicit UUID to avoid git repository lookup
+        $result = Coolify::logs('test-app-uuid');
 
         expect($result['logs'])->toBe('App logs...');
     });
