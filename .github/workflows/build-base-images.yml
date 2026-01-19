@@ -168,7 +168,7 @@ jobs:
       issues: write
     steps:
       - name: Create issue on failure
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const title = `Base image build failed - ${new Date().toISOString().split('T')[0]}`;
