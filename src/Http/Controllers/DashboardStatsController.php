@@ -153,7 +153,10 @@ class DashboardStatsController extends Controller
                 $allDatabases = $databases->all();
                 foreach ($allDatabases as $db) {
                     $category = $this->getDatabaseCategory($db);
-                    $stats['databases'][$category] = $this->formatDatabaseInfo($db, $category);
+                    if (! isset($stats['databases'][$category])) {
+                        $stats['databases'][$category] = [];
+                    }
+                    $stats['databases'][$category][] = $this->formatDatabaseInfo($db, $category);
                 }
             } catch (CoolifyApiException) {
                 // Ignore database fetch errors

@@ -138,6 +138,9 @@ class Coolify
 
     /**
      * Get the current git repository name (owner/repo format).
+     *
+     * Note: Currently only supports GitHub repositories. GitLab, Bitbucket,
+     * and other providers will return null and require using --uuid flag.
      */
     public static function getCurrentGitRepository(): ?string
     {
@@ -159,30 +162,48 @@ class Coolify
 
     /**
      * Deploy the current application.
+     *
+     * @throws \InvalidArgumentException
      */
     public static function deploy(?string $uuid = null): array
     {
         $uuid = $uuid ?? static::getApplicationUuid();
+
+        if ($uuid === null) {
+            throw new \InvalidArgumentException('No application UUID configured. Run coolify:provision first or provide a UUID.');
+        }
 
         return static::applications()->deploy($uuid);
     }
 
     /**
      * Get the status of the current application.
+     *
+     * @throws \InvalidArgumentException
      */
     public static function status(?string $uuid = null): array
     {
         $uuid = $uuid ?? static::getApplicationUuid();
+
+        if ($uuid === null) {
+            throw new \InvalidArgumentException('No application UUID configured. Run coolify:provision first or provide a UUID.');
+        }
 
         return static::applications()->get($uuid);
     }
 
     /**
      * Get the logs for the current application.
+     *
+     * @throws \InvalidArgumentException
      */
     public static function logs(?string $uuid = null): array
     {
         $uuid = $uuid ?? static::getApplicationUuid();
+
+        if ($uuid === null) {
+            throw new \InvalidArgumentException('No application UUID configured. Run coolify:provision first or provide a UUID.');
+        }
 
         return static::applications()->logs($uuid);
     }
