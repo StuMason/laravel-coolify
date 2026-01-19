@@ -47,9 +47,15 @@ return [
     // Log channel for Coolify events
     'log_channel' => env('COOLIFY_LOG_CHANNEL', 'stack'),
 
+    // Project UUID (set by coolify:provision)
+    'project_uuid' => env('COOLIFY_PROJECT_UUID'),
+
     // Docker configuration
     'docker' => [
         'php_version' => env('COOLIFY_PHP_VERSION', '8.4'),
+        'use_base_image' => env('COOLIFY_USE_BASE_IMAGE', true),
+        'auto_migrate' => env('COOLIFY_AUTO_MIGRATE', true),
+        'db_wait_timeout' => env('COOLIFY_DB_WAIT_TIMEOUT', 30),
         'health_check_path' => env('COOLIFY_HEALTH_CHECK_PATH', '/up'),
         'nginx' => [
             'client_max_body_size' => env('COOLIFY_NGINX_MAX_BODY_SIZE', '35M'),
@@ -64,31 +70,15 @@ return [
 ];
 ```
 
-## Resource Configuration
+## How Application Lookup Works
 
-Resource UUIDs (application, database, redis, etc.) are stored in the `coolify_resources` database table, not in config. Run the migration after installing:
+Only `COOLIFY_PROJECT_UUID` is stored in your `.env` file. All other resource UUIDs are fetched from the Coolify API automatically.
 
-```bash
-php artisan migrate
-```
+When you run commands like `coolify:deploy` or `coolify:status`:
 
-See [Database Schema](#database-schema) for the table structure.
+1. The package reads `COOLIFY_PROJECT_UUID` from your config
+2. Fetches all applications from Coolify
+3. Matches your local `git remote get-url origin` with application git repositories
+4. Uses the matching application for operations
 
-## Database Schema
-
-The `coolify_resources` table stores provisioned resource information:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `name` | string | Unique resource name |
-| `server_uuid` | string | Coolify server |
-| `project_uuid` | string | Coolify project |
-| `environment` | string | Environment (production, staging) |
-| `deploy_key_uuid` | string | SSH key for git access |
-| `repository` | string | GitHub repository (owner/repo) |
-| `branch` | string | Git branch |
-| `application_uuid` | string | Coolify application |
-| `database_uuid` | string | PostgreSQL instance |
-| `redis_uuid` | string | Dragonfly/Redis instance |
-| `is_default` | boolean | Default resource for commands |
-| `metadata` | json | Additional data |
+This means no manual UUID configuration is needed after provisioning.

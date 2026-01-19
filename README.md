@@ -42,7 +42,7 @@ Then provision your infrastructure:
 php artisan coolify:provision
 ```
 
-Creates app + PostgreSQL + Dragonfly on Coolify and deploys. One command.
+This creates app + PostgreSQL + Dragonfly on Coolify and deploys. The provision command automatically adds `COOLIFY_PROJECT_UUID` to your `.env` file, enabling all other commands to work without manual configuration.
 
 ## Documentation
 
@@ -146,17 +146,27 @@ Coolify::services()->all();
 
 ## Configuration
 
+After running `coolify:provision`, your `.env` will contain:
+
+```env
+COOLIFY_URL=https://your-coolify.com
+COOLIFY_TOKEN=your-api-token
+COOLIFY_PROJECT_UUID=your-project-uuid  # Added automatically by provision
+```
+
+The package automatically finds your application by matching your local git repository with applications in Coolify. No need to manually configure application UUIDs.
+
 ```php
 // config/coolify.php
 return [
     'url' => env('COOLIFY_URL'),
     'token' => env('COOLIFY_TOKEN'),
-    'path' => env('COOLIFY_PATH', 'coolify'),  // Dashboard URL path
+    'project_uuid' => env('COOLIFY_PROJECT_UUID'),  // Set by coolify:provision
+    'path' => env('COOLIFY_PATH', 'coolify'),
 
     'docker' => [
-        'php_version' => '8.3',
-        'node_version' => '20',
-        'extensions' => ['pdo_pgsql', 'redis', 'pcntl', 'bcmath'],
+        'php_version' => '8.4',
+        'use_base_image' => true,  // Fast builds with pre-built images
     ],
 ];
 ```

@@ -51,25 +51,15 @@ php artisan coolify:provision \
 5. Dragonfly cache (with `--with-dragonfly` or `--all`)
 6. Environment variables linking all services
 
-## Database Storage
+## Configuration Storage
 
-Resource UUIDs are stored in the `coolify_resources` table:
+After provisioning, `COOLIFY_PROJECT_UUID` is automatically added to your local `.env` file:
 
-| Column | Value |
-|--------|-------|
-| `name` | Application name |
-| `server_uuid` | Selected server |
-| `project_uuid` | Project UUID |
-| `environment` | Environment name |
-| `application_uuid` | Created application |
-| `database_uuid` | PostgreSQL UUID |
-| `redis_uuid` | Dragonfly/Redis UUID |
-| `deploy_key_uuid` | SSH key UUID |
-| `repository` | GitHub repository |
-| `branch` | Git branch |
-| `is_default` | true |
+```bash
+COOLIFY_PROJECT_UUID=abc123-def456-...
+```
 
-This record is marked as the default, so subsequent commands (`coolify:deploy`, `coolify:status`, etc.) use it automatically.
+All other commands (`coolify:deploy`, `coolify:status`, etc.) automatically find your application by matching your local git repository with applications in Coolify. No manual UUID configuration is required.
 
 ## Generated Files
 
