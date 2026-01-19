@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Stumason\Coolify\Models\CoolifyResource;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -17,8 +16,8 @@ describe('coolify:status command', function () {
     });
 
     it('shows error when no application UUID', function () {
-        // Clear the default resource so no application UUID exists
-        CoolifyResource::query()->delete();
+        // Clear the project UUID so no application UUID can be resolved
+        config(['coolify.project_uuid' => null]);
 
         Http::fake(['*' => Http::response(['version' => '4.0'], 200)]);
 
@@ -40,7 +39,8 @@ describe('coolify:status command', function () {
             ], 200),
         ]);
 
-        $this->artisan('coolify:status')
+        // Use --uuid to bypass git repository lookup
+        $this->artisan('coolify:status', ['--uuid' => 'test-app-uuid'])
             ->assertSuccessful()
             ->expectsOutputToContain('My Laravel App')
             ->expectsOutputToContain('running');

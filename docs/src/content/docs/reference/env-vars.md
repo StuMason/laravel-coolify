@@ -10,6 +10,12 @@ description: All supported environment variables
 | `COOLIFY_URL` | Coolify instance URL |
 | `COOLIFY_TOKEN` | API authentication token |
 
+## Auto-Generated
+
+| Variable | Description |
+|----------|-------------|
+| `COOLIFY_PROJECT_UUID` | Set automatically by `coolify:provision` |
+
 ## Optional
 
 | Variable | Default | Description |
@@ -51,8 +57,8 @@ When `COOLIFY_USE_BASE_IMAGE=false`:
 - Build time: ~12 minutes
 - Use this if you need custom PHP extensions
 
-## Resource Configuration
+## How Application Lookup Works
 
-Resource UUIDs (application, database, server, etc.) are stored in the database, not environment variables. Run `coolify:provision` to create resources and store their UUIDs automatically.
+Only `COOLIFY_PROJECT_UUID` is stored in your `.env`. All other resource UUIDs (applications, databases, etc.) are fetched from the Coolify API.
 
-See [Configuration Reference](/laravel-coolify/reference/config/#database-schema) for the database schema.
+When you run commands like `coolify:deploy`, the package automatically finds your application by matching your local git repository URL with applications in Coolify.

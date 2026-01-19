@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Stumason\Coolify\Models\CoolifyResource;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -17,8 +16,8 @@ describe('coolify:deploy command', function () {
     });
 
     it('shows error when no application UUID', function () {
-        // Clear the default resource so no application UUID exists
-        CoolifyResource::query()->delete();
+        // Clear the project UUID so no application can be found
+        config(['coolify.project_uuid' => null]);
 
         $this->artisan('coolify:deploy', ['--force' => true])
             ->assertFailed()
@@ -36,7 +35,8 @@ describe('coolify:deploy command', function () {
             ], 200),
         ]);
 
-        $this->artisan('coolify:deploy', ['--force' => true])
+        // Use --uuid to bypass the git repo lookup
+        $this->artisan('coolify:deploy', ['--force' => true, '--uuid' => 'test-app-uuid'])
             ->assertSuccessful()
             ->expectsOutputToContain('Deployment triggered successfully')
             ->expectsOutputToContain('new-deployment-123');
@@ -53,7 +53,7 @@ describe('coolify:deploy command', function () {
             ], 200),
         ]);
 
-        $this->artisan('coolify:deploy', ['--force' => true, '--tag' => 'v1.0.0'])
+        $this->artisan('coolify:deploy', ['--force' => true, '--tag' => 'v1.0.0', '--uuid' => 'test-app-uuid'])
             ->assertSuccessful()
             ->expectsOutputToContain('Deployment triggered');
 

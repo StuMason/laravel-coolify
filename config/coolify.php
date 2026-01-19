@@ -60,6 +60,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Project UUID
+    |--------------------------------------------------------------------------
+    |
+    | The UUID of the Coolify project this application belongs to. This is
+    | set automatically by `coolify:provision`. All other resource UUIDs
+    | (applications, databases, etc.) are fetched from Coolify using this
+    | project as the scope.
+    |
+    */
+
+    'project_uuid' => env('COOLIFY_PROJECT_UUID'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Dashboard Path
     |--------------------------------------------------------------------------
     |
