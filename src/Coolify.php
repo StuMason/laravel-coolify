@@ -108,15 +108,16 @@ class Coolify
             return null;
         }
 
-        $cacheKey = "coolify.app_uuid.{$projectUuid}";
+        $gitRepo = static::getCurrentGitRepository();
+        if (! $gitRepo) {
+            return null;
+        }
+
+        // Include git repo in cache key to prevent stale cache when switching repos
+        $cacheKey = "coolify.app_uuid.{$projectUuid}.".md5($gitRepo);
         $ttl = config('coolify.cache_ttl', 30);
 
-        return Cache::remember($cacheKey, $ttl, function () {
-            $gitRepo = static::getCurrentGitRepository();
-            if (! $gitRepo) {
-                return null;
-            }
-
+        return Cache::remember($cacheKey, $ttl, function () use ($gitRepo) {
             // Fetch all applications and find the one matching our repository
             $applications = static::applications()->all();
 
@@ -144,6 +145,11 @@ class Coolify
      */
     public static function getCurrentGitRepository(): ?string
     {
+        // Validate we're in a git repository first
+        if (! is_dir(base_path('.git'))) {
+            return null;
+        }
+
         $result = Process::run('git remote get-url origin 2>/dev/null');
 
         if (! $result->successful() || empty(trim($result->output()))) {

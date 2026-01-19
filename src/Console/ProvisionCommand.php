@@ -1571,15 +1571,21 @@ class ProvisionCommand extends Command
 
         $content = File::get($envPath);
 
-        // Check if the key already exists
-        if (preg_match("/^{$key}=.*/m", $content)) {
+        // Escape key for regex pattern
+        $escapedKey = preg_quote($key, '/');
+
+        // Check if the key already exists (only uncommented lines)
+        if (preg_match("/^{$escapedKey}=.*/m", $content)) {
             // Update existing key
-            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
+            $content = preg_replace("/^{$escapedKey}=.*/m", "{$key}={$value}", $content);
         } else {
             // Add new key at the end
             $content = rtrim($content, "\n")."\n{$key}={$value}\n";
         }
 
-        File::put($envPath, $content);
+        // Atomic write using temp file
+        $tempPath = $envPath.'.tmp';
+        File::put($tempPath, $content);
+        File::move($tempPath, $envPath);
     }
 }

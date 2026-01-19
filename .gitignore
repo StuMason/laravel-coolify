@@ -14,3 +14,4 @@ composer.lock
 # This ensures users get working assets on composer install without needing Node.js.
 # The compile-assets workflow auto-commits changes on every push to keep them in sync.
 .env
+.claude/

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Process;
 use Stumason\Coolify\Coolify;
 
 beforeEach(function () {
@@ -18,6 +19,16 @@ describe('Coolify Dashboard', function () {
     });
 
     it('returns stats from API endpoint', function () {
+        // Create fake .git directory and mock git command for repository lookup
+        $gitDir = base_path('.git');
+        if (! is_dir($gitDir)) {
+            mkdir($gitDir, 0755, true);
+        }
+
+        Process::fake([
+            'git remote get-url origin*' => Process::result('git@github.com:StuMason/laravel-coolify.git'),
+        ]);
+
         Http::fake([
             '*/version' => Http::response(['version' => '4.0'], 200),
             // Fake the applications list endpoint for git repository lookup
@@ -75,6 +86,11 @@ describe('Coolify Dashboard', function () {
                     'status' => 'running',
                 ],
             ]);
+
+        // Cleanup
+        if (is_dir($gitDir)) {
+            rmdir($gitDir);
+        }
     });
 
     it('returns disconnected status on API failure', function () {
