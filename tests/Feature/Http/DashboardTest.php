@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Process;
 use Stumason\Coolify\Coolify;
 
 beforeEach(function () {
@@ -19,31 +18,8 @@ describe('Coolify Dashboard', function () {
     });
 
     it('returns stats from API endpoint', function () {
-        // Create fake .git directory and mock git command for repository lookup
-        $gitDir = base_path('.git');
-        if (! is_dir($gitDir)) {
-            mkdir($gitDir, 0755, true);
-        }
-
-        Process::fake([
-            'git remote get-url origin*' => Process::result('git@github.com:StuMason/laravel-coolify.git'),
-        ]);
-
         Http::fake([
             '*/version' => Http::response(['version' => '4.0'], 200),
-            // Fake the applications list endpoint for git repository lookup
-            '*/applications' => Http::response([
-                [
-                    'uuid' => 'test-app-uuid',
-                    'name' => 'My App',
-                    'git_repository' => 'https://github.com/StuMason/laravel-coolify',
-                ],
-            ], 200),
-            '*/security/keys/test-deploy-key-uuid' => Http::response([
-                'uuid' => 'test-deploy-key-uuid',
-                'name' => 'test-key',
-                'public_key' => 'ssh-ed25519 AAAA...',
-            ], 200),
             '*/projects/test-project-uuid' => Http::response([
                 'uuid' => 'test-project-uuid',
                 'name' => 'Test Project',
@@ -51,10 +27,20 @@ describe('Coolify Dashboard', function () {
                     ['uuid' => 'test-env-uuid', 'name' => 'production'],
                 ],
             ], 200),
-            // Environment endpoint for fetching resources
+            // Environment endpoint for fetching resources (applications, databases)
             '*/projects/test-project-uuid/production' => Http::response([
                 'uuid' => 'test-env-uuid',
                 'name' => 'production',
+                'applications' => [
+                    [
+                        'uuid' => 'test-app-uuid',
+                        'name' => 'My App',
+                        'status' => 'running',
+                        'fqdn' => 'https://myapp.com',
+                        'git_repository' => 'https://github.com/StuMason/laravel-coolify',
+                        'git_branch' => 'main',
+                    ],
+                ],
                 'postgresqls' => [
                     [
                         'uuid' => 'test-db-uuid',
@@ -71,12 +57,6 @@ describe('Coolify Dashboard', function () {
                     ],
                 ],
             ], 200),
-            '*/applications/test-app-uuid' => Http::response([
-                'uuid' => 'test-app-uuid',
-                'name' => 'My App',
-                'status' => 'running',
-                'fqdn' => 'https://myapp.com',
-            ], 200),
             '*/deployments/applications/test-app-uuid' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],
             ], 200),
@@ -92,11 +72,6 @@ describe('Coolify Dashboard', function () {
                     'status' => 'running',
                 ],
             ]);
-
-        // Cleanup
-        if (is_dir($gitDir)) {
-            rmdir($gitDir);
-        }
     });
 
     it('returns disconnected status on API failure', function () {

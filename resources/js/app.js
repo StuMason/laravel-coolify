@@ -13,10 +13,19 @@ const stats = ref(null);
 const loading = ref(true);
 const error = ref(null);
 
+// Environment state - persisted in localStorage
+const STORAGE_KEY = 'coolify_environment';
+const selectedEnvironment = ref(localStorage.getItem(STORAGE_KEY) || 'production');
+
+function setSelectedEnvironment(envName) {
+    selectedEnvironment.value = envName;
+    localStorage.setItem(STORAGE_KEY, envName);
+}
+
 // Fetch stats
 async function fetchStats() {
     try {
-        stats.value = await api.getStats();
+        stats.value = await api.getStats(selectedEnvironment.value);
         error.value = null;
     } catch (e) {
         error.value = e.message;
@@ -84,6 +93,8 @@ app.provide('error', readonly(error));
 app.provide('refreshStats', fetchStats);
 app.provide('api', api);
 app.provide('basePath', basePath);
+app.provide('selectedEnvironment', readonly(selectedEnvironment));
+app.provide('setSelectedEnvironment', setSelectedEnvironment);
 
 // Use router
 app.use(router);
