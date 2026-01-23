@@ -3,30 +3,28 @@
 namespace Stumason\Coolify\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Stumason\Coolify\Contracts\ProjectRepository;
+use Stumason\Coolify\Exceptions\CoolifyApiException;
 
 class EnvironmentController extends Controller
 {
     /**
-     * List all configured environments.
-     *
-     * Note: Multi-environment support has been removed.
-     * Use COOLIFY_PROJECT_UUID in .env to configure your project.
+     * List all environments for the configured project.
      */
-    public function index(): JsonResponse
+    public function index(ProjectRepository $projects): JsonResponse
     {
-        return response()->json([]);
-    }
+        $projectUuid = config('coolify.project_uuid');
 
-    /**
-     * Switch to a different environment.
-     *
-     * Note: Multi-environment support has been removed.
-     */
-    public function switch(int $id): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'message' => 'Multi-environment support has been removed. Configure COOLIFY_PROJECT_UUID in .env instead.',
-        ], 400);
+        if (! $projectUuid) {
+            return response()->json([]);
+        }
+
+        try {
+            $project = $projects->get($projectUuid);
+
+            return response()->json($project['environments'] ?? []);
+        } catch (CoolifyApiException) {
+            return response()->json([]);
+        }
     }
 }

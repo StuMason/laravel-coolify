@@ -3,11 +3,11 @@
 namespace Stumason\Coolify\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
-use Stumason\Coolify\Coolify;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
 
@@ -17,6 +17,7 @@ class DashboardStatsController extends Controller
      * Get the key performance stats for the dashboard.
      */
     public function index(
+        Request $request,
         CoolifyClient $client,
         ApplicationRepository $applications,
         DatabaseRepository $databases,
@@ -30,6 +31,7 @@ class DashboardStatsController extends Controller
             'recentDeployments' => [],
             'project' => null,
             'environment' => null,
+            'environments' => [],
             'server' => null,
             'coolify_url' => rtrim(config('coolify.url'), '/'),
         ];
@@ -44,15 +46,16 @@ class DashboardStatsController extends Controller
 
             // Get project from config
             $projectUuid = config('coolify.project_uuid');
-            $environmentName = 'production'; // Default environment
+            $environmentName = $request->query('environment', 'production');
             $environmentUuid = null;
 
             if ($projectUuid) {
                 try {
                     $project = $projects->get($projectUuid);
                     $stats['project'] = $project;
+                    $stats['environments'] = $project['environments'] ?? [];
 
-                    // Find environment UUID by name
+                    // Find environment by name
                     if (! empty($project['environments'])) {
                         foreach ($project['environments'] as $env) {
                             if (($env['name'] ?? null) === $environmentName) {
@@ -61,59 +64,79 @@ class DashboardStatsController extends Controller
                                 break;
                             }
                         }
+
+                        // If environment not found, use first available
+                        if (! $stats['environment'] && count($project['environments']) > 0) {
+                            $stats['environment'] = $project['environments'][0];
+                            $environmentName = $stats['environment']['name'] ?? 'production';
+                            $environmentUuid = $stats['environment']['uuid'] ?? null;
+                        }
                     }
                 } catch (CoolifyApiException) {
                     // Project not found
                 }
             }
 
-            // Get application by matching git repository
-            $appUuid = Coolify::getApplicationUuid();
-
-            if ($appUuid) {
+            // Fetch environment resources (applications, databases, services)
+            $envResources = null;
+            if ($projectUuid && $environmentName) {
                 try {
-                    $app = $applications->get($appUuid);
+                    $envResources = $projects->environment($projectUuid, $environmentName);
+                } catch (CoolifyApiException) {
+                    // Environment not found
+                }
+            }
 
-                    // Determine if using deploy key (no GitHub App)
-                    $usesDeployKey = empty($app['source_id']) || $app['source_type'] === null;
-                    $webhookSecret = $app['manual_webhook_secret_github'] ?? null;
+            // Get first application from the environment
+            $app = null;
+            if ($envResources && ! empty($envResources['applications'])) {
+                $app = $envResources['applications'][0];
+            }
 
-                    // Build webhook URL if using deploy key
-                    $webhookUrl = null;
-                    $coolifyUrl = rtrim(config('coolify.url'), '/');
-                    if ($usesDeployKey && $webhookSecret) {
-                        $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$appUuid}&webhook_secret={$webhookSecret}";
-                    }
+            if ($app) {
+                $appUuid = $app['uuid'] ?? null;
 
-                    // Build proper Coolify dashboard URL
-                    $coolifyDashboardUrl = null;
-                    if ($projectUuid && $environmentUuid) {
-                        $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/environment/{$environmentUuid}/application/{$appUuid}";
-                    }
+                // Determine if using deploy key (no GitHub App)
+                $usesDeployKey = empty($app['source_id']) || $app['source_type'] === null;
+                $webhookSecret = $app['manual_webhook_secret_github'] ?? null;
 
-                    // Return ALL application data from Coolify, plus computed fields
-                    $stats['application'] = array_merge($app, [
-                        'repository' => $app['git_repository'] ?? null,
-                        'branch' => $app['git_branch'] ?? null,
-                        'commit' => isset($app['git_commit_sha']) ? substr($app['git_commit_sha'], 0, 7) : null,
-                        'full_commit' => $app['git_commit_sha'] ?? null,
-                        'uses_deploy_key' => $usesDeployKey,
-                        'webhook_secret' => $webhookSecret,
-                        'webhook_url' => $webhookUrl,
-                        'webhook_configured' => $usesDeployKey ? ! empty($webhookSecret) : true,
-                        'coolify_url' => $coolifyDashboardUrl,
-                        'project_uuid' => $projectUuid,
-                        'environment_uuid' => $environmentUuid,
-                        'environment_name' => $environmentName,
-                        'project_name' => $stats['project']['name'] ?? null,
-                    ]);
+                // Build webhook URL if using deploy key
+                $webhookUrl = null;
+                $coolifyUrl = rtrim(config('coolify.url'), '/');
+                if ($usesDeployKey && $webhookSecret && $appUuid) {
+                    $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$appUuid}&webhook_secret={$webhookSecret}";
+                }
 
-                    // Add server info from app destination
-                    if (isset($app['destination']['server'])) {
-                        $stats['server'] = $app['destination']['server'];
-                    }
+                // Build proper Coolify dashboard URL
+                $coolifyDashboardUrl = null;
+                if ($projectUuid && $environmentUuid && $appUuid) {
+                    $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/{$environmentName}/application/{$appUuid}";
+                }
 
-                    // Get recent deployments
+                // Return ALL application data from Coolify, plus computed fields
+                $stats['application'] = array_merge($app, [
+                    'repository' => $app['git_repository'] ?? null,
+                    'branch' => $app['git_branch'] ?? null,
+                    'commit' => isset($app['git_commit_sha']) ? substr($app['git_commit_sha'], 0, 7) : null,
+                    'full_commit' => $app['git_commit_sha'] ?? null,
+                    'uses_deploy_key' => $usesDeployKey,
+                    'webhook_secret' => $webhookSecret,
+                    'webhook_url' => $webhookUrl,
+                    'webhook_configured' => $usesDeployKey ? ! empty($webhookSecret) : true,
+                    'coolify_url' => $coolifyDashboardUrl,
+                    'project_uuid' => $projectUuid,
+                    'environment_uuid' => $environmentUuid,
+                    'environment_name' => $environmentName,
+                    'project_name' => $stats['project']['name'] ?? null,
+                ]);
+
+                // Add server info from app destination
+                if (isset($app['destination']['server'])) {
+                    $stats['server'] = $app['destination']['server'];
+                }
+
+                // Get recent deployments
+                if ($appUuid) {
                     try {
                         $recentDeployments = $deployments->forApplication($appUuid);
                         $stats['recentDeployments'] = collect($recentDeployments)
@@ -143,23 +166,60 @@ class DashboardStatsController extends Controller
                     } catch (CoolifyApiException) {
                         // Ignore deployment fetch errors
                     }
-                } catch (CoolifyApiException) {
-                    // Application not found
                 }
             }
 
-            // Fetch all databases and show them
-            try {
-                $allDatabases = $databases->all();
-                foreach ($allDatabases as $db) {
-                    $category = $this->getDatabaseCategory($db);
-                    if (! isset($stats['databases'][$category])) {
-                        $stats['databases'][$category] = [];
+            // Fetch databases from the environment resources
+            $environmentId = $stats['environment']['id'] ?? null;
+
+            if ($envResources) {
+                // Extract databases from various type arrays in the environment
+                // Returns first database of each category (primary = SQL databases, redis = cache)
+                $databaseTypes = [
+                    'postgresqls' => 'standalone-postgresql',
+                    'mysqls' => 'standalone-mysql',
+                    'mariadbs' => 'standalone-mariadb',
+                    'mongodbs' => 'standalone-mongodb',
+                    'redis' => 'standalone-redis',
+                ];
+
+                foreach ($databaseTypes as $key => $dbType) {
+                    if (! empty($envResources[$key])) {
+                        foreach ($envResources[$key] as $db) {
+                            // Add database_type if not present (redis array doesn't have it)
+                            if (empty($db['database_type'])) {
+                                $db['database_type'] = $dbType;
+                            }
+                            $category = $this->getDatabaseCategory($db);
+
+                            // Only set if not already set (take first of each category)
+                            if (! isset($stats['databases'][$category])) {
+                                $stats['databases'][$category] = $this->formatDatabaseInfo($db, $category);
+                            }
+                        }
                     }
-                    $stats['databases'][$category][] = $this->formatDatabaseInfo($db, $category);
                 }
-            } catch (CoolifyApiException) {
-                // Ignore database fetch errors
+
+                // Fallback: check global databases for Dragonfly/KeyDB not in environment response
+                // The Coolify API doesn't include Dragonfly in the redis array
+                if ($environmentId && ! isset($stats['databases']['redis'])) {
+                    try {
+                        $allDatabases = $databases->all();
+                        foreach ($allDatabases as $db) {
+                            // Filter by environment_id
+                            if (($db['environment_id'] ?? null) !== $environmentId) {
+                                continue;
+                            }
+                            $category = $this->getDatabaseCategory($db);
+                            if ($category === 'redis' && ! isset($stats['databases']['redis'])) {
+                                $stats['databases']['redis'] = $this->formatDatabaseInfo($db, 'redis');
+                                break;
+                            }
+                        }
+                    } catch (CoolifyApiException) {
+                        // Ignore database fetch errors
+                    }
+                }
             }
 
         } catch (CoolifyApiException) {

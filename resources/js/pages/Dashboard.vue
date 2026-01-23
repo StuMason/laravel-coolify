@@ -666,8 +666,12 @@ const uniqueCommits = computed(() => {
                     </div>
                     <div>
                         <div class="text-zinc-500 text-xs uppercase tracking-wide mb-1">Project</div>
-                        <span class="text-white">{{ project?.name || '-' }}</span>
-                        <span v-if="environment" class="text-zinc-500"> / {{ environment.name }}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-white">{{ project?.name || '-' }}</span>
+                            <span v-if="environment" class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                                {{ environment.name }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

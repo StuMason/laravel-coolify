@@ -64,9 +64,8 @@ Route::middleware(Authenticate::class)->group(function () {
         Route::get('/teams/current', 'TeamController@current')->name('coolify.teams.current');
         Route::get('/teams/current/members', 'TeamController@members')->name('coolify.teams.members');
 
-        // Environment routes (configured resources)
+        // Environment routes
         Route::get('/environments', 'EnvironmentController@index')->name('coolify.environments.index');
-        Route::post('/environments/{id}/switch', 'EnvironmentController@switch')->name('coolify.environments.switch');
     });
 
     // SPA catch-all - serves Vue app for all dashboard routes

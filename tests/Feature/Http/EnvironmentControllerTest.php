@@ -9,34 +9,45 @@ beforeEach(function () {
 });
 
 describe('EnvironmentController', function () {
-    it('returns empty array for environments list', function () {
-        // Multi-environment support has been removed
-        // The endpoint now always returns an empty array
+    it('returns environments from the project', function () {
+        Http::fake([
+            '*/projects/test-project-uuid' => Http::response([
+                'uuid' => 'test-project-uuid',
+                'name' => 'Test Project',
+                'environments' => [
+                    ['uuid' => 'env-1', 'name' => 'production'],
+                    ['uuid' => 'env-2', 'name' => 'staging'],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->getJson(route('coolify.environments.index'));
+
+        $response->assertOk()
+            ->assertJsonCount(2)
+            ->assertJson([
+                ['uuid' => 'env-1', 'name' => 'production'],
+                ['uuid' => 'env-2', 'name' => 'staging'],
+            ]);
+    });
+
+    it('returns empty array when no project configured', function () {
+        config(['coolify.project_uuid' => null]);
+
         $response = $this->getJson(route('coolify.environments.index'));
 
         $response->assertOk()
             ->assertJsonCount(0);
     });
 
-    it('returns error when trying to switch environments', function () {
-        // Multi-environment support has been removed
-        // The switch endpoint now returns a 400 error
-        $response = $this->postJson(route('coolify.environments.switch', 1));
+    it('returns empty array when project not found', function () {
+        Http::fake([
+            '*/projects/test-project-uuid' => Http::response(['message' => 'Not found'], 404),
+        ]);
 
-        $response->assertStatus(400)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Multi-environment support has been removed. Configure COOLIFY_PROJECT_UUID in .env instead.',
-            ]);
-    });
+        $response = $this->getJson(route('coolify.environments.index'));
 
-    it('returns same error for any environment id', function () {
-        // Any id should return the same error since multi-environment is removed
-        $response = $this->postJson(route('coolify.environments.switch', 999));
-
-        $response->assertStatus(400)
-            ->assertJson([
-                'success' => false,
-            ]);
+        $response->assertOk()
+            ->assertJsonCount(0);
     });
 });

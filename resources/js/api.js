@@ -28,7 +28,7 @@ async function request(method, endpoint, data = null) {
 
 export const api = {
     // Stats
-    getStats: () => request('GET', '/stats'),
+    getStats: (environment = 'production') => request('GET', `/stats?environment=${encodeURIComponent(environment)}`),
 
     // Applications
     getApplication: (uuid) => request('GET', `/applications/${uuid}`),
@@ -79,9 +79,8 @@ export const api = {
     getProjects: () => request('GET', '/projects'),
     getProject: (uuid) => request('GET', `/projects/${uuid}`),
 
-    // Environments (configured resources)
+    // Environments
     getEnvironments: () => request('GET', '/environments'),
-    switchEnvironment: (id) => request('POST', `/environments/${id}/switch`),
 };
 
 export default api;
