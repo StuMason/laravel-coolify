@@ -1,9 +1,13 @@
 ---
-title: Multiple Applications
-description: Manage multiple apps from one Laravel install
+title: Multiple Environments
+description: Manage multiple environments from one Laravel install
 ---
 
-## Multiple Environments
+## Environment Support
+
+The dashboard supports multiple environments within a single Coolify project. Use the environment switcher in the sidebar to switch between environments like production, staging, and development.
+
+## Provisioning Environments
 
 Provision separate environments within the same project:
 
@@ -23,30 +27,7 @@ php artisan coolify:provision \
   --all
 ```
 
-Each provisioning creates a separate record in `coolify_resources`. The most recent becomes the default.
-
-## Using Specific Resources
-
-Override the default with `--uuid`:
-
-```bash
-# Deploy staging
-php artisan coolify:deploy --uuid=staging-app-uuid
-
-# Check production status
-php artisan coolify:status --uuid=prod-app-uuid
-
-# View staging logs
-php artisan coolify:logs --uuid=staging-app-uuid
-```
-
-## View All Resources
-
-```bash
-php artisan coolify:status --all
-```
-
-Shows all applications and databases across your Coolify instance.
+Each environment gets its own application, database, and cache resources.
 
 ## Coolify Project Structure
 
@@ -68,9 +49,32 @@ graph TB
 
 ## Dashboard
 
-The dashboard shows the default resource. To manage multiple environments:
+The dashboard includes an environment switcher in the sidebar. Click on the current environment name to see all available environments and switch between them.
 
-1. Use Coolify's web UI for full environment management
-2. Or use `--uuid` flags with artisan commands
+Each environment view shows:
+- Application status and deployment history
+- Database and cache resources for that environment
+- Environment-specific logs and configuration
 
-The dashboard includes a direct link to the Coolify console for each resource.
+## CLI Commands with UUID
+
+For CLI operations targeting specific resources, use the `--uuid` flag:
+
+```bash
+# Deploy specific application
+php artisan coolify:deploy --uuid=staging-app-uuid
+
+# Check specific application status
+php artisan coolify:status --uuid=prod-app-uuid
+
+# View specific application logs
+php artisan coolify:logs --uuid=staging-app-uuid
+```
+
+## View All Resources
+
+```bash
+php artisan coolify:status --all
+```
+
+Shows all applications and databases across your Coolify instance.

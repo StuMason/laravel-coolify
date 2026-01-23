@@ -59,7 +59,7 @@ After provisioning, `COOLIFY_PROJECT_UUID` is automatically added to your local 
 COOLIFY_PROJECT_UUID=abc123-def456-...
 ```
 
-All other commands (`coolify:deploy`, `coolify:status`, etc.) automatically find your application by matching your local git repository with applications in Coolify. No manual UUID configuration is required.
+The dashboard fetches your application and resources from the selected environment. Use the environment switcher to view different environments within your project.
 
 ## Generated Files
 

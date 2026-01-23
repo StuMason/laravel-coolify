@@ -74,11 +74,10 @@ return [
 
 Only `COOLIFY_PROJECT_UUID` is stored in your `.env` file. All other resource UUIDs are fetched from the Coolify API automatically.
 
-When you run commands like `coolify:deploy` or `coolify:status`:
+The dashboard fetches your application and resources directly from the selected environment:
 
 1. The package reads `COOLIFY_PROJECT_UUID` from your config
-2. Fetches all applications from Coolify
-3. Matches your local `git remote get-url origin` with application git repositories
-4. Uses the matching application for operations
+2. Fetches resources from the selected environment (defaults to "production")
+3. Uses the first application in that environment for operations
 
-This means no manual UUID configuration is needed after provisioning.
+The dashboard includes an environment switcher to view different environments within your project. No manual UUID configuration is needed after provisioning.

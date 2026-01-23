@@ -17,7 +17,7 @@ php artisan coolify:install
 
 This will:
 - Publish `config/coolify.php`
-- Publish and run migrations (creates `coolify_resources` table)
+- Publish dashboard assets
 - Generate Dockerfile and docker configs
 - Configure TrustProxies middleware
 
