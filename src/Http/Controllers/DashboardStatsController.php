@@ -148,18 +148,63 @@ class DashboardStatsController extends Controller
                 }
             }
 
-            // Fetch all databases and show them
-            try {
-                $allDatabases = $databases->all();
-                foreach ($allDatabases as $db) {
-                    $category = $this->getDatabaseCategory($db);
-                    if (! isset($stats['databases'][$category])) {
-                        $stats['databases'][$category] = [];
+            // Fetch databases from the environment resources
+            $environmentId = $stats['environment']['id'] ?? null;
+
+            if ($projectUuid) {
+                try {
+                    $envResources = $projects->environment($projectUuid, $environmentName);
+
+                    // Extract databases from various type arrays in the environment
+                    // Returns first database of each category (primary = SQL databases, redis = cache)
+                    $databaseTypes = [
+                        'postgresqls' => 'standalone-postgresql',
+                        'mysqls' => 'standalone-mysql',
+                        'mariadbs' => 'standalone-mariadb',
+                        'mongodbs' => 'standalone-mongodb',
+                        'redis' => 'standalone-redis',
+                    ];
+
+                    foreach ($databaseTypes as $key => $dbType) {
+                        if (! empty($envResources[$key])) {
+                            foreach ($envResources[$key] as $db) {
+                                // Add database_type if not present (redis array doesn't have it)
+                                if (empty($db['database_type'])) {
+                                    $db['database_type'] = $dbType;
+                                }
+                                $category = $this->getDatabaseCategory($db);
+
+                                // Only set if not already set (take first of each category)
+                                if (! isset($stats['databases'][$category])) {
+                                    $stats['databases'][$category] = $this->formatDatabaseInfo($db, $category);
+                                }
+                            }
+                        }
                     }
-                    $stats['databases'][$category][] = $this->formatDatabaseInfo($db, $category);
+                } catch (CoolifyApiException) {
+                    // Ignore database fetch errors
                 }
-            } catch (CoolifyApiException) {
-                // Ignore database fetch errors
+
+                // Fallback: check global databases for Dragonfly/KeyDB not in environment response
+                // The Coolify API doesn't include Dragonfly in the redis array
+                if ($environmentId && ! isset($stats['databases']['redis'])) {
+                    try {
+                        $allDatabases = $databases->all();
+                        foreach ($allDatabases as $db) {
+                            // Filter by environment_id
+                            if (($db['environment_id'] ?? null) !== $environmentId) {
+                                continue;
+                            }
+                            $category = $this->getDatabaseCategory($db);
+                            if ($category === 'redis' && ! isset($stats['databases']['redis'])) {
+                                $stats['databases']['redis'] = $this->formatDatabaseInfo($db, 'redis');
+                                break;
+                            }
+                        }
+                    } catch (CoolifyApiException) {
+                        // Ignore database fetch errors
+                    }
+                }
             }
 
         } catch (CoolifyApiException) {

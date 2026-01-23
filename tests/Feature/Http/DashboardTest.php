@@ -51,6 +51,26 @@ describe('Coolify Dashboard', function () {
                     ['uuid' => 'test-env-uuid', 'name' => 'production'],
                 ],
             ], 200),
+            // Environment endpoint for fetching resources
+            '*/projects/test-project-uuid/production' => Http::response([
+                'uuid' => 'test-env-uuid',
+                'name' => 'production',
+                'postgresqls' => [
+                    [
+                        'uuid' => 'test-db-uuid',
+                        'name' => 'test-db',
+                        'database_type' => 'standalone-postgresql',
+                        'status' => 'running',
+                    ],
+                ],
+                'redis' => [
+                    [
+                        'uuid' => 'test-redis-uuid',
+                        'name' => 'test-redis',
+                        'status' => 'running',
+                    ],
+                ],
+            ], 200),
             '*/applications/test-app-uuid' => Http::response([
                 'uuid' => 'test-app-uuid',
                 'name' => 'My App',
@@ -59,20 +79,6 @@ describe('Coolify Dashboard', function () {
             ], 200),
             '*/deployments/applications/test-app-uuid' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],
-            ], 200),
-            '*/databases' => Http::response([
-                [
-                    'uuid' => 'test-db-uuid',
-                    'name' => 'test-db',
-                    'database_type' => 'postgresql',
-                    'status' => 'running',
-                ],
-                [
-                    'uuid' => 'test-redis-uuid',
-                    'name' => 'test-redis',
-                    'database_type' => 'dragonfly',
-                    'status' => 'running',
-                ],
             ], 200),
         ]);
 
