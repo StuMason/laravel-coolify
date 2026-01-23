@@ -154,7 +154,7 @@ COOLIFY_TOKEN=your-api-token
 COOLIFY_PROJECT_UUID=your-project-uuid  # Added automatically by provision
 ```
 
-The package automatically finds your application by matching your local git repository with applications in Coolify. No need to manually configure application UUIDs.
+The dashboard automatically fetches your application and resources from the configured project's environment. No need to manually configure application UUIDs.
 
 ```php
 // config/coolify.php

@@ -39,14 +39,13 @@ COOLIFY_PHP_MEMORY_LIMIT=256M
 
 ## How Application Lookup Works
 
-The package automatically finds your application by matching your local git repository URL with applications in Coolify. When you run commands like `coolify:deploy` or `coolify:status`:
+The dashboard fetches your application directly from the Coolify API using your project and environment:
 
 1. It reads `COOLIFY_PROJECT_UUID` from your `.env`
-2. Fetches all applications from Coolify
-3. Matches your local `git remote get-url origin` with application git repositories
-4. Uses the matching application for all operations
+2. Fetches resources from the selected environment (defaults to "production")
+3. Uses the first application in that environment
 
-This means no manual UUID configuration is needed after provisioning.
+The dashboard includes an environment switcher to view different environments within your project. No manual UUID configuration is needed after provisioning.
 
 ## Dashboard Authentication
 
