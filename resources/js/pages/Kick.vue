@@ -27,6 +27,17 @@ const artisanOutput = ref(null);
 const artisanRunning = ref(false);
 
 const appUuid = computed(() => stats.value?.application?.uuid);
+const appName = computed(() => stats.value?.application?.name || 'Unknown App');
+const envName = computed(() => stats.value?.environment?.name || 'unknown');
+const appFqdn = computed(() => {
+    const fqdn = stats.value?.application?.fqdn;
+    if (!fqdn) return null;
+    try {
+        return new URL(fqdn).hostname;
+    } catch {
+        return fqdn;
+    }
+});
 
 const tabs = [
     { id: 'overview', name: 'Overview', icon: 'dashboard' },
@@ -227,8 +238,17 @@ onUnmounted(() => {
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-white">Laravel Kick</h1>
-                <p class="mt-1 text-sm text-zinc-400">Application introspection and monitoring</p>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-semibold text-white">Laravel Kick</h1>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 px-3 py-1 text-sm font-medium text-violet-400 ring-1 ring-inset ring-violet-500/20">
+                        {{ appName }}
+                        <span class="text-violet-500/60">·</span>
+                        {{ envName }}
+                    </span>
+                </div>
+                <p class="mt-1 text-sm text-zinc-400">
+                    Introspecting <span class="text-zinc-300">{{ appFqdn || 'remote application' }}</span>
+                </p>
             </div>
         </div>
 
