@@ -72,6 +72,11 @@ const routes = [
         name: 'resources',
         component: () => import('./pages/Resources.vue'),
     },
+    {
+        path: '/kick',
+        name: 'kick',
+        component: () => import('./pages/Kick.vue'),
+    },
     { path: '/environment', redirect: '/configuration?tab=environment' },
     { path: '/backups', redirect: '/configuration?tab=backups' },
     { path: '/settings', redirect: '/configuration?tab=settings' },

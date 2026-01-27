@@ -222,4 +222,32 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel Kick Integration
+    |--------------------------------------------------------------------------
+    |
+    | Enable integration with laravel-kick for enhanced application monitoring.
+    | When enabled, the dashboard will check if apps have KICK_TOKEN configured
+    | in their environment variables and display health, stats, logs, and
+    | queue information from the kick endpoints.
+    |
+    | For an application to show the Kick tab, it needs:
+    | - KICK_TOKEN=your_secret_token (in its Coolify environment variables)
+    | - KICK_ENABLED=true (in its Coolify environment variables)
+    | - Optionally: KICK_PREFIX=custom_path (defaults to 'kick')
+    |
+    */
+
+    'kick' => [
+        // Enable or disable kick integration globally
+        'enabled' => env('COOLIFY_KICK_ENABLED', true),
+
+        // How long to cache kick configuration lookups (seconds)
+        'cache_ttl' => env('COOLIFY_KICK_CACHE_TTL', 60),
+
+        // Timeout for kick API requests (seconds)
+        'timeout' => env('COOLIFY_KICK_TIMEOUT', 10),
+    ],
+
 ];

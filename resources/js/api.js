@@ -81,6 +81,25 @@ export const api = {
 
     // Environments
     getEnvironments: () => request('GET', '/environments'),
+
+    // Kick integration
+    getKickStatus: (appUuid) => request('GET', `/kick/${appUuid}/status`),
+    getKickHealth: (appUuid) => request('GET', `/kick/${appUuid}/health`),
+    getKickStats: (appUuid) => request('GET', `/kick/${appUuid}/stats`),
+    getKickLogFiles: (appUuid) => request('GET', `/kick/${appUuid}/logs`),
+    postKickLogsTest: (appUuid) => request('POST', `/kick/${appUuid}/logs/test`),
+    getKickLogs: (appUuid, file, params = {}) => {
+        const query = new URLSearchParams();
+        if (params.level) query.set('level', params.level);
+        if (params.search) query.set('search', params.search);
+        if (params.lines) query.set('lines', params.lines);
+        const queryStr = query.toString();
+        return request('GET', `/kick/${appUuid}/logs/${file}${queryStr ? '?' + queryStr : ''}`);
+    },
+    getKickQueueStatus: (appUuid) => request('GET', `/kick/${appUuid}/queue`),
+    getKickQueueFailed: (appUuid, limit = 20) => request('GET', `/kick/${appUuid}/queue/failed?limit=${limit}`),
+    getKickArtisanList: (appUuid) => request('GET', `/kick/${appUuid}/artisan`),
+    postKickArtisanRun: (appUuid, command, args = {}) => request('POST', `/kick/${appUuid}/artisan`, { command, arguments: args }),
 };
 
 export default api;

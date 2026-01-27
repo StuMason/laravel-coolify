@@ -73,6 +73,28 @@ The dashboard shows everything at a glance:
 - Recent deployments with inline build logs
 - Quick actions for deploy, restart, stop
 
+### Laravel Kick Integration
+
+Install [laravel-kick](https://github.com/StuMason/laravel-kick) on your deployed app for enhanced introspection:
+
+```bash
+# On your deployed app
+composer require stumason/laravel-kick
+```
+
+Add to the app's Coolify environment:
+```
+KICK_ENABLED=true
+KICK_TOKEN=your-secure-token
+```
+
+A new **Kick** tab appears with:
+- Health checks (database, cache, storage, redis)
+- System stats (CPU, memory, disk, uptime)
+- Log viewer with filtering and search
+- Queue status and failed jobs
+- Artisan command execution
+
 ## Artisan Commands
 
 | Command | Description |

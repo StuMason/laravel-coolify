@@ -60,6 +60,10 @@ describe('Coolify Dashboard', function () {
             '*/deployments/applications/test-app-uuid' => Http::response([
                 ['uuid' => 'deploy-1', 'status' => 'finished'],
             ], 200),
+            // Kick config lookup (envs endpoint)
+            '*/applications/test-app-uuid/envs' => Http::response([
+                ['key' => 'APP_NAME', 'value' => 'Test'],
+            ], 200),
         ]);
 
         $response = $this->getJson(route('coolify.stats'));
