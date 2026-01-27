@@ -88,6 +88,19 @@ The dashboard includes multiple pages accessible from the sidebar:
 | **Resources** | All databases and services in your environment |
 | **Configuration** | Environment variables, settings, backup schedules |
 | **Logs** | Real-time application logs |
+| **Kick** | Laravel Kick introspection (when configured) |
+
+### Kick Tab
+
+When your deployed application has [Laravel Kick](https://github.com/StuMason/laravel-kick) installed and configured, a **Kick** tab appears with:
+
+- Health checks (database, cache, storage, redis)
+- System stats (CPU, memory, disk, uptime)
+- Log viewer with filtering and search
+- Queue status and failed jobs
+- Artisan command execution
+
+See [Kick Integration](/dashboard/kick) for setup details.
 
 ## Quick Actions
 

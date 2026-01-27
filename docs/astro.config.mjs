@@ -58,6 +58,8 @@ export default defineConfig({
 						{ label: 'coolify:logs', slug: 'commands/logs' },
 						{ label: 'coolify:restart', slug: 'commands/restart' },
 						{ label: 'coolify:rollback', slug: 'commands/rollback' },
+						{ label: 'coolify:setup-ci', slug: 'commands/setup-ci' },
+						{ label: 'coolify:destroy', slug: 'commands/destroy' },
 					],
 				},
 				{
@@ -65,6 +67,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Overview', slug: 'dashboard/overview' },
 						{ label: 'Authentication', slug: 'dashboard/authentication' },
+						{ label: 'Kick Integration', slug: 'dashboard/kick' },
 						{ label: 'API', slug: 'dashboard/api' },
 					],
 				},

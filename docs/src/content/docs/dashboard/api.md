@@ -76,3 +76,27 @@ GET    /api/projects/{uuid}/environments     # List environments
 ```
 GET    /api/stats                            # Aggregated dashboard data
 ```
+
+## Kick Integration
+
+These endpoints proxy requests to Laravel Kick on your deployed applications.
+
+```
+GET    /api/kick/{appUuid}/status            # Check if Kick is configured
+GET    /api/kick/{appUuid}/health            # Health check results
+GET    /api/kick/{appUuid}/stats             # System stats (CPU, memory, disk)
+GET    /api/kick/{appUuid}/logs              # List log files
+GET    /api/kick/{appUuid}/logs/{file}       # Read log entries
+GET    /api/kick/{appUuid}/queue             # Queue status
+GET    /api/kick/{appUuid}/queue/failed      # Failed jobs list
+GET    /api/kick/{appUuid}/artisan           # List available commands
+POST   /api/kick/{appUuid}/artisan           # Execute artisan command
+```
+
+### Query Parameters
+
+Log reading supports:
+
+- `level` - Filter by log level (DEBUG, INFO, WARNING, ERROR, etc.)
+- `search` - Full-text search
+- `lines` - Number of lines to return (default: 100)

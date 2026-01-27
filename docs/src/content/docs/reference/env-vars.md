@@ -57,6 +57,26 @@ When `COOLIFY_USE_BASE_IMAGE=false`:
 - Build time: ~12 minutes
 - Use this if you need custom PHP extensions
 
+## Kick Integration
+
+These control how Laravel Coolify connects to Laravel Kick on your deployed apps.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COOLIFY_KICK_ENABLED` | `true` | Enable Kick integration |
+| `COOLIFY_KICK_CACHE_TTL` | `60` | Cache Kick config lookups (seconds) |
+| `COOLIFY_KICK_TIMEOUT` | `10` | Kick API timeout (seconds) |
+
+### On Your Deployed App
+
+These are set in your **application's Coolify environment** (not your local `.env`):
+
+| Variable | Description |
+|----------|-------------|
+| `KICK_ENABLED` | Set to `true` to enable Kick endpoints |
+| `KICK_TOKEN` | Authentication token for Kick API |
+| `KICK_PREFIX` | Optional, defaults to `kick` |
+
 ## How Application Lookup Works
 
 Only `COOLIFY_PROJECT_UUID` is stored in your `.env`. All other resource UUIDs (applications, databases, etc.) are fetched from the Coolify API.
