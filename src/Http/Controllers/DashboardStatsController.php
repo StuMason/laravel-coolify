@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
+use Stumason\Coolify\Contracts\KickRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\CoolifyClient;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
@@ -22,7 +23,8 @@ class DashboardStatsController extends Controller
         ApplicationRepository $applications,
         DatabaseRepository $databases,
         DeploymentRepository $deployments,
-        ProjectRepository $projects
+        ProjectRepository $projects,
+        KickRepository $kick
     ): JsonResponse {
         $stats = [
             'connected' => false,
@@ -133,6 +135,20 @@ class DashboardStatsController extends Controller
                 // Add server info from app destination
                 if (isset($app['destination']['server'])) {
                     $stats['server'] = $app['destination']['server'];
+                }
+
+                // Add kick availability status
+                if ($appUuid && config('coolify.kick.enabled', true)) {
+                    $kickConfig = $kick->getConfig($appUuid);
+                    $stats['application']['kick'] = [
+                        'available' => $kickConfig !== null,
+                        'configured' => $kickConfig !== null,
+                    ];
+                } else {
+                    $stats['application']['kick'] = [
+                        'available' => false,
+                        'configured' => false,
+                    ];
                 }
 
                 // Get recent deployments

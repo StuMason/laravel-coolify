@@ -66,6 +66,20 @@ Route::middleware(Authenticate::class)->group(function () {
 
         // Environment routes
         Route::get('/environments', 'EnvironmentController@index')->name('coolify.environments.index');
+
+        // Kick integration routes (proxied to remote Laravel apps)
+        Route::prefix('kick/{appUuid}')->group(function () {
+            Route::get('/status', 'KickController@status')->name('coolify.kick.status');
+            Route::get('/health', 'KickController@health')->name('coolify.kick.health');
+            Route::get('/stats', 'KickController@stats')->name('coolify.kick.stats');
+            Route::get('/logs', 'KickController@logFiles')->name('coolify.kick.logs');
+            Route::post('/logs/test', 'KickController@logsTest')->name('coolify.kick.logs.test');
+            Route::get('/logs/{file}', 'KickController@logRead')->name('coolify.kick.logs.read');
+            Route::get('/queue', 'KickController@queueStatus')->name('coolify.kick.queue');
+            Route::get('/queue/failed', 'KickController@queueFailed')->name('coolify.kick.queue.failed');
+            Route::get('/artisan', 'KickController@artisanList')->name('coolify.kick.artisan');
+            Route::post('/artisan', 'KickController@artisanRun')->name('coolify.kick.artisan.run');
+        });
     });
 
     // SPA catch-all - serves Vue app for all dashboard routes

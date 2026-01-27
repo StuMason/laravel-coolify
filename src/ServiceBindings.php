@@ -6,6 +6,7 @@ use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\DatabaseRepository;
 use Stumason\Coolify\Contracts\DeploymentRepository;
 use Stumason\Coolify\Contracts\GitHubAppRepository;
+use Stumason\Coolify\Contracts\KickRepository;
 use Stumason\Coolify\Contracts\ProjectRepository;
 use Stumason\Coolify\Contracts\SecurityKeyRepository;
 use Stumason\Coolify\Contracts\ServerRepository;
@@ -15,6 +16,7 @@ use Stumason\Coolify\Repositories\CoolifyApplicationRepository;
 use Stumason\Coolify\Repositories\CoolifyDatabaseRepository;
 use Stumason\Coolify\Repositories\CoolifyDeploymentRepository;
 use Stumason\Coolify\Repositories\CoolifyGitHubAppRepository;
+use Stumason\Coolify\Repositories\CoolifyKickRepository;
 use Stumason\Coolify\Repositories\CoolifyProjectRepository;
 use Stumason\Coolify\Repositories\CoolifySecurityKeyRepository;
 use Stumason\Coolify\Repositories\CoolifyServerRepository;
@@ -34,6 +36,7 @@ trait ServiceBindings
         DatabaseRepository::class => CoolifyDatabaseRepository::class,
         DeploymentRepository::class => CoolifyDeploymentRepository::class,
         GitHubAppRepository::class => CoolifyGitHubAppRepository::class,
+        KickRepository::class => CoolifyKickRepository::class,
         ProjectRepository::class => CoolifyProjectRepository::class,
         SecurityKeyRepository::class => CoolifySecurityKeyRepository::class,
         ServerRepository::class => CoolifyServerRepository::class,
