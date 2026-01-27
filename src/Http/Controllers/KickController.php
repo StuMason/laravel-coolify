@@ -88,6 +88,11 @@ class KickController extends Controller
      */
     public function logRead(Request $request, string $appUuid, string $file): JsonResponse
     {
+        // Validate file name to prevent path traversal
+        if (str_contains($file, '..') || str_contains($file, '/') || str_contains($file, '\\')) {
+            return response()->json(['error' => 'Invalid file name'], 400);
+        }
+
         $level = $request->query('level');
         $search = $request->query('search');
         $lines = $request->integer('lines', 100);

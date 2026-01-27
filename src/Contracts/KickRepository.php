@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Stumason\Coolify\Contracts;
 
 /**
@@ -86,4 +88,9 @@ interface KickRepository
      * @return array<string, mixed>|null
      */
     public function artisanRun(string $appUuid, string $command, array $arguments = []): ?array;
+
+    /**
+     * Clear cached kick configuration for an application.
+     */
+    public function clearCache(string $appUuid): void;
 }

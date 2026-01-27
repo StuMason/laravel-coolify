@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, inject, computed, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, inject, computed, watch } from 'vue';
 
 const stats = inject('stats');
 const api = inject('api');
@@ -227,7 +227,7 @@ onMounted(() => {
     }, 10000);
 });
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
     if (pollInterval) clearInterval(pollInterval);
     if (searchTimeout) clearTimeout(searchTimeout);
 });

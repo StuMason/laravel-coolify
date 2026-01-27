@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace Stumason\Coolify\Repositories;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Stumason\Coolify\Contracts\ApplicationRepository;
 use Stumason\Coolify\Contracts\KickRepository;
+use Stumason\Coolify\Exceptions\CoolifyApiException;
+use Stumason\Coolify\Exceptions\CoolifyAuthenticationException;
+use Stumason\Coolify\Exceptions\CoolifyNotFoundException;
 use Stumason\Coolify\Exceptions\KickApiException;
+use Stumason\Coolify\Exceptions\KickAuthenticationException;
+use Stumason\Coolify\Exceptions\KickUnavailableException;
 use Stumason\Coolify\Services\KickClient;
 
 /**
@@ -41,7 +47,23 @@ class CoolifyKickRepository implements KickRepository
     {
         try {
             $envs = $this->applications->envs($appUuid);
-        } catch (\Exception) {
+        } catch (CoolifyNotFoundException $e) {
+            Log::debug('Kick: Application not found when fetching config', ['app_uuid' => $appUuid]);
+
+            return null;
+        } catch (CoolifyAuthenticationException $e) {
+            Log::error('Kick: Coolify authentication failed', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (CoolifyApiException $e) {
+            Log::warning('Kick: Coolify API error fetching env vars', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+            ]);
+
             return null;
         }
 
@@ -56,12 +78,23 @@ class CoolifyKickRepository implements KickRepository
 
         try {
             $app = $this->applications->get($appUuid);
-        } catch (\Exception) {
+        } catch (CoolifyNotFoundException $e) {
+            Log::debug('Kick: Application not found', ['app_uuid' => $appUuid]);
+
+            return null;
+        } catch (CoolifyApiException $e) {
+            Log::warning('Kick: Coolify API error fetching application', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+            ]);
+
             return null;
         }
 
         $fqdn = $app['fqdn'] ?? null;
         if (! $fqdn) {
+            Log::debug('Kick: Application has no FQDN configured', ['app_uuid' => $appUuid]);
+
             return null;
         }
 
@@ -196,7 +229,27 @@ class CoolifyKickRepository implements KickRepository
 
         try {
             return $callback($client);
-        } catch (KickApiException) {
+        } catch (KickAuthenticationException $e) {
+            Log::warning('Kick: Authentication failed', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (KickUnavailableException $e) {
+            Log::info('Kick: Service unavailable', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } catch (KickApiException $e) {
+            Log::error('Kick: API error', [
+                'app_uuid' => $appUuid,
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+
             return null;
         }
     }

@@ -78,7 +78,9 @@ Route::middleware(Authenticate::class)->group(function () {
             Route::get('/queue', 'KickController@queueStatus')->name('coolify.kick.queue');
             Route::get('/queue/failed', 'KickController@queueFailed')->name('coolify.kick.queue.failed');
             Route::get('/artisan', 'KickController@artisanList')->name('coolify.kick.artisan');
-            Route::post('/artisan', 'KickController@artisanRun')->name('coolify.kick.artisan.run');
+            Route::post('/artisan', 'KickController@artisanRun')
+                ->middleware('throttle:10,1')
+                ->name('coolify.kick.artisan.run');
         });
     });
 
