@@ -16,6 +16,6 @@
         "tailwindcss": "^4.1.18",
         "vite": "^6.0.7",
         "vue": "^3.5.27",
-        "vue-router": "^4.5.0"
+        "vue-router": "^5.0.2"
     }
 }
