@@ -641,7 +641,12 @@ class ProvisionCommand extends Command
         $keyPath = "{$tempDir}/{$keyName}_".time();
 
         // Generate ED25519 key (more secure, shorter than RSA)
-        $result = Process::run("ssh-keygen -t ed25519 -f {$keyPath} -N '' -C '{$keyName}' 2>&1");
+        $result = Process::run(sprintf(
+            'ssh-keygen -t ed25519 -f %s -N %s -C %s 2>&1',
+            escapeshellarg($keyPath),
+            escapeshellarg(''),
+            escapeshellarg($keyName)
+        ));
 
         if (! $result->successful()) {
             $this->components->error('Failed to generate SSH key: '.$result->output());
@@ -1123,7 +1128,9 @@ class ProvisionCommand extends Command
         $envVars[] = ['key' => 'ASSET_URL', 'value' => "https://{$domain}"];
 
         // Log management best practices (prevents runaway log files)
-        $envVars[] = ['key' => 'LOG_STACK', 'value' => 'daily'];
+        // Uses errorlog channel (not stderr) because PHP-FPM redirects worker stderr.
+        // error_log() → FPM catch_workers_output → supervisord → container stderr → Coolify
+        $envVars[] = ['key' => 'LOG_STACK', 'value' => 'daily,errorlog'];
         $envVars[] = ['key' => 'LOG_DAILY_MAX_FILES', 'value' => '7'];
 
         // Set Coolify connection (so deployed app can use this package's dashboard/API)

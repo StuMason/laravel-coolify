@@ -101,7 +101,7 @@ class CoolifyApplicationRepository implements ApplicationRepository
      */
     public function deploy(string $uuid, bool $force = false, ?string $commit = null): array
     {
-        // If deploying a specific commit, update the app's git_commit_sha first
+        // If deploying a specific commit, temporarily set git_commit_sha
         if ($commit !== null) {
             $this->update($uuid, ['git_commit_sha' => $commit]);
         }
@@ -113,6 +113,11 @@ class CoolifyApplicationRepository implements ApplicationRepository
         }
 
         $response = $this->client->get('deploy', $params);
+
+        // Clear pinned commit so future deploys use HEAD
+        if ($commit !== null) {
+            $this->update($uuid, ['git_commit_sha' => '']);
+        }
 
         // API returns {deployments: [{message, resource_uuid, deployment_uuid}]}
         $deployment = $response['deployments'][0] ?? $response;

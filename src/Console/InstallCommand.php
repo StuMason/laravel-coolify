@@ -71,6 +71,13 @@ class InstallCommand extends Command
         info('Laravel Coolify installed successfully!');
         $this->newLine();
 
+        // Logging tip for containerised deployments
+        $this->components->info('Recommended .env for Coolify containers:');
+        $this->components->bulletList([
+            '<comment>LOG_STACK=daily,errorlog</comment> — file logs + visible in Coolify log viewer',
+        ]);
+        $this->newLine();
+
         // Check if .env is configured
         if ($this->isConfigured()) {
             $this->testConnection();
