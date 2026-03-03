@@ -112,11 +112,13 @@ class CoolifyApplicationRepository implements ApplicationRepository
             $params['force'] = 'true';
         }
 
-        $response = $this->client->get('deploy', $params);
-
-        // Clear pinned commit so future deploys use HEAD
-        if ($commit !== null) {
-            $this->update($uuid, ['git_commit_sha' => '']);
+        try {
+            $response = $this->client->get('deploy', $params);
+        } finally {
+            // Clear pinned commit so future deploys use HEAD
+            if ($commit !== null) {
+                $this->update($uuid, ['git_commit_sha' => '']);
+            }
         }
 
         // API returns {deployments: [{message, resource_uuid, deployment_uuid}]}

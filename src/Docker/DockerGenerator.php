@@ -443,6 +443,7 @@ CONF;
         $clientMaxBodySize = config('coolify.docker.nginx.client_max_body_size') ?? '35M';
         $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize') ?? '30M';
         $postMaxSize = config('coolify.docker.nginx.post_max_size') ?? '35M';
+        $healthCheckPath = config('coolify.docker.health_check_path') ?? '/up';
 
         // Collect nginx location blocks from detectors
         $extraLocations = [];
@@ -508,7 +509,7 @@ http {
 
         location = /favicon.ico { access_log off; log_not_found off; }
         location = /robots.txt  { access_log off; log_not_found off; }
-        location = /up { access_log off; log_not_found off; try_files \$uri \$uri/ /index.php?\$query_string; }
+        location = {$healthCheckPath} { access_log off; log_not_found off; try_files \$uri \$uri/ /index.php?\$query_string; }
 
 {$extraLocationStr}
 
