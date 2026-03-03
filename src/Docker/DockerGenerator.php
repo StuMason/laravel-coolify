@@ -87,6 +87,7 @@ class DockerGenerator
             'docker/supervisord.conf' => $this->generateSupervisordConf(),
             'docker/nginx.conf' => $this->generateNginxConf(),
             'docker/php.ini' => $this->generatePhpIni(),
+            'docker/php-fpm.conf' => $this->generatePhpFpmConf(),
             'docker/entrypoint.sh' => $this->generateEntrypoint(),
         ];
 
@@ -171,6 +172,9 @@ LABEL maintainer="Laravel Coolify" \\
 
 # Custom PHP config
 COPY docker/php.ini "\$PHP_INI_DIR/conf.d/99-custom.ini"
+
+# PHP-FPM config (enables container log forwarding)
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-laravel.conf
 
 # Nginx config
 COPY docker/nginx.conf /etc/nginx/nginx.conf
@@ -295,6 +299,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \\
 # PHP config
 RUN mv "\$PHP_INI_DIR/php.ini-production" "\$PHP_INI_DIR/php.ini"
 COPY docker/php.ini "\$PHP_INI_DIR/conf.d/99-custom.ini"
+
+# PHP-FPM config (enables container log forwarding)
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-laravel.conf
 
 # Nginx config
 COPY docker/nginx.conf /etc/nginx/nginx.conf
@@ -436,6 +443,7 @@ CONF;
         $clientMaxBodySize = config('coolify.docker.nginx.client_max_body_size') ?? '35M';
         $uploadMaxFilesize = config('coolify.docker.nginx.upload_max_filesize') ?? '30M';
         $postMaxSize = config('coolify.docker.nginx.post_max_size') ?? '35M';
+        $healthCheckPath = config('coolify.docker.health_check_path') ?? '/up';
 
         // Collect nginx location blocks from detectors
         $extraLocations = [];
@@ -501,6 +509,7 @@ http {
 
         location = /favicon.ico { access_log off; log_not_found off; }
         location = /robots.txt  { access_log off; log_not_found off; }
+        location = {$healthCheckPath} { access_log off; log_not_found off; try_files \$uri \$uri/ /index.php?\$query_string; }
 
 {$extraLocationStr}
 
@@ -582,6 +591,19 @@ session.use_strict_mode = On
 realpath_cache_size = 4096K
 realpath_cache_ttl = 600
 INI;
+    }
+
+    /**
+     * Generate PHP-FPM pool config for container logging.
+     * Enables catch_workers_output so error_log() output reaches container stderr via supervisord.
+     */
+    public function generatePhpFpmConf(): string
+    {
+        return <<<'CONF'
+[www]
+catch_workers_output = yes
+decorate_workers_output = no
+CONF;
     }
 
     /**
@@ -894,7 +916,7 @@ CONF;
 ; Laravel Scheduler
 ; ===================
 [program:scheduler]
-command=/bin/sh -c "while true; do /usr/local/bin/php /var/www/html/artisan schedule:run --verbose --no-interaction; sleep 60; done"
+command=/usr/local/bin/php /var/www/html/artisan schedule:work
 user=www-data
 autostart=true
 autorestart=true

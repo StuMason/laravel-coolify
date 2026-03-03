@@ -189,6 +189,22 @@ describe('DockerGenerator common features', function () {
         expect($content)->toContain('[program:nginx]');
     });
 
+    it('generates scheduler supervisor using schedule:work', function () {
+        // Create routes/console.php with a scheduled task to trigger detection
+        File::ensureDirectoryExists(base_path('routes'));
+        File::put(base_path('routes/console.php'), '<?php Schedule::command("test")->daily();');
+
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateSupervisordConf();
+
+        expect($content)->toContain('[program:scheduler]')
+            ->and($content)->toContain('schedule:work')
+            ->and($content)->not->toContain('schedule:run');
+
+        File::delete(base_path('routes/console.php'));
+    });
+
     it('generates nginx.conf with correct settings', function () {
         config(['coolify.docker.nginx.client_max_body_size' => '50M']);
 
@@ -214,6 +230,15 @@ describe('DockerGenerator common features', function () {
         expect($content)->toContain('opcache.enable = 1');
     });
 
+    it('generates php-fpm.conf with catch_workers_output enabled', function () {
+        $generator = new DockerGenerator;
+        $content = $generator->generatePhpFpmConf();
+
+        expect($content)->toContain('[www]')
+            ->and($content)->toContain('catch_workers_output = yes')
+            ->and($content)->toContain('decorate_workers_output = no');
+    });
+
     it('writes all Docker files to disk', function () {
         $generator = new DockerGenerator;
         $generator->detect();
@@ -223,12 +248,14 @@ describe('DockerGenerator common features', function () {
         expect(File::exists(base_path('docker/supervisord.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/nginx.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/php.ini')))->toBeTrue();
+        expect(File::exists(base_path('docker/php-fpm.conf')))->toBeTrue();
         expect(File::exists(base_path('docker/entrypoint.sh')))->toBeTrue();
 
         expect($files)->toHaveKey('Dockerfile');
         expect($files)->toHaveKey('docker/supervisord.conf');
         expect($files)->toHaveKey('docker/nginx.conf');
         expect($files)->toHaveKey('docker/php.ini');
+        expect($files)->toHaveKey('docker/php-fpm.conf');
         expect($files)->toHaveKey('docker/entrypoint.sh');
     });
 

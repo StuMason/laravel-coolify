@@ -99,11 +99,19 @@ describe('ApplicationRepository', function () {
         expect($result['deployment_uuid'])->toBe('deploy-commit')
             ->and($result['commit'])->toBe('abc123');
 
-        // Verify it first updates the app with the commit SHA
-        Http::assertSent(function ($request) {
+        // Verify it sets then clears the commit SHA
+        $patchRequests = Http::recorded(function ($request) {
             return str_contains($request->url(), 'applications/app-123')
                 && $request->method() === 'PATCH';
-        });
+        })->values();
+
+        expect($patchRequests)->toHaveCount(2);
+
+        // First PATCH sets the commit SHA
+        expect($patchRequests[0][0]->data()['git_commit_sha'])->toBe('abc123');
+
+        // Second PATCH clears it so future deploys use HEAD
+        expect($patchRequests[1][0]->data()['git_commit_sha'])->toBe('');
     });
 
     it('restarts an application', function () {
