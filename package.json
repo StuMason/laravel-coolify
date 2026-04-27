@@ -8,14 +8,14 @@
         "watch": "vite build --watch"
     },
     "devDependencies": {
-        "@tailwindcss/postcss": "^4.2.2",
-        "@vitejs/plugin-vue": "^6.0.5",
-        "autoprefixer": "^10.4.27",
-        "axios": "^1.14.0",
-        "postcss": "^8.5.8",
+        "@tailwindcss/postcss": "^4.2.4",
+        "@vitejs/plugin-vue": "^6.0.6",
+        "autoprefixer": "^10.5.0",
+        "axios": "^1.15.2",
+        "postcss": "^8.5.12",
         "tailwindcss": "^4.1.18",
         "vite": "^6.0.7",
-        "vue": "^3.5.31",
-        "vue-router": "^5.0.4"
+        "vue": "^3.5.33",
+        "vue-router": "^5.0.6"
     }
 }
