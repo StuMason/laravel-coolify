@@ -3,9 +3,6 @@ name: Dependabot Auto-merge
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_run:
-    workflows: ["Tests", "Lint"]
-    types: [completed]
 
 permissions:
   contents: write

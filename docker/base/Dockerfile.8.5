@@ -51,7 +51,7 @@ RUN apt-get update \
 # Extensions are pre-compiled to avoid build time during deployments.
 # =============================================================================
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
+    && docker-php-ext-install -j1 \
         pdo \
         pdo_mysql \
         pdo_pgsql \
