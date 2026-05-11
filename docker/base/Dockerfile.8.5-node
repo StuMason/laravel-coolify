@@ -64,10 +64,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
 # Extensions are pre-compiled to avoid build time during deployments.
 # =============================================================================
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    # -j1 (not -j$(nproc)): PHP 8.5's install-modules make target copies modules/*
-    # before parallel compile finishes; -j>1 races and fails the build. Revisit
-    # once upstream fixes the Makefile ordering. See PR #97 for context.
-    && docker-php-ext-install -j1 \
+    && docker-php-ext-install -j"$(nproc)" \
         pdo \
         pdo_mysql \
         pdo_pgsql \
@@ -78,8 +75,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         xml \
         bcmath \
         intl \
-        opcache \
         pcntl
+
+# opcache must be installed on its own. In PHP 8.5 the JIT IR added build-time
+# helpers (`ext/opcache/jit/ir/gen_ir_fold_hash`, `minilua`) that are produced
+# during opcache's compile phase. docker-php-ext-install cleans those up in the
+# inter-extension teardown when opcache shares an invocation with other exts,
+# so the helpers are gone before opcache itself starts compiling — `modules/`
+# stays empty and `install-modules` fails with `cp: cannot stat 'modules/*'`.
+# Splitting opcache into its own RUN avoids the shared teardown entirely. See #98.
+RUN docker-php-ext-install -j"$(nproc)" opcache
 
 # =============================================================================
 # PECL Extensions
