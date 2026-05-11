@@ -51,6 +51,9 @@ RUN apt-get update \
 # Extensions are pre-compiled to avoid build time during deployments.
 # =============================================================================
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    # -j1 (not -j$(nproc)): PHP 8.5's install-modules make target copies modules/*
+    # before parallel compile finishes; -j>1 races and fails the build. Revisit
+    # once upstream fixes the Makefile ordering. See PR #97 for context.
     && docker-php-ext-install -j1 \
         pdo \
         pdo_mysql \
