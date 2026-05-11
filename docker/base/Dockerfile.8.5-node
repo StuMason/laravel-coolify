@@ -83,7 +83,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # inter-extension teardown when opcache shares an invocation with other exts,
 # so the helpers are gone before opcache itself starts compiling — `modules/`
 # stays empty and `install-modules` fails with `cp: cannot stat 'modules/*'`.
-# Splitting opcache into its own RUN avoids the shared teardown entirely. See #98.
+# Splitting opcache into its own RUN avoids the shared teardown entirely. See #100.
 RUN docker-php-ext-install -j"$(nproc)" opcache
 
 # =============================================================================
