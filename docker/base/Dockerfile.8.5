@@ -50,8 +50,17 @@ RUN apt-get update \
 # Includes both MySQL and PostgreSQL drivers for maximum compatibility.
 # Extensions are pre-compiled to avoid build time during deployments.
 # =============================================================================
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
+# Use mlocati/install-php-extensions instead of docker-php-ext-install: the
+# stock script fails on PHP 8.5's opcache (make produces no compile output and
+# `install-modules` fails on an empty `modules/`). install-php-extensions is
+# the community-maintained alternative that handles per-version quirks. See
+# #97 / #100 for the two failed docker-php-ext-install attempts before this
+# switch; once docker-php-ext-install ships a PHP 8.5 fix upstream we can
+# revisit. 8.3 and 8.4 Dockerfiles still use docker-php-ext-install — it
+# works fine on those versions.
+ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+
+RUN install-php-extensions \
         pdo \
         pdo_mysql \
         pdo_pgsql \
@@ -62,16 +71,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         xml \
         bcmath \
         intl \
+        opcache \
         pcntl
-
-# opcache must be installed on its own. In PHP 8.5 the JIT IR added build-time
-# helpers (`ext/opcache/jit/ir/gen_ir_fold_hash`, `minilua`) that are produced
-# during opcache's compile phase. docker-php-ext-install cleans those up in the
-# inter-extension teardown when opcache shares an invocation with other exts,
-# so the helpers are gone before opcache itself starts compiling — `modules/`
-# stays empty and `install-modules` fails with `cp: cannot stat 'modules/*'`.
-# Splitting opcache into its own RUN avoids the shared teardown entirely. See #100.
-RUN docker-php-ext-install -j"$(nproc)" opcache
 
 # =============================================================================
 # PECL Extensions
