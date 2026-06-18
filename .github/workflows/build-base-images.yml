@@ -8,7 +8,7 @@
 #
 # Triggers:
 # - Push to docker/base/* (when base Dockerfiles change)
-# - Nightly at 2am UTC (security patches)
+# - Fortnightly at 2am UTC, 1st & 15th (security patches)
 # - Manual workflow dispatch
 # =============================================================================
 
@@ -21,8 +21,11 @@ on:
       - 'docker/base/**'
       - '.github/workflows/build-base-images.yml'
   schedule:
-    # Nightly at 2am UTC for security patches
-    - cron: '0 2 * * *'
+    # Fortnightly at 2am UTC (1st & 15th) for security patches. Nightly rebuilds
+    # of 12 multi-arch base images were burning ~3,000 Actions minutes/month for
+    # patches that a twice-monthly cadence catches just as well. Real Dockerfile
+    # changes still rebuild immediately via the push trigger above.
+    - cron: '0 2 1,15 * *'
   workflow_dispatch:
     inputs:
       force_rebuild:
@@ -98,7 +101,11 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.variant.tag }}-${{ matrix.arch.suffix }}
           cache-from: type=gha,scope=${{ matrix.variant.tag }}-${{ matrix.arch.suffix }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.variant.tag }}-${{ matrix.arch.suffix }}
+          # mode=min: these are single-stage images, so there are no intermediate
+          # build stages for mode=max to cache — it only bloated the per-repo GHA
+          # cache (10 GB cap, LRU-evicted). Twelve max-mode scopes blew the cap and
+          # thrashed, so nightly runs kept missing cache and rebuilding cold.
+          cache-to: type=gha,mode=min,scope=${{ matrix.variant.tag }}-${{ matrix.arch.suffix }}
 
   # ===========================================================================
   # Create multi-arch manifests combining amd64 and arm64 images
