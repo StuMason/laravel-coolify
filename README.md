@@ -18,6 +18,8 @@
 
 Like Laravel Horizon for queues, but for your entire infrastructure.
 
+> 💡 **Using an AI assistant?** Check out [**coolify-mcp**](https://github.com/StuMason/coolify-mcp) — a 42-tool MCP server that lets Claude, Cursor, and friends manage your whole Coolify estate through natural language.
+
 ![Laravel Coolify Dashboard](docs/dashboard.png)
 
 ## Why This Exists
