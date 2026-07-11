@@ -231,6 +231,32 @@ describe('DockerGenerator common features', function () {
             ->toBeLessThan(strpos($content, 'fastcgi_pass 127.0.0.1:9000'));
     });
 
+    it('hardens nginx: no server tokens, security headers on every response', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateNginxConf();
+
+        expect($content)->toContain('server_tokens off')
+            ->and($content)->toContain('add_header X-Content-Type-Options "nosniff" always')
+            ->and($content)->toContain('add_header X-Frame-Options "SAMEORIGIN" always')
+            ->and($content)->toContain('add_header Referrer-Policy "strict-origin-when-cross-origin" always');
+    });
+
+    it('refuses commodity scanner probe paths before PHP ever runs', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateNginxConf();
+
+        expect($content)->toContain('wp-login\.php')
+            ->and($content)->toContain('xmlrpc\.php')
+            ->and($content)->toContain('eval-stdin\.php');
+
+        // The probe deny block MUST precede the generic php-fpm handler so a
+        // probe like /wp-login.php is refused by nginx, not routed to PHP.
+        expect(strpos($content, 'wp-login\.php'))
+            ->toBeLessThan(strpos($content, 'fastcgi_pass 127.0.0.1:9000'));
+    });
+
     it('generates php.ini with correct settings', function () {
         config(['coolify.docker.php.memory_limit' => '512M']);
         config(['coolify.docker.php.max_execution_time' => 120]);
