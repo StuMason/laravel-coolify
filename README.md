@@ -10,7 +10,7 @@
 [![Tests](https://github.com/StuMason/laravel-coolify/actions/workflows/tests.yml/badge.svg)](https://github.com/StuMason/laravel-coolify/actions/workflows/tests.yml)
 [![Latest Version](https://img.shields.io/packagist/v/stumason/laravel-coolify.svg)](https://packagist.org/packages/stumason/laravel-coolify)
 [![PHP Version](https://img.shields.io/packagist/php-v/stumason/laravel-coolify.svg)](https://packagist.org/packages/stumason/laravel-coolify)
-[![Laravel Version](https://img.shields.io/badge/laravel-11.x%20|%2012.x-red.svg)](https://laravel.com)
+[![Laravel Version](https://img.shields.io/badge/laravel-12.x%20|%2013.x-red.svg)](https://laravel.com)
 [![License](https://img.shields.io/packagist/l/stumason/laravel-coolify.svg)](LICENSE)
 [![Downloads](https://img.shields.io/packagist/dt/stumason/laravel-coolify.svg)](https://packagist.org/packages/stumason/laravel-coolify)
 
@@ -220,8 +220,8 @@ public function boot(): void
 
 ## Requirements
 
-- PHP 8.2+
-- Laravel 11 or 12
+- PHP 8.3+
+- Laravel 12 or 13
 - Coolify 4.x instance with API access
 
 ## Testing

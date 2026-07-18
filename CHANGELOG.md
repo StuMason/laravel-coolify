@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-07-18
+
+### Added
+- PHP 8.5 base images (`ghcr.io/stumason/laravel-coolify-base:8.5` / `8.5-node`); Node bumped to 24 in node images (#92)
+
+### Security
+- Generated nginx denies PHP execution under `/storage` and `/uploads` — a dropped `*.php` in an upload path can never reach php-fpm (#109)
+- Generated nginx hardening: `server_tokens off`, `X-Content-Type-Options` / `X-Frame-Options` / `Referrer-Policy` on all responses including errors, and refusal of commodity scanner probes (wp-login.php, xmlrpc.php, eval-stdin.php) before they boot PHP (#115)
+- Security headers repeated inside the static-asset location — nginx discards inherited `add_header` directives when a location adds its own, so cached assets (including `/storage` uploads) were missing them (#117)
+
+**Upgrade note:** the package only generates Docker files; it never rewrites existing ones. Re-run `php artisan coolify:install` (or regenerate `docker/nginx.conf`) to pick up the nginx changes above.
+
+### Fixed
+- PHP 8.5 base image builds: switched to `install-php-extensions` and split opcache into its own layer (#100, #101)
+
+### Changed
+- CI: base image rebuilds moved from nightly to fortnightly with minimal-mode caching (#107); nightly 8.5 build and spurious automerge runs fixed (#97); claude-review workflow can now actually post reviews (#118)
+
+### Removed
+- Laravel 11 from the supported constraint range — it had been untested since the CI matrix moved to 12/13. Laravel 11 apps stay on v3.3.x.
+
+## [3.3.0] - 2026-03-26
+
+### Added
+- Laravel 13 support across all illuminate dependencies
+
+## [3.2.0] - 2026-04-02
+
+### Changed
+- Dependency updates and recompiled dashboard assets
+
+## [3.1.1] - 2026-03-03
+
+### Added
+- Laravel Kick integration — health/logs/queue/artisan proxying to remote apps (#62)
+
+### Fixed
+- Batch fixes for #60, #38, #59, #67, #68 (#70)
+
+## [3.1.0] - 2026-01-23
+
 ### Added
 - Multi-environment support in dashboard with environment switcher
 - Environment badge displayed prominently in dashboard header

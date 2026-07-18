@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Laravel package for managing Coolify infrastructure from within a Laravel application. Provides a dashboard, artisan commands, and programmatic API access - similar to how Horizon manages queues.
 
-**Stack:** PHP 8.2+, Laravel 11/12, Pest for testing
+**Stack:** PHP 8.3+, Laravel 12/13, Pest for testing
 
 ## Common Commands
 
