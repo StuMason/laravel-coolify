@@ -555,10 +555,16 @@ http {
             deny all;
         }
 
-        # Cache static assets
+        # Cache static assets. Any add_header in a location discards ALL
+        # inherited add_header directives, so the server-level security
+        # headers must be repeated here or static responses (including
+        # user-uploaded files under /storage) lose them.
         location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
             expires 1y;
             add_header Cache-Control "public, immutable";
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
             access_log off;
         }
     }

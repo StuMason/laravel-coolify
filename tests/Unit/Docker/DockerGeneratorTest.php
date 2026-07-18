@@ -240,6 +240,16 @@ describe('DockerGenerator common features', function () {
             ->and($content)->toContain('add_header X-Content-Type-Options "nosniff" always')
             ->and($content)->toContain('add_header X-Frame-Options "SAMEORIGIN" always')
             ->and($content)->toContain('add_header Referrer-Policy "strict-origin-when-cross-origin" always');
+
+        // nginx: an add_header inside a location discards all inherited
+        // add_header directives, so the static-asset block (which adds
+        // Cache-Control) must repeat the security headers itself.
+        $staticBlock = substr($content, strpos($content, 'location ~* \.(js|css'));
+        $staticBlock = substr($staticBlock, 0, strpos($staticBlock, '}'));
+
+        expect($staticBlock)->toContain('add_header X-Content-Type-Options "nosniff" always')
+            ->and($staticBlock)->toContain('add_header X-Frame-Options "SAMEORIGIN" always')
+            ->and($staticBlock)->toContain('add_header Referrer-Policy "strict-origin-when-cross-origin" always');
     });
 
     it('refuses commodity scanner probe paths before PHP ever runs', function () {
