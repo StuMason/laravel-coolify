@@ -7,6 +7,10 @@
         {
             "name": "Stu Mason",
             "email": "stu@stuartmason.co.uk"
+        },
+        {
+            "name": "Michael Grunewalder",
+            "email": "michael@grunewalder.com"
         }
     ],
     "require": {

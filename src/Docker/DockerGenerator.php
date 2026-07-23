@@ -198,6 +198,10 @@ COPY public ./public
 {$frontendCopy}
 COPY routes ./routes
 COPY storage ./storage
+
+# Save a copy of storage so volume mounts can be restored at runtime
+RUN cp -a storage /var/www/html/storage-init \
+    && chown -R www-data:www-data /var/www/html/storage-init
 COPY resources/views ./resources/views
 COPY app ./app
 COPY composer.json composer.lock ./
@@ -325,6 +329,10 @@ COPY public ./public
 {$frontendCopy}
 COPY routes ./routes
 COPY storage ./storage
+
+# Save a copy of storage so volume mounts can be restored at runtime
+RUN cp -a storage /var/www/html/storage-init \
+    && chown -R www-data:www-data /var/www/html/storage-init
 COPY resources/views ./resources/views
 COPY app ./app
 COPY composer.json composer.lock ./
@@ -704,12 +712,16 @@ echo "       Optimization completed (config, routes, views, events cached)."
 STEP=$((STEP + 1))
 
 # ===========================================
-# Step 3: Storage Link
+# Step 3: Restore Storage from Image (for volume mounts)
 # ===========================================
 echo ""
-echo "[$STEP/$TOTAL_STEPS] Ensuring storage link..."
+echo "[$STEP/$TOTAL_STEPS] Restoring storage files..."
+if [ -d /var/www/html/storage-init ]; then
+    cp -rn /var/www/html/storage-init/. /var/www/html/storage/
+    chown -R www-data:www-data /var/www/html/storage 2>/dev/null || true
+fi
 php artisan storage:link 2>/dev/null || true
-echo "       Storage link ready."
+echo "       Storage ready."
 
 echo ""
 echo "============================================"
