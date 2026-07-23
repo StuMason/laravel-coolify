@@ -1072,12 +1072,12 @@ class ProvisionCommand extends Command
         $this->line('    Adding deploy key to GitHub...');
         $publicKey = $deployKey['public_key'] ?? null;
         if ($publicKey) {
-            $escapedKey = addslashes(trim($publicKey));
+            $publicKey = trim($publicKey);
             $ghResult = Process::run(sprintf(
-                'gh api repos/%s/keys --method POST -f title="%s-deploy-key" -f key=%s -F read_only=true 2>/dev/null',
+                'gh api repos/%s/keys --method POST -f title=%s -f key=%s -F read_only=true 2>/dev/null',
                 escapeshellarg($gitRepository),
-                escapeshellarg($appName),
-                escapeshellarg($escapedKey)
+                escapeshellarg($appName.'-deploy-key'),
+                escapeshellarg($publicKey)
             ));
 
             if ($ghResult->successful()) {
@@ -1086,7 +1086,7 @@ class ProvisionCommand extends Command
                 $this->line('    <fg=yellow>Could not add deploy key via CLI. Add it manually:</>');
                 $this->line("    <fg=gray>gh api repos/{$gitRepository}/keys --method POST</> \\");
                 $this->line("      <fg=gray>-f title=\"{$appName}-deploy-key\"</> \\");
-                $this->line("      <fg=gray>-f key=\"{$escapedKey}\"</> \\");
+                $this->line("      <fg=gray>-f key=\"{$publicKey}\"</> \\");
                 $this->line('      <fg=gray>-F read_only=true</>');
                 $this->newLine();
                 if (! $this->option('no-interaction')) {
