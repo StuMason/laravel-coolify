@@ -11,10 +11,10 @@
         "@tailwindcss/postcss": "^4.3.3",
         "@vitejs/plugin-vue": "^6.0.8",
         "autoprefixer": "^10.5.4",
-        "axios": "^1.18.1",
-        "postcss": "^8.5.23",
+        "axios": "^1.19.0",
+        "postcss": "^8.5.25",
         "tailwindcss": "^4.1.18",
-        "vite": "^8.1.5",
+        "vite": "^8.2.0",
         "vue": "^3.5.40",
         "vue-router": "^5.2.0"
     }
