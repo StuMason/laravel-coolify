@@ -9,13 +9,13 @@
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.3.3",
-        "@vitejs/plugin-vue": "^6.0.8",
-        "autoprefixer": "^10.5.6",
+        "@vitejs/plugin-vue": "^6.0.9",
+        "autoprefixer": "^10.6.1",
         "axios": "^1.20.0",
         "postcss": "^8.5.28",
         "tailwindcss": "^4.1.18",
         "vite": "^8.3.0",
-        "vue": "^3.5.42",
+        "vue": "^3.5.43",
         "vue-router": "^5.3.1"
     }
 }
