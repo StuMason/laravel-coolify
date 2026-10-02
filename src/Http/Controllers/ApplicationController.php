@@ -133,7 +133,7 @@ class ApplicationController extends Controller
     public function logs(Request $request, string $uuid): JsonResponse
     {
         try {
-            $lines = $request->integer('lines', 100);
+            $lines = max(1, min($request->integer('lines', 100), 1000));
             $result = $this->applications->logs($uuid, $lines);
 
             return response()->json($result);
