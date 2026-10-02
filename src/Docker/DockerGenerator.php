@@ -209,6 +209,10 @@ COPY composer.json composer.lock ./
 # Generate optimized autoloader
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
+# Create the public/storage symlink at build time: public/ is root-owned and
+# the entrypoint runs artisan as www-data, so it can't create it at boot
+RUN php artisan storage:link
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \\
     && chmod -R 775 storage bootstrap/cache
@@ -339,6 +343,10 @@ COPY composer.json composer.lock ./
 
 # Generate optimized autoloader
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+
+# Create the public/storage symlink at build time: public/ is root-owned and
+# the entrypoint runs artisan as www-data, so it can't create it at boot
+RUN php artisan storage:link
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \\
@@ -664,8 +672,28 @@ DB_WAIT_TIMEOUT="${DB_WAIT_TIMEOUT:-30}"
 STEP=1
 TOTAL_STEPS=3
 
+# Run artisan as www-data, never root. bootstrap/cache and storage are
+# www-data-writable, so root must not load PHP from them.
+artisan() {
+    runuser -u www-data -- /usr/local/bin/php /var/www/html/artisan "$@"
+}
+
 # ===========================================
-# Step 1: Database Migrations (if enabled)
+# Step 1: Restore Storage from Image (for volume mounts)
+# ===========================================
+# Runs first so a freshly mounted storage volume is www-data-writable before
+# migrate and optimize write logs and compiled views to it.
+echo ""
+echo "[$STEP/$TOTAL_STEPS] Restoring storage files..."
+if [ -d /var/www/html/storage-init ]; then
+    cp -rn /var/www/html/storage-init/. /var/www/html/storage/
+    chown -R www-data:www-data /var/www/html/storage 2>/dev/null || true
+fi
+echo "       Storage ready."
+STEP=$((STEP + 1))
+
+# ===========================================
+# Step 2: Database Migrations (if enabled)
 # ===========================================
 if [ "$AUTO_MIGRATE" = "true" ]; then
     echo ""
@@ -676,7 +704,7 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
     # both connectivity AND schema access. If db:show fails, migrations would
     # fail anyway, so this gives us an early, clear error message.
     WAITED=0
-    until php artisan db:show > /dev/null 2>&1; do
+    until artisan db:show > /dev/null 2>&1; do
         WAITED=$((WAITED + 1))
         if [ $WAITED -ge $DB_WAIT_TIMEOUT ]; then
             echo "ERROR: Database connection timeout after ${DB_WAIT_TIMEOUT}s" >&2
@@ -690,7 +718,7 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
 
     echo ""
     echo "[$STEP/$TOTAL_STEPS] Running database migrations..."
-    if ! php artisan migrate --force; then
+    if ! artisan migrate --force; then
         echo "ERROR: Database migrations failed!" >&2
         echo "       Check migration files and database state." >&2
         exit 1
@@ -703,25 +731,12 @@ fi
 STEP=$((STEP + 1))
 
 # ===========================================
-# Step 2: Application Optimization
+# Step 3: Application Optimization
 # ===========================================
 echo ""
 echo "[$STEP/$TOTAL_STEPS] Optimizing application..."
-php artisan optimize
+artisan optimize
 echo "       Optimization completed (config, routes, views, events cached)."
-STEP=$((STEP + 1))
-
-# ===========================================
-# Step 3: Restore Storage from Image (for volume mounts)
-# ===========================================
-echo ""
-echo "[$STEP/$TOTAL_STEPS] Restoring storage files..."
-if [ -d /var/www/html/storage-init ]; then
-    cp -rn /var/www/html/storage-init/. /var/www/html/storage/
-    chown -R www-data:www-data /var/www/html/storage 2>/dev/null || true
-fi
-php artisan storage:link 2>/dev/null || true
-echo "       Storage ready."
 
 echo ""
 echo "============================================"

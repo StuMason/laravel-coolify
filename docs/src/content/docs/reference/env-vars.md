@@ -64,7 +64,6 @@ These control how Laravel Coolify connects to Laravel Kick on your deployed apps
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `COOLIFY_KICK_ENABLED` | `true` | Enable Kick integration |
-| `COOLIFY_KICK_CACHE_TTL` | `60` | Cache Kick config lookups (seconds) |
 | `COOLIFY_KICK_TIMEOUT` | `10` | Kick API timeout (seconds) |
 
 ### On Your Deployed App

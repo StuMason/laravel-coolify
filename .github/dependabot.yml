@@ -7,6 +7,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: Europe/London
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     groups:
       minor-and-patch:
@@ -21,6 +23,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: Europe/London
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
 
   - package-ecosystem: npm
@@ -30,6 +34,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: Europe/London
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     groups:
       minor-and-patch:
@@ -44,4 +50,6 @@ updates:
       day: monday
       time: "09:00"
       timezone: Europe/London
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5

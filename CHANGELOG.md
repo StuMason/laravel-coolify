@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Generated container runs boot-time `artisan` (`db:show`, `migrate`, `optimize`) as `www-data` via `runuser`, not root. Storage is restored before artisan runs, and `public/storage` is linked at build time (#142)
+- `coolify:provision` no longer puts the webhook secret in the webhook URL, and doesn't print it with `--no-interaction` (#143)
+- `coolify:provision` generates fresh Reverb credentials for production instead of copying local ones (#143)
+- `coolify:provision` keeps `.env` file permissions when updating it (#143)
+- Deploy keypair is generated in a private, randomly named temp directory that is always removed (#143)
+- Kick config (including `KICK_TOKEN`) is no longer cached in the host app's cache under `kick.config.{uuid}` (#143)
+- CI: narrower `claude.yml` tool allowlist, Dependabot 7-day cooldown, `dist/` built without install scripts or a write token, actions pinned to commit SHAs (#141)
+
+### Removed
+- `coolify.kick.cache_ttl` / `COOLIFY_KICK_CACHE_TTL`: Kick lookups use the API response cache (`coolify.cache_ttl`) (#143)
+
 ## [3.4.2] - 2026-10-02
 
 ### Fixed

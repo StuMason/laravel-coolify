@@ -412,7 +412,13 @@ class ProvisionCommand extends Command
             $this->line('  <fg=cyan;options=bold>OPTIONAL: GitHub Webhook (for automatic deploys)</>');
             $this->newLine();
             $coolifyUrl = rtrim(config('coolify.url'), '/');
-            $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual?source={$appUuid}&webhook_secret={$this->webhookSecret}";
+            // Coolify matches manual webhooks by repository and branch, then checks
+            // GitHub's X-Hub-Signature-256 against the secret. Nothing goes in the URL.
+            $webhookUrl = "{$coolifyUrl}/webhooks/source/github/events/manual";
+            // Keep the secret out of CI logs when running unattended
+            $webhookSecret = $this->option('no-interaction')
+                ? '[copy it from the application\'s Webhooks page in Coolify]'
+                : $this->webhookSecret;
 
             $this->line('  <fg=white>Option A: Via GitHub UI</>');
             $this->line('  <fg=gray>────────────────────────</>');
@@ -423,7 +429,7 @@ class ProvisionCommand extends Command
             $this->line("      <fg=gray>{$webhookUrl}</>");
             $this->newLine();
             $this->line('  <fg=white>4.</> Content type: <fg=gray>application/json</>');
-            $this->line('  <fg=white>5.</> Secret: <fg=gray>'.$this->webhookSecret.'</>');
+            $this->line('  <fg=white>5.</> Secret: <fg=gray>'.$webhookSecret.'</>');
             $this->line('  <fg=white>6.</> Events: <fg=gray>Just the push event</>');
             $this->newLine();
 
@@ -433,7 +439,7 @@ class ProvisionCommand extends Command
             $this->line('    <fg=cyan>-f name="web"</> \\');
             $this->line("    <fg=cyan>-f \"config[url]={$webhookUrl}\"</> \\");
             $this->line('    <fg=cyan>-f "config[content_type]=json"</> \\');
-            $this->line("    <fg=cyan>-f \"config[secret]={$this->webhookSecret}\"</> \\");
+            $this->line("    <fg=cyan>-f \"config[secret]={$webhookSecret}\"</> \\");
             $this->line('    <fg=cyan>-f "events[]=push"</> \\');
             $this->line('    <fg=cyan>-F active=true</>');
             $this->newLine();
@@ -637,34 +643,40 @@ class ProvisionCommand extends Command
      */
     protected function generateSshKeyPair(string $keyName): ?array
     {
-        $tempDir = sys_get_temp_dir();
-        $keyPath = "{$tempDir}/{$keyName}_".time();
+        // Private, unpredictable temp dir so other local users can't read or
+        // pre-create the key files
+        $tempDir = sys_get_temp_dir().'/coolify-key-'.bin2hex(random_bytes(16));
 
-        // Generate ED25519 key (more secure, shorter than RSA)
-        $result = Process::run(sprintf(
-            'ssh-keygen -t ed25519 -f %s -N %s -C %s 2>&1',
-            escapeshellarg($keyPath),
-            escapeshellarg(''),
-            escapeshellarg($keyName)
-        ));
-
-        if (! $result->successful()) {
-            $this->components->error('Failed to generate SSH key: '.$result->output());
+        if (! @mkdir($tempDir, 0700)) {
+            $this->components->error('Failed to create a temporary directory for the SSH key');
 
             return null;
         }
 
-        $privateKey = File::get($keyPath);
-        $publicKey = File::get("{$keyPath}.pub");
+        try {
+            $keyPath = "{$tempDir}/id_ed25519";
 
-        // Clean up temp files
-        File::delete($keyPath);
-        File::delete("{$keyPath}.pub");
+            // Generate ED25519 key (more secure, shorter than RSA)
+            $result = Process::run(sprintf(
+                'ssh-keygen -t ed25519 -f %s -N %s -C %s 2>&1',
+                escapeshellarg($keyPath),
+                escapeshellarg(''),
+                escapeshellarg($keyName)
+            ));
 
-        return [
-            'private_key' => $privateKey,
-            'public_key' => trim($publicKey),
-        ];
+            if (! $result->successful()) {
+                $this->components->error('Failed to generate SSH key: '.$result->output());
+
+                return null;
+            }
+
+            return [
+                'private_key' => File::get($keyPath),
+                'public_key' => trim(File::get("{$keyPath}.pub")),
+            ];
+        } finally {
+            File::deleteDirectory($tempDir);
+        }
     }
 
     /**
@@ -1228,16 +1240,11 @@ class ProvisionCommand extends Command
         $reverbVars = $this->getLocalEnvVars(['REVERB_']);
 
         if (! empty($reverbVars)) {
-            // Generate missing credentials if needed
-            if (! isset($reverbVars['REVERB_APP_ID'])) {
-                $reverbVars['REVERB_APP_ID'] = (string) random_int(100000, 999999);
-            }
-            if (! isset($reverbVars['REVERB_APP_KEY'])) {
-                $reverbVars['REVERB_APP_KEY'] = Str::random(20);
-            }
-            if (! isset($reverbVars['REVERB_APP_SECRET'])) {
-                $reverbVars['REVERB_APP_SECRET'] = Str::random(20);
-            }
+            // Fresh credentials for production, never the local ones. This always
+            // runs against the application created above, so nothing to preserve.
+            $reverbVars['REVERB_APP_ID'] = (string) random_int(100000, 999999);
+            $reverbVars['REVERB_APP_KEY'] = Str::random(20);
+            $reverbVars['REVERB_APP_SECRET'] = Str::random(20);
 
             // Set broadcasting config for Laravel Reverb
             $envVars[] = ['key' => 'BROADCAST_CONNECTION', 'value' => 'reverb'];
@@ -1633,9 +1640,12 @@ class ProvisionCommand extends Command
             $content = rtrim($content, "\n")."\n{$key}={$value}\n";
         }
 
-        // Atomic write using temp file
+        // Atomic write using temp file, keeping the original permissions
+        // (a 0600 .env must not become 0644 under the default umask)
+        $permissions = fileperms($envPath) & 0777;
         $tempPath = $envPath.'.tmp';
         File::put($tempPath, $content);
+        File::chmod($tempPath, $permissions);
         File::move($tempPath, $envPath);
     }
 }

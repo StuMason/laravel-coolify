@@ -71,7 +71,6 @@ return [
     // Laravel Kick integration
     'kick' => [
         'enabled' => env('COOLIFY_KICK_ENABLED', true),
-        'cache_ttl' => env('COOLIFY_KICK_CACHE_TTL', 60),
         'timeout' => env('COOLIFY_KICK_TIMEOUT', 10),
     ],
 ];

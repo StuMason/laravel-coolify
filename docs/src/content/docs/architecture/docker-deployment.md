@@ -54,6 +54,10 @@ The generator automatically selects the right image variant:
 - Chromium/Browsershot (add to your Dockerfile if needed)
 - Application code (copied during deployment)
 
+### Pinning a Base Image Version
+
+Tags like `8.4` and `8.4-node` move: they are rebuilt on a schedule to pick up security patches. Each rebuild also publishes a dated tag, `{variant}-YYYYMMDD` (for example `8.4-20261001` or `8.4-node-20261001`). To pin, edit the `FROM ghcr.io/stumason/laravel-coolify-base:...` line in your generated `Dockerfile` to a dated tag or an `@sha256:` digest. You then pick up patches only when you bump it yourself. The same applies to the `composer:2` stages.
+
 ### Opting Out of Base Images
 
 If you need custom PHP extensions or want full control:
@@ -66,14 +70,25 @@ This generates a Dockerfile that builds from `php:x.x-fpm-bookworm` directly.
 
 ## Container Startup
 
-When your container starts, the entrypoint script runs automatically:
+When your container starts, the entrypoint script runs automatically. Every `artisan` call runs as `www-data`, not root.
 
-### 1. Database Connection Check
+### 1. Storage Restore
+
+Copies the files baked into the image back into `storage/` (so an empty volume mount gets the expected directory layout) and makes it owned by `www-data`:
+
+```
+[1/3] Restoring storage files...
+       Storage ready.
+```
+
+The `public/storage` symlink is created at build time with `php artisan storage:link`.
+
+### 2. Database Connection Check
 
 The script waits for your database to be available before proceeding:
 
 ```
-[1/3] Waiting for database connection...
+[2/3] Waiting for database connection...
        Waiting for database... (1/30s)
        Database connected!
 ```
@@ -83,12 +98,12 @@ Configure the timeout:
 COOLIFY_DB_WAIT_TIMEOUT=30  # seconds (default)
 ```
 
-### 2. Database Migrations
+### 3. Database Migrations
 
 Migrations run automatically with `--force` flag:
 
 ```
-[1/3] Running database migrations...
+[2/3] Running database migrations...
        Migrations completed successfully.
 ```
 
@@ -99,22 +114,13 @@ To disable automatic migrations:
 COOLIFY_AUTO_MIGRATE=false
 ```
 
-### 3. Application Optimization
+### 4. Application Optimization
 
 Laravel's `optimize` command caches config, routes, views, and events:
 
 ```
-[2/3] Optimizing application...
+[3/3] Optimizing application...
        Optimization completed (config, routes, views, events cached).
-```
-
-### 4. Storage Link
-
-Ensures the storage symlink exists:
-
-```
-[3/3] Ensuring storage link...
-       Storage link ready.
 ```
 
 ## Handling Migration Failures
@@ -137,7 +143,7 @@ If you deploy a broken migration:
 4. The new container will run both migrations
 
 :::note
-Migrations run as `root` user during container startup. The application itself runs as `www-data` via php-fpm.
+Migrations, `optimize` and every other boot-time `artisan` call run as `www-data` (via `runuser`), the same user as php-fpm and the queue workers. `bootstrap/cache` and `storage` are writable by `www-data`, so root never loads PHP from them.
 :::
 
 ## Auto-detected Workers
