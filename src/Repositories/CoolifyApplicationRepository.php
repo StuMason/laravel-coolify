@@ -106,14 +106,14 @@ class CoolifyApplicationRepository implements ApplicationRepository
             $this->update($uuid, ['git_commit_sha' => $commit]);
         }
 
-        // Coolify API uses GET /deploy with query params
+        // POST /deploy: uncached, and current Coolify rejects GET with post_required
         $params = ['uuid' => $uuid];
         if ($force) {
-            $params['force'] = 'true';
+            $params['force'] = true;
         }
 
         try {
-            $response = $this->client->get('deploy', $params);
+            $response = $this->client->post('deploy', $params);
         } finally {
             // Clear pinned commit so future deploys use HEAD
             if ($commit !== null) {
@@ -189,7 +189,8 @@ class CoolifyApplicationRepository implements ApplicationRepository
      */
     public function updateEnv(string $uuid, string $envUuid, array $env): array
     {
-        return $this->client->patch("applications/{$uuid}/envs/{$envUuid}", $env);
+        // Coolify has no per-uuid update route: PATCH /applications/{uuid}/envs matches on 'key'.
+        return $this->client->patch("applications/{$uuid}/envs", $env);
     }
 
     /**

@@ -1309,10 +1309,13 @@ class ProvisionCommand extends Command
             callback: function () use ($applications, $appUuid, $envVars, &$existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
                     if (isset($existingKeys[$env['key']]) && $existingKeys[$env['key']]) {
-                        // Env var exists - update it (include the env var UUID)
-                        $applications->updateEnv($appUuid, array_merge($env, [
-                            'uuid' => $existingKeys[$env['key']],
-                        ]));
+                        // Never replace an existing APP_KEY: rotating it breaks encrypted data
+                        if ($env['key'] === 'APP_KEY') {
+                            continue;
+                        }
+
+                        // Env var exists - update it (Coolify matches on key)
+                        $applications->updateEnv($appUuid, (string) $existingKeys[$env['key']], $env);
                         $updated++;
                     } else {
                         // Env var doesn't exist - create it
