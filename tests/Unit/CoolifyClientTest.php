@@ -116,6 +116,23 @@ describe('CoolifyClient', function () {
         $this->client->get('applications', cached: false);
     })->throws(CoolifyApiException::class);
 
+    it('includes validation errors in the API exception message', function () {
+        Http::fake([
+            '*' => Http::response([
+                'message' => 'Validation failed.',
+                'errors' => [
+                    'postgres_db' => ['The postgres_db may only contain letters, digits, and underscores, and must start with a letter or underscore.'],
+                ],
+            ], 422),
+        ]);
+
+        expect(fn () => $this->client->post('databases/postgresql', []))
+            ->toThrow(
+                CoolifyApiException::class,
+                'Validation failed. (postgres_db: The postgres_db may only contain letters, digits, and underscores, and must start with a letter or underscore.)'
+            );
+    });
+
     it('reports when configured', function () {
         expect($this->client->isConfigured())->toBeTrue();
 

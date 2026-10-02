@@ -204,10 +204,18 @@ class CoolifyClient
             );
         }
 
-        throw new CoolifyApiException(
-            $response->json('message') ?? "Coolify API request failed with status {$response->status()}",
-            $response->status()
-        );
+        $message = $response->json('message') ?? "Coolify API request failed with status {$response->status()}";
+        $errors = $response->json('errors');
+
+        if (is_array($errors) && $errors !== []) {
+            $details = collect($errors)
+                ->map(fn ($messages, $field) => "{$field}: ".implode(' ', (array) $messages))
+                ->implode('; ');
+
+            $message = "{$message} ({$details})";
+        }
+
+        throw new CoolifyApiException($message, $response->status());
     }
 
     /**
