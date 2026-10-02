@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Application log requests are clamped to 1-1000 lines, and the dashboard's `environment` query parameter is validated
 - Require `guzzlehttp/guzzle` ^7.15.2 (GHSA-v5mv-p594-2x33, GHSA-f7vp-7xgx-4w4r)
 
+### Fixed
+- Re-running `coolify:provision` no longer throws a `TypeError`. Existing env vars are updated through Coolify's key-based `PATCH /applications/{uuid}/envs`, and an existing `APP_KEY` is never replaced (#144)
+- Deploys use `POST /deploy` and are never cached. Current Coolify rejects `GET /deploy`, and repeat deploys within the cache TTL previously did nothing (#145)
+- The dashboard sends `is_buildtime` and `domains`, the field names Coolify's API accepts, instead of `is_build_time` and `fqdn` (#146)
+
 **Upgrade note:** apps provisioned before 3.5.0 still have `COOLIFY_TOKEN` set in Coolify. Remove it from apps that don't use the dashboard, or replace it with a minimal-scope token, and rotate the operator token.
 
 ## [3.4.2] - 2026-10-02
