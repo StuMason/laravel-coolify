@@ -5,7 +5,13 @@ use Stumason\Coolify\Http\Middleware\Authenticate;
 
 Route::middleware(Authenticate::class)->group(function () {
     // API Routes (JSON responses for AJAX calls)
-    Route::prefix('api')->group(function () {
+    Route::prefix('api')->middleware('throttle:coolify')->where([
+        'uuid' => '[A-Za-z0-9-]+',
+        'envUuid' => '[A-Za-z0-9-]+',
+        'backupUuid' => '[A-Za-z0-9-]+',
+        'applicationUuid' => '[A-Za-z0-9-]+',
+        'appUuid' => '[A-Za-z0-9-]+',
+    ])->group(function () {
         // Dashboard stats
         Route::get('/stats', 'DashboardStatsController@index')->name('coolify.stats');
 

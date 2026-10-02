@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-02
+
+### Security
+- Dashboard API route parameters are restricted to letters, digits and hyphens, so encoded `..`, `#` and `?` can no longer redirect a dashboard action to a different Coolify endpoint
+- `coolify:provision` no longer copies the operator's `COOLIFY_TOKEN` into the provisioned app. To use the dashboard in production, create a separate, minimal-scope token in Coolify and set it on the app
+- `coolify:provision` marks every env var except `VITE_*` as runtime-only, so secrets such as `APP_KEY` and `DB_PASSWORD` are no longer passed as Docker build args
+- Dashboard actions (non-GET requests) are rate-limited to 30 per minute per user; reads are unlimited
+- Application log requests are clamped to 1-1000 lines, and the dashboard's `environment` query parameter is validated
+- Require `guzzlehttp/guzzle` ^7.15.2 (GHSA-v5mv-p594-2x33, GHSA-f7vp-7xgx-4w4r)
+
+**Upgrade note:** apps provisioned before 3.5.0 still have `COOLIFY_TOKEN` set in Coolify. Remove it from apps that don't use the dashboard, or replace it with a minimal-scope token, and rotate the operator token.
+
 ## [3.4.2] - 2026-10-02
 
 ### Fixed
