@@ -73,7 +73,7 @@ describe('KickRepository', function () {
         expect($config['kick_path'])->toBe('api/kick');
     });
 
-    it('caches config lookups', function () {
+    it('does not cache the kick token in the host app cache', function () {
         Http::fake([
             '*/applications/*/envs' => Http::response([
                 ['key' => 'KICK_TOKEN', 'value' => 'secret-token'],
@@ -85,15 +85,10 @@ describe('KickRepository', function () {
             ], 200),
         ]);
 
-        $repo = app(KickRepository::class);
+        $config = app(KickRepository::class)->getConfig('app-123');
 
-        // First call
-        $repo->getConfig('app-123');
-        // Second call should use cache
-        $repo->getConfig('app-123');
-
-        // Should only have made one set of requests
-        Http::assertSentCount(2); // envs + get app
+        expect($config['token'])->toBe('secret-token')
+            ->and(Cache::has('kick.config.app-123'))->toBeFalse();
     });
 
     it('checks reachability', function () {

@@ -31,11 +31,9 @@ class CoolifyKickRepository implements KickRepository
      */
     public function getConfig(string $appUuid): ?array
     {
-        $ttl = config('coolify.kick.cache_ttl', 60);
-
-        return Cache::remember("kick.config.{$appUuid}", $ttl, function () use ($appUuid) {
-            return $this->fetchConfig($appUuid);
-        });
+        // Not cached here: the result holds KICK_TOKEN. The env lookup already
+        // goes through CoolifyClient's response cache.
+        return $this->fetchConfig($appUuid);
     }
 
     /**

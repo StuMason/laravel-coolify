@@ -13,6 +13,10 @@ Pre-built Docker images with all system dependencies and PHP extensions compiled
 | `ghcr.io/stumason/laravel-coolify-base:8.4-node` | 8.4 | 24 LTS | Full-stack with Vite/Inertia |
 | `ghcr.io/stumason/laravel-coolify-base:8.5-node` | 8.5 | 24 LTS | Full-stack with Vite/Inertia |
 
+## Tags
+
+The tags above are rebuilt on a schedule for security patches, so they move. Every build also publishes a dated tag, `{tag}-YYYYMMDD` (for example `8.4-20261001` or `8.4-node-20261001`), which never changes. To pin, point the `FROM` line in your generated `Dockerfile` at a dated tag or an `@sha256:` digest.
+
 ## What's Included
 
 ### System Dependencies

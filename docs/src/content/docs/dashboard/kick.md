@@ -96,9 +96,6 @@ In your **Laravel Coolify** config (`config/coolify.php`):
     // Enable/disable kick integration globally
     'enabled' => env('COOLIFY_KICK_ENABLED', true),
 
-    // Cache TTL for kick config lookups (seconds)
-    'cache_ttl' => env('COOLIFY_KICK_CACHE_TTL', 60),
-
     // Timeout for kick API requests (seconds)
     'timeout' => env('COOLIFY_KICK_TIMEOUT', 10),
 ],

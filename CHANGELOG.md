@@ -16,8 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard actions (non-GET requests) are rate-limited to 30 per minute per user; reads are unlimited
 - Application log requests are clamped to 1-1000 lines, and the dashboard's `environment` query parameter is validated
 - Require `guzzlehttp/guzzle` ^7.15.2 (GHSA-v5mv-p594-2x33, GHSA-f7vp-7xgx-4w4r)
+- Generated container runs boot-time `artisan` (`db:show`, `migrate`, `optimize`) as `www-data` via `runuser`, not root. Storage is restored before artisan runs, and `public/storage` is linked at build time (#142)
+- `coolify:provision` no longer puts the webhook secret in the webhook URL, and doesn't print it with `--no-interaction` (#143)
+- `coolify:provision` generates fresh Reverb credentials for production instead of copying local ones (#143)
+- `coolify:provision` keeps `.env` file permissions when updating it (#143)
+- Deploy keypair is generated in a private, randomly named temp directory that is always removed (#143)
+- Kick config (including `KICK_TOKEN`) is no longer cached in the host app's cache under `kick.config.{uuid}` (#143)
+- CI: narrower `claude.yml` tool allowlist, Dependabot 7-day cooldown, `dist/` built without install scripts or a write token, actions pinned to commit SHAs (#141)
 
-**Upgrade note:** apps provisioned before 3.5.0 still have `COOLIFY_TOKEN` set in Coolify. Remove it from apps that don't use the dashboard, or replace it with a minimal-scope token, and rotate the operator token.
+### Fixed
+- Re-running `coolify:provision` no longer throws a `TypeError`. Existing env vars are updated through Coolify's key-based `PATCH /applications/{uuid}/envs`, and an existing `APP_KEY` is never replaced (#144)
+- Deploys use `POST /deploy` and are never cached. Current Coolify rejects `GET /deploy`, and repeat deploys within the cache TTL previously did nothing (#145)
+- The dashboard sends `is_buildtime` and `domains`, the field names Coolify's API accepts, instead of `is_build_time` and `fqdn` (#146)
+
+### Removed
+- `coolify.kick.cache_ttl` / `COOLIFY_KICK_CACHE_TTL`: Kick lookups use the API response cache (`coolify.cache_ttl`) (#143)
+
+**Upgrade notes:**
+- Apps provisioned before 3.5.0 still have `COOLIFY_TOKEN` set in Coolify. Remove it from apps that don't use the dashboard, or replace it with a minimal-scope token, and rotate the operator token.
+- The package only generates Docker files; it never rewrites existing ones. Regenerate them (`php artisan coolify:install`) to pick up the non-root entrypoint and build-time `storage:link`.
 
 ## [3.4.2] - 2026-10-02
 

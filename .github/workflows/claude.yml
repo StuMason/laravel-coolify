@@ -34,15 +34,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1.0.239
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --allowedTools "Bash(gh:*),Bash(npm:*),Bash(composer:*)"
-            --system-prompt "You can create PRs with 'gh pr create', merge with 'gh pr merge', and comment with 'gh issue comment'. Use gh CLI for all GitHub operations."
+            --allowedTools "Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr list:*),Bash(gh pr comment:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh search:*),Bash(composer test:*),Bash(vendor/bin/pest:*)"
+            --system-prompt "You can read PRs and issues with 'gh pr view', 'gh pr diff', 'gh pr list', 'gh issue view', 'gh issue list' and 'gh search', comment with 'gh pr comment' or 'gh issue comment', and run tests with 'composer test' or 'vendor/bin/pest'. You cannot merge PRs, call 'gh api', or run npm."

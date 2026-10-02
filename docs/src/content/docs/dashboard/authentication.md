@@ -14,6 +14,10 @@ Coolify::auth(function ($request) {
 });
 ```
 
+:::caution
+The default gate allows everyone when `APP_ENV=local`. If a deployed app ever runs with `APP_ENV=local`, the dashboard, with its deploy, restart and environment-variable controls, is open to anyone who can reach it. Set `APP_ENV=production` on deployed apps and define a `Coolify::auth()` gate.
+:::
+
 ## Custom Authentication
 
 In `AppServiceProvider::boot()`:

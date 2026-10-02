@@ -204,7 +204,7 @@ return [
 
 ## Authentication
 
-By default, the dashboard is only accessible in `local` environment. For production:
+By default, the dashboard is only accessible in `local` environment. That check allows everyone, so a deployed app running with `APP_ENV=local` exposes the dashboard to anyone who can reach it. For production:
 
 ```php
 // app/Providers/AppServiceProvider.php

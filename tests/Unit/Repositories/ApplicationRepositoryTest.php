@@ -55,9 +55,26 @@ describe('ApplicationRepository', function () {
         expect($result['deployment_uuid'])->toBe('deploy-456');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'deploy')
-                && $request->method() === 'GET';
+            return str_ends_with($request->url(), '/deploy')
+                && $request->method() === 'POST'
+                && $request['uuid'] === 'app-123';
         });
+    });
+
+    it('does not cache deploys, so a repeat deploy reaches Coolify', function () {
+        Http::fake([
+            '*/deploy*' => Http::response([
+                'deployments' => [[
+                    'deployment_uuid' => 'deploy-456',
+                    'resource_uuid' => 'app-123',
+                ]],
+            ], 200),
+        ]);
+
+        app(ApplicationRepository::class)->deploy('app-123');
+        app(ApplicationRepository::class)->deploy('app-123');
+
+        Http::assertSentCount(2);
     });
 
     it('deploys with force rebuild', function () {
@@ -77,8 +94,9 @@ describe('ApplicationRepository', function () {
             ->and($result['force'])->toBeTrue();
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'deploy')
-                && str_contains($request->url(), 'force=true');
+            return str_ends_with($request->url(), '/deploy')
+                && $request->method() === 'POST'
+                && $request['force'] === true;
         });
     });
 
@@ -239,7 +257,7 @@ describe('ApplicationRepository', function () {
 
     it('updates an environment variable', function () {
         Http::fake([
-            '*/applications/app-123/envs/env-456' => Http::response([
+            '*/applications/app-123/envs' => Http::response([
                 'uuid' => 'env-456',
                 'key' => 'UPDATED_VAR',
                 'value' => 'updated_value',
@@ -255,9 +273,11 @@ describe('ApplicationRepository', function () {
             ->and($result['key'])->toBe('UPDATED_VAR');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'applications/app-123/envs/env-456')
+            // Coolify matches on key: PATCH /applications/{uuid}/envs, no env uuid in path or body
+            return str_ends_with($request->url(), 'applications/app-123/envs')
                 && $request->method() === 'PATCH'
-                && $request['key'] === 'UPDATED_VAR';
+                && $request['key'] === 'UPDATED_VAR'
+                && ! isset($request['uuid']);
         });
     });
 

@@ -367,10 +367,35 @@ describe('DockerGenerator entrypoint', function () {
 
         expect($content)->toContain('#!/bin/bash');
         expect($content)->toContain('set -e');
-        expect($content)->toContain('php artisan migrate --force');
-        expect($content)->toContain('php artisan optimize');
-        expect($content)->toContain('php artisan storage:link');
+        expect($content)->toContain('artisan migrate --force');
+        expect($content)->toContain('artisan optimize');
         expect($content)->toContain('exec /usr/bin/supervisord');
+    });
+
+    it('runs boot-time artisan as www-data, not root', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect($content)->toContain('runuser -u www-data -- /usr/local/bin/php /var/www/html/artisan "$@"');
+        expect($content)->not->toMatch('/^\s*php artisan/m');
+        expect($content)->not->toContain('storage:link');
+    });
+
+    it('restores storage before running artisan', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+        $content = $generator->generateEntrypoint();
+
+        expect(strpos($content, 'cp -rn /var/www/html/storage-init/.'))
+            ->toBeLessThan(strpos($content, 'artisan db:show'));
+    });
+
+    it('creates the storage symlink at build time', function () {
+        $generator = new DockerGenerator;
+        $generator->detect();
+
+        expect($generator->generateDockerfile())->toContain('RUN php artisan storage:link');
     });
 
     it('includes database connection wait with retry', function () {
@@ -378,7 +403,7 @@ describe('DockerGenerator entrypoint', function () {
         $generator->detect();
         $content = $generator->generateEntrypoint();
 
-        expect($content)->toContain('php artisan db:show');
+        expect($content)->toContain('artisan db:show');
         expect($content)->toContain('DB_WAIT_TIMEOUT');
         expect($content)->toContain('Waiting for database');
     });

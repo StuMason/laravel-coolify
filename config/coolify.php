@@ -243,9 +243,6 @@ return [
         // Enable or disable kick integration globally
         'enabled' => env('COOLIFY_KICK_ENABLED', true),
 
-        // How long to cache kick configuration lookups (seconds)
-        'cache_ttl' => env('COOLIFY_KICK_CACHE_TTL', 60),
-
         // Timeout for kick API requests (seconds)
         'timeout' => env('COOLIFY_KICK_TIMEOUT', 10),
     ],

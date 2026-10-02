@@ -40,7 +40,7 @@ describe('ApplicationController', function () {
 
         $response = $this->patchJson(route('coolify.applications.update', 'app-123'), [
             'name' => 'Updated App',
-            'fqdn' => 'https://app.example.com',
+            'domains' => 'https://app.example.com',
             'health_check_enabled' => true,
             'health_check_path' => '/health',
         ]);
@@ -52,7 +52,9 @@ describe('ApplicationController', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'applications/app-123')
                 && $request->method() === 'PATCH'
-                && $request['name'] === 'Updated App';
+                && $request['name'] === 'Updated App'
+                && $request['domains'] === 'https://app.example.com'
+                && ! isset($request['fqdn']);
         });
     });
 
@@ -183,8 +185,8 @@ describe('Environment Variables', function () {
     it('lists environment variables', function () {
         Http::fake([
             '*/applications/app-123/envs' => Http::response([
-                ['uuid' => 'env-1', 'key' => 'APP_NAME', 'value' => 'MyApp', 'is_build_time' => false],
-                ['uuid' => 'env-2', 'key' => 'DB_PASSWORD', 'value' => 'secret123', 'is_build_time' => false],
+                ['uuid' => 'env-1', 'key' => 'APP_NAME', 'value' => 'MyApp', 'is_buildtime' => false],
+                ['uuid' => 'env-2', 'key' => 'DB_PASSWORD', 'value' => 'secret123', 'is_buildtime' => false],
             ], 200),
         ]);
 
@@ -208,16 +210,22 @@ describe('Environment Variables', function () {
         $response = $this->postJson(route('coolify.applications.envs.create', 'app-123'), [
             'key' => 'NEW_VAR',
             'value' => 'new_value',
-            'is_build_time' => false,
+            'is_buildtime' => false,
         ]);
 
         $response->assertOk()
             ->assertJsonFragment(['key' => 'NEW_VAR']);
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'POST'
+                && $request['is_buildtime'] === false
+                && ! isset($request['is_build_time']);
+        });
     });
 
     it('updates environment variable', function () {
         Http::fake([
-            '*/applications/app-123/envs/env-1' => Http::response([
+            '*/applications/app-123/envs' => Http::response([
                 'uuid' => 'env-1',
                 'key' => 'APP_NAME',
                 'value' => 'UpdatedApp',
@@ -233,8 +241,10 @@ describe('Environment Variables', function () {
             ->assertJsonFragment(['value' => 'UpdatedApp']);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'applications/app-123/envs/env-1')
-                && $request->method() === 'PATCH';
+            return str_ends_with($request->url(), 'applications/app-123/envs')
+                && $request->method() === 'PATCH'
+                && $request['key'] === 'APP_NAME'
+                && ! isset($request['uuid']);
         });
     });
 
