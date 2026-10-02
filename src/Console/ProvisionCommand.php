@@ -1415,7 +1415,7 @@ class ProvisionCommand extends Command
      */
     public static function postgresDatabaseName(string $appName): string
     {
-        $name = preg_replace('/[^a-z0-9_]/', '_', Str::lower($appName));
+        $name = preg_replace('/[^a-z0-9_]/', '_', Str::lower(Str::ascii($appName)));
 
         if (preg_match('/^[0-9]/', $name)) {
             $name = "_{$name}";

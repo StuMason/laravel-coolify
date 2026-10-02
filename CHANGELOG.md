@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.2] - 2026-10-02
+
+### Fixed
+- `coolify:provision` derives a valid Postgres database name from any app name (hyphens, spaces, accents, a leading digit, over 63 characters), so provisioning no longer fails with `Validation failed.` (#122, #139, fixes #129)
+- Coolify API errors now include field-level validation detail, e.g. `Validation failed. (postgres_db: ...)` (#139)
+- `coolify:provision` adds the deploy key to GitHub via `gh` before creating the application, so Coolify's key check passes; sets `force_domain_override` to avoid domain conflict errors (#122)
+- Deploy key title no longer contains literal quotes (#125)
+- Generated Docker setup restores image files under `storage/app` when a volume mount hides them, without overwriting existing uploads (#122)
+
+### Removed
+- GitHub App creation path in `coolify:provision`; provisioning uses deploy keys (#122)
+
 ## [3.4.1] - 2026-07-18
 
 ### Fixed

@@ -133,6 +133,15 @@ describe('CoolifyClient', function () {
             );
     });
 
+    it('keeps the API message unchanged when there are no field errors', function () {
+        Http::fake([
+            '*' => Http::response(['message' => 'Server error'], 500),
+        ]);
+
+        expect(fn () => $this->client->post('applications', []))
+            ->toThrow(CoolifyApiException::class, 'Server error');
+    });
+
     it('reports when configured', function () {
         expect($this->client->isConfigured())->toBeTrue();
 

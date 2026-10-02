@@ -4,6 +4,7 @@ namespace Stumason\Coolify;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Stumason\Coolify\Exceptions\CoolifyApiException;
@@ -209,7 +210,7 @@ class CoolifyClient
 
         if (is_array($errors) && $errors !== []) {
             $details = collect($errors)
-                ->map(fn ($messages, $field) => "{$field}: ".implode(' ', (array) $messages))
+                ->map(fn ($messages, $field) => "{$field}: ".implode(' ', Arr::flatten((array) $messages)))
                 ->implode('; ');
 
             $message = "{$message} ({$details})";

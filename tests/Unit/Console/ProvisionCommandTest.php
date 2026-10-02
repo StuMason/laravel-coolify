@@ -13,6 +13,7 @@ describe('ProvisionCommand::postgresDatabaseName', function () {
         'plain' => ['appfirst', 'appfirst'],
         'hyphen' => ['app-first', 'app_first'],
         'space and capitals' => ['My App', 'my_app'],
+        'non-ascii' => ['Café', 'cafe'],
         'leading digit' => ['2fa-app', '_2fa_app'],
         'too long' => [str_repeat('a', 70), str_repeat('a', 63)],
     ]);
