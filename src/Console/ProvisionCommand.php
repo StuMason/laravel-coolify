@@ -891,7 +891,7 @@ class ProvisionCommand extends Command
         string $environment,
         string $appName
     ): ?string {
-        $dbName = str_replace('-', '_', Str::lower($appName));
+        $dbName = static::postgresDatabaseName($appName);
 
         $result = spin(
             callback: fn () => $databases->createPostgres([
@@ -1405,6 +1405,23 @@ class ProvisionCommand extends Command
         }
 
         return $result;
+    }
+
+    /**
+     * Derive a Postgres database name from an application name.
+     *
+     * Coolify validates postgres_db as /^[A-Za-z_][A-Za-z0-9_]{0,62}$/,
+     * while application names may contain hyphens and spaces.
+     */
+    public static function postgresDatabaseName(string $appName): string
+    {
+        $name = preg_replace('/[^a-z0-9_]/', '_', Str::lower(Str::ascii($appName)));
+
+        if (preg_match('/^[0-9]/', $name)) {
+            $name = "_{$name}";
+        }
+
+        return substr($name, 0, 63);
     }
 
     /**
