@@ -2,8 +2,11 @@
 
 namespace Stumason\Coolify;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\CachesRoutes;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,6 +21,7 @@ class CoolifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerEvents();
+        $this->registerRateLimiter();
         $this->registerRoutes();
         $this->registerResources();
         $this->registerCommands();
@@ -64,6 +68,18 @@ class CoolifyServiceProvider extends ServiceProvider
             __DIR__.'/../config/coolify.php',
             'coolify'
         );
+    }
+
+    /**
+     * Rate-limit dashboard actions. Reads are unlimited so polling keeps working.
+     */
+    protected function registerRateLimiter(): void
+    {
+        RateLimiter::for('coolify', function (Request $request) {
+            return $request->isMethod('GET')
+                ? Limit::none()
+                : Limit::perMinute(30)->by($request->user()?->getAuthIdentifier() ?: $request->ip());
+        });
     }
 
     /**

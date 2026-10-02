@@ -9,7 +9,7 @@ const loading = ref(true);
 const saving = ref(false);
 const showAddForm = ref(false);
 
-const newEnv = ref({ key: '', value: '', is_build_time: false });
+const newEnv = ref({ key: '', value: '', is_buildtime: false });
 const editingEnv = ref(null);
 
 const appUuid = computed(() => stats.value?.application?.uuid);
@@ -31,7 +31,7 @@ async function addEnv() {
     saving.value = true;
     try {
         await api.createEnv(appUuid.value, newEnv.value);
-        newEnv.value = { key: '', value: '', is_build_time: false };
+        newEnv.value = { key: '', value: '', is_buildtime: false };
         showAddForm.value = false;
         await fetchEnvs();
     } catch (e) {
@@ -47,7 +47,7 @@ async function updateEnv(env) {
         await api.updateEnv(appUuid.value, env.uuid, {
             key: env.key,
             value: env.value,
-            is_build_time: env.is_build_time,
+            is_buildtime: env.is_buildtime,
         });
         editingEnv.value = null;
         await fetchEnvs();
@@ -123,7 +123,7 @@ onMounted(fetchEnvs);
             <div class="mt-4 flex items-center justify-between">
                 <label class="flex items-center gap-2 text-sm text-zinc-400">
                     <input
-                        v-model="newEnv.is_build_time"
+                        v-model="newEnv.is_buildtime"
                         type="checkbox"
                         class="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-violet-600 focus:ring-violet-500 focus:ring-offset-zinc-900"
                     />
@@ -175,7 +175,7 @@ onMounted(fetchEnvs);
                         <div class="flex items-center justify-between">
                             <label class="flex items-center gap-2 text-sm text-zinc-400">
                                 <input
-                                    v-model="editingEnv.is_build_time"
+                                    v-model="editingEnv.is_buildtime"
                                     type="checkbox"
                                     class="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-violet-600 focus:ring-violet-500 focus:ring-offset-zinc-900"
                                 />
@@ -200,7 +200,7 @@ onMounted(fetchEnvs);
                             <code class="text-sm font-medium text-white">{{ env.key }}</code>
                             <code class="text-sm text-zinc-400 truncate max-w-md">{{ env.value || '(empty)' }}</code>
                             <span
-                                v-if="env.is_build_time"
+                                v-if="env.is_buildtime"
                                 class="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400"
                             >
                                 Build

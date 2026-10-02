@@ -1171,9 +1171,9 @@ class ProvisionCommand extends Command
         $envVars[] = ['key' => 'LOG_STACK', 'value' => 'daily,errorlog'];
         $envVars[] = ['key' => 'LOG_DAILY_MAX_FILES', 'value' => '7'];
 
-        // Set Coolify connection (so deployed app can use this package's dashboard/API)
+        // Coolify URL only. The operator's token is never copied into the app: it usually
+        // has full access, so any compromise of the app would expose the whole instance.
         $envVars[] = ['key' => 'COOLIFY_URL', 'value' => config('coolify.url')];
-        $envVars[] = ['key' => 'COOLIFY_TOKEN', 'value' => config('coolify.token')];
 
         // Set Coolify resource UUIDs so they're available in production
         $envVars[] = ['key' => 'COOLIFY_SERVER_UUID', 'value' => $serverUuid];
@@ -1289,6 +1289,10 @@ class ProvisionCommand extends Command
         // Deduplicate env vars by key (later values override earlier ones)
         $uniqueEnvVars = [];
         foreach ($envVars as $env) {
+            // Only Vite reads env at build time. Everything else, secrets included,
+            // stays out of build args (Coolify defaults is_buildtime to true).
+            $env['is_buildtime'] = Str::startsWith($env['key'], 'VITE_');
+            $env['is_runtime'] = true;
             $uniqueEnvVars[$env['key']] = $env;
         }
         $envVars = array_values($uniqueEnvVars);
@@ -1316,10 +1320,13 @@ class ProvisionCommand extends Command
             callback: function () use ($applications, $appUuid, $envVars, &$existingKeys, &$created, &$updated): void {
                 foreach ($envVars as $env) {
                     if (isset($existingKeys[$env['key']]) && $existingKeys[$env['key']]) {
-                        // Env var exists - update it (include the env var UUID)
-                        $applications->updateEnv($appUuid, array_merge($env, [
-                            'uuid' => $existingKeys[$env['key']],
-                        ]));
+                        // Never replace an existing APP_KEY: rotating it breaks encrypted data
+                        if ($env['key'] === 'APP_KEY') {
+                            continue;
+                        }
+
+                        // Env var exists - update it (Coolify matches on key)
+                        $applications->updateEnv($appUuid, (string) $existingKeys[$env['key']], $env);
                         $updated++;
                     } else {
                         // Env var doesn't exist - create it
@@ -1339,6 +1346,7 @@ class ProvisionCommand extends Command
         );
 
         $this->line("    <fg=green>Environment variables configured on Coolify</> (created: {$created}, updated: {$updated})");
+        $this->line('    <fg=gray>COOLIFY_TOKEN is not copied to the app. To use the dashboard in production, create a separate, minimal-scope token in Coolify and set it on the app.</>');
     }
 
     /**

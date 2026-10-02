@@ -49,6 +49,10 @@ class DashboardStatsController extends Controller
             // Get project from config
             $projectUuid = config('coolify.project_uuid');
             $environmentName = $request->query('environment', 'production');
+
+            if (! is_string($environmentName) || ! preg_match('/^[A-Za-z0-9_-]+$/', $environmentName)) {
+                $environmentName = 'production';
+            }
             $environmentUuid = null;
 
             if ($projectUuid) {

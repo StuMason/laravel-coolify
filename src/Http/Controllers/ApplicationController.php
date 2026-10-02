@@ -35,7 +35,7 @@ class ApplicationController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'sometimes|nullable|string|max:1000',
-            'fqdn' => 'sometimes|nullable|string|max:255',
+            'domains' => 'sometimes|nullable|string|max:255',
             'git_repository' => 'sometimes|string|max:500',
             'git_branch' => 'sometimes|string|max:255',
             'git_commit_sha' => 'sometimes|string|max:40',
@@ -133,7 +133,7 @@ class ApplicationController extends Controller
     public function logs(Request $request, string $uuid): JsonResponse
     {
         try {
-            $lines = $request->integer('lines', 100);
+            $lines = max(1, min($request->integer('lines', 100), 1000));
             $result = $this->applications->logs($uuid, $lines);
 
             return response()->json($result);
@@ -163,7 +163,7 @@ class ApplicationController extends Controller
             'key' => ['required', 'string', 'max:255', 'regex:/^[A-Z][A-Z0-9_]*$/'],
             'value' => 'required|string|max:65535',
             'is_preview' => 'sometimes|boolean',
-            'is_build_time' => 'sometimes|boolean',
+            'is_buildtime' => 'sometimes|boolean',
             'is_literal' => 'sometimes|boolean',
             'is_multiline' => 'sometimes|boolean',
             'is_shown_once' => 'sometimes|boolean',
@@ -187,7 +187,7 @@ class ApplicationController extends Controller
             'key' => ['sometimes', 'string', 'max:255', 'regex:/^[A-Z][A-Z0-9_]*$/'],
             'value' => 'sometimes|string|max:65535',
             'is_preview' => 'sometimes|boolean',
-            'is_build_time' => 'sometimes|boolean',
+            'is_buildtime' => 'sometimes|boolean',
             'is_literal' => 'sometimes|boolean',
             'is_multiline' => 'sometimes|boolean',
             'is_shown_once' => 'sometimes|boolean',
