@@ -24,7 +24,6 @@ trait StreamsDeploymentLogs
         $maxAttempts = 180; // 15 minutes with 5 second intervals
         $attempts = 0;
         $seenLogHashes = [];
-        $status = 'in_progress';
 
         while ($attempts < $maxAttempts) {
             try {

@@ -115,7 +115,7 @@ class DashboardStatsController extends Controller
 
                 // Build proper Coolify dashboard URL
                 $coolifyDashboardUrl = null;
-                if ($projectUuid && $environmentUuid && $appUuid) {
+                if ($environmentUuid && $appUuid) {
                     $coolifyDashboardUrl = "{$coolifyUrl}/project/{$projectUuid}/{$environmentName}/application/{$appUuid}";
                 }
 
@@ -243,7 +243,7 @@ class DashboardStatsController extends Controller
             }
 
         } catch (CoolifyApiException) {
-            $stats['connected'] = false;
+            // Connection failed; 'connected' keeps its initial false.
         }
 
         return response()->json($stats);
