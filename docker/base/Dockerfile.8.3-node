@@ -79,12 +79,17 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         pcntl
 
 # =============================================================================
-# PECL Extensions
+# Redis Extension
 # =============================================================================
-# Redis is installed via PECL as it's not bundled with PHP.
-# =============================================================================
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+# Redis is built from the pinned phpredis GitHub release rather than PECL, so a
+# pecl.php.net outage can't block a security rebuild (it did on 21 Oct 2026).
+ARG PHPREDIS_VERSION=6.3.0
+RUN docker-php-source extract \
+    && curl -fsSL "https://github.com/phpredis/phpredis/archive/refs/tags/${PHPREDIS_VERSION}.tar.gz" \
+        | tar -xz -C /usr/src/php/ext \
+    && mv "/usr/src/php/ext/phpredis-${PHPREDIS_VERSION}" /usr/src/php/ext/redis \
+    && docker-php-ext-install redis \
+    && docker-php-source delete
 
 # =============================================================================
 # PHP Configuration
