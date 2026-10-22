@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\File;
+use Stumason\Coolify\Detectors\ReverbDetector;
 use Stumason\Coolify\Docker\DockerGenerator;
 
 beforeEach(function () {
@@ -496,5 +497,27 @@ describe('DockerGenerator database detection', function () {
         } else {
             File::delete($envPath);
         }
+    });
+});
+
+describe('Reverb nginx proxy', function () {
+    it('anchors the Reverb location so /appsettings.json etc fall through to Laravel', function () {
+        $generator = new DockerGenerator;
+        $detected = new ReflectionProperty(DockerGenerator::class, 'detected');
+        $detected->setValue($generator, [new ReverbDetector]);
+
+        $content = $generator->generateNginxConf();
+
+        // /app/{key} websockets and /apps/{id}/events HTTP API both proxy to Reverb.
+        expect($content)->toContain('location ~ ^/apps?/ {')
+            ->and($content)->toContain('proxy_pass http://127.0.0.1:6001;')
+            ->and($content)->not->toContain('location /app {');
+    });
+
+    it('emits the anchored location from the detector too', function () {
+        $blocks = implode("\n", (new ReverbDetector)->getNginxLocationBlocks());
+
+        expect($blocks)->toContain('location ~ ^/apps?/ {')
+            ->and($blocks)->not->toContain('location /app {');
     });
 });

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Generated nginx config anchors the Reverb proxy to `^/apps?/`, so paths like `/appsettings.json` no longer get proxied to Reverb (502 when Reverb isn't running). `/app/{key}` websockets and the `/apps/{id}/events` HTTP API still reach Reverb
+
 ## [3.5.0] - 2026-10-02
 
 ### Security

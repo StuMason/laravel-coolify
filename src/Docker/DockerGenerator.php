@@ -1017,8 +1017,8 @@ CONF;
         if (str_contains($name, 'reverb')) {
             return [
                 <<<'NGINX'
-        # Reverb WebSocket proxy
-        location /app {
+        # Reverb: /app/{key} websockets + /apps/{id} HTTP API. Anchored so /appsettings.json etc fall through to Laravel.
+        location ~ ^/apps?/ {
             proxy_pass http://127.0.0.1:6001;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
