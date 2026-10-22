@@ -501,7 +501,7 @@ describe('DockerGenerator database detection', function () {
 });
 
 describe('Reverb nginx proxy', function () {
-    it('anchors the Reverb location so /appsettings.json etc fall through to Laravel', function () {
+    it('proxies /app/ and /apps/ to Reverb so /appsettings.json etc fall through to Laravel', function () {
         $generator = new DockerGenerator;
         $detected = new ReflectionProperty(DockerGenerator::class, 'detected');
         $detected->setValue($generator, [new ReverbDetector]);
@@ -509,15 +509,19 @@ describe('Reverb nginx proxy', function () {
         $content = $generator->generateNginxConf();
 
         // /app/{key} websockets and /apps/{id}/events HTTP API both proxy to Reverb.
-        expect($content)->toContain('location ~ ^/apps?/ {')
-            ->and($content)->toContain('proxy_pass http://127.0.0.1:6001;')
-            ->and($content)->not->toContain('location /app {');
+        expect($content)->toContain('location /app/ {')
+            ->and($content)->toContain('location /apps/ {')
+            ->and(substr_count($content, 'proxy_pass http://127.0.0.1:6001;'))->toBe(2)
+            ->and($content)->not->toContain('location /app {')
+            ->and($content)->not->toContain('location ~ ^/apps?/');
     });
 
-    it('emits the anchored location from the detector too', function () {
+    it('emits both prefix blocks from the detector too', function () {
         $blocks = implode("\n", (new ReverbDetector)->getNginxLocationBlocks());
 
-        expect($blocks)->toContain('location ~ ^/apps?/ {')
-            ->and($blocks)->not->toContain('location /app {');
+        expect($blocks)->toContain('location /app/ {')
+            ->and($blocks)->toContain('location /apps/ {')
+            ->and($blocks)->not->toContain('location /app {')
+            ->and($blocks)->not->toContain('location ~ ^/apps?/');
     });
 });
