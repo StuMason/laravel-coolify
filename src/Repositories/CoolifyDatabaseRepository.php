@@ -130,7 +130,6 @@ class CoolifyDatabaseRepository implements DatabaseRepository
         // For each schedule, get recent executions (handle individual failures gracefully)
         $result = [];
         foreach ($schedules as $schedule) {
-            $executions = [];
             try {
                 $response = $this->client->get("databases/{$uuid}/backups/{$schedule['uuid']}/executions");
                 // API returns { "executions": [...] } - extract the array
